@@ -1,0 +1,14 @@
+{
+  "name": "pokemon",
+  "version": "1.0.0",
+  "description": "A pokemon game am i right?",
+  "author": "Axel Forsman",
+  "dependencies": {
+    "gl-matrix": "^2.3.1",
+    "lerp": "^1.0.3",
+    "parse-bmfont-ascii": "^1.0.6"
+  },
+  "devDependencies": {
+    "webpack-glsl-loader": "^1.0.1"
+  }
+}
