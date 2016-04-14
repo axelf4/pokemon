@@ -3,7 +3,7 @@ var Position = require("Position.js");
 var Direction = require("Direction.js");
 var SpriteComponent = require("SpriteComponent.js");
 var OldPosition = require("OldPosition.js");
-var Interactable = require("Interactable.js");
+var InteractionComponent = require("InteractionComponent.js");
 var MovementComponent = require("MovementComponent.js");
 var Animation = require("Animation.js");
 var texture = require("texture.js");
@@ -11,11 +11,8 @@ var texture = require("texture.js");
 var keys = input.keys;
 var player;
 
-var update = function(dt, em, context) {
-};
+var PlayerMovementController = function() {};
 
-var PlayerMovementController = function() {
-};
 PlayerMovementController.prototype.getTarget = function(dt, context, position, entity) {
 	var em = context.em;
 	var direction = em.getComponent(entity, Direction);
@@ -53,8 +50,6 @@ PlayerMovementController.prototype.getTarget = function(dt, context, position, e
 };
 
 module.exports = function(manager, context) {
-	// context.addUpdateHook(update);
-
 	var em = context.em;
 
 	context.player = player = em.createEntity();

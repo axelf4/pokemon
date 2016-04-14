@@ -1,6 +1,7 @@
 var glMatrix = require("gl-matrix");
 var lerp = require("lerp");
-var fowl = require("fowl.js");
+var BitSet = require("bitset");
+var fowl = require("fowl");
 var renderer = require("renderer.js");
 var SpriteBatch = require("SpriteBatch.js");
 var sign = require("sign.js");
@@ -21,7 +22,6 @@ var Direction = require("Direction.js");
 var SpriteComponent = require("SpriteComponent.js");
 var PlayerComponent = require("PlayerComponent.js");
 var InteractionComponent = require("InteractionComponent.js");
-var Interactable = require("Interactable.js");
 var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
 
@@ -51,7 +51,6 @@ fowl.registerComponents(
 		SpriteComponent,
 		PlayerComponent,
 		InteractionComponent,
-		Interactable,
 		OldPosition,
 		MovementComponent
 		);
@@ -101,12 +100,15 @@ var context = {
 	},
 	getEntityAtCell: function(em, x, y) {
 		var result = null;
-		em.each(function(entity) {
-			var position = em.getComponent(entity, Position);
-			if (position.x === x && position.y === y) {
-				result = entity;
+		var mask = fowl.getMask([Position]);
+		for (var entity = 0, length = em.count; entity < length; entity++) {
+			if (em.matches(entity, mask)) {
+				var position = em.getComponent(entity, Position);
+				if (position.x === x && position.y === y) {
+					result = entity;
+				}
 			}
-		}, Position);
+		}
 		return result;
 	},
 	loadScript: function(name) {
@@ -132,6 +134,15 @@ var context = {
 		return true;
 	},
 	isSolid: function(x, y) {
+		// Check for entity at cell
+		var mask = fowl.getMask([Position]);
+		for (var entity = 0, length = this.em.count; entity < length; entity++) {
+			if (em.matches(entity, mask)) {
+				var position = em.getComponent(entity, Position);
+				if (position.x === x && position.y === y) return true;
+			}
+		}
+		// Check for collidable tile at cell
 		var layer;
 		for (var i = 0, length = map.layers.length; i < length; i++) {
 			if (map.layers[i].name === "meta") {
@@ -189,23 +200,26 @@ var update = function(timestamp) {
 	map.drawLayer(spriteBatch, map.layers[0]);
 	map.drawLayer(spriteBatch, map.layers[1]);
 
-	em.each(function(entity) {
-		var position = pos = em.getComponent(entity, Position);
-		var oldpos = em.getComponent(entity, OldPosition);
-		var spriteComponent = em.getComponent(entity, SpriteComponent);
-		var movement = em.getComponent(entity, MovementComponent);
+	var mask = fowl.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
+	for (var entity = 0, length = em.count; entity < length; entity++) {
+		if (em.matches(entity, mask)) {
+			var position = pos = em.getComponent(entity, Position);
+			var oldpos = em.getComponent(entity, OldPosition);
+			var spriteComponent = em.getComponent(entity, SpriteComponent);
+			var movement = em.getComponent(entity, MovementComponent);
 
-		var texture = spriteComponent.texture;
-		var region = spriteComponent.animation.getFrame(time);
-		var u1 = (region.x + 0.5) / texture.width;
-		var v1 = (region.y + 0.5) / texture.height;
-		var u2 = (region.x + region.width - 0.5) / texture.width;
-		var v2 = (region.y + region.height - 0.5) / texture.height;
-		var x = lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 + spriteComponent.offsetX;
-		var y = lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 + spriteComponent.offsetY;
-		var width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
-		spriteBatch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
-	}, Position, SpriteComponent);
+			var texture = spriteComponent.texture;
+			var region = spriteComponent.animation.getFrame(time);
+			var u1 = (region.x + 0.5) / texture.width;
+			var v1 = (region.y + 0.5) / texture.height;
+			var u2 = (region.x + region.width - 0.5) / texture.width;
+			var v2 = (region.y + region.height - 0.5) / texture.height;
+			var x = lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 + spriteComponent.offsetX;
+			var y = lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 + spriteComponent.offsetY;
+			var width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
+			spriteBatch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
+		}
+	}
 
 	map.drawLayer(spriteBatch, map.layers[2]);
 
@@ -228,7 +242,7 @@ var update = function(timestamp) {
 			var direction = em.getComponent(context.player, Direction);
 			var entity = context.getEntityAtCell(em, pos.x + direction.getDeltaX(), pos.y + direction.getDeltaY());
 			if (entity !== null) {
-				var interactable = em.getComponent(entity, Interactable);
+				var interactable = em.getComponent(entity, InteractionComponent);
 				if (interactable) interactable.callback(context);
 			}
 		}

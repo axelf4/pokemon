@@ -1,2 +1,3 @@
-module.exports = function() {
+module.exports = function(callback) {
+	this.callback = callback;
 };

@@ -1,6 +1,6 @@
 var Map = require("map.js");
 var Position = require("Position.js");
-var Interactable = require("Interactable.js");
+var InteractionComponent = require("InteractionComponent.js");
 var texture = require("texture.js");
 var Animation = require("Animation.js");
 var PushTrigger = require("PushTrigger.js");
@@ -11,7 +11,19 @@ var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
 
-var map;
+var thread = function(fn) {
+	var gen = fn();
+	if (typeof gen.next !== "function") return;
+	var next = function(err, res) {
+		var ret = gen.next(res);
+		if (ret.done) return;
+
+		if (typeof ret.value.then === "function") {
+			ret.value.then(next);
+		} else ret.value(next);
+	};
+	next();
+};
 
 module.exports = function(manager, context) {
 	var map = new Map();
@@ -26,13 +38,14 @@ module.exports = function(manager, context) {
 
 	var item = em.createEntity();
 	em.addComponent(item, new Position(13, 5));
-	em.addComponent(item, new Interactable(function(context) {
-		var playerMovement = context.em.getComponent(context.player, MovementComponent);
-		playerMovement.pushController(new StillMovementController());
-		context.showDialogue("It's a pokéball. What did you expect?")
-			.then(function() {
-				playerMovement.popController();
-			});
+	em.addComponent(item, new InteractionComponent(function(context) {
+		thread(function*() {
+			var playerMovement = context.em.getComponent(context.player, MovementComponent);
+			playerMovement.pushController(new StillMovementController());
+			yield context.showDialogue("It's a pokéball. What did you expect?");
+			yield context.showDialogue("Hello");
+			playerMovement.popController();
+		});
 	}));
 
 	var jorryt = em.createEntity();
@@ -49,16 +62,14 @@ module.exports = function(manager, context) {
 	em.addComponent(jorryt, spriteComponent);
 	var controller = new RandomMovementController();
 	em.addComponent(jorryt, new MovementComponent(controller));
-	em.addComponent(jorryt, new Interactable(function(context) {
-		var playerMovement = context.em.getComponent(context.player, MovementComponent);
-		var entityMovement = context.em.getComponent(jorryt, MovementComponent);
-		playerMovement.pushController(new StillMovementController());
-		entityMovement.pushController(new StillMovementController());
-		context.showDialogue("I could be a girl, you could be a boy. Transsexuality is so fun!")
-			.then(function() {
-				return context.showDialogue("What's up with that jar of nutella? Still fighting the good fight I see.");
-			})
-		.then(function() {
+	em.addComponent(jorryt, new InteractionComponent(function(context) {
+		thread(function*() {
+			var playerMovement = context.em.getComponent(context.player, MovementComponent);
+			var entityMovement = context.em.getComponent(jorryt, MovementComponent);
+			playerMovement.pushController(new StillMovementController());
+			entityMovement.pushController(new StillMovementController());
+			yield context.showDialogue("I could be a girl, you could be a boy. Transsexuality is so fun!");
+			yield context.showDialogue("What's up with that jar of nutella? Still fighting the good fight.");
 			playerMovement.popController();
 			entityMovement.popController();
 		});

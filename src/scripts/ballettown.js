@@ -1,9 +1,7 @@
 var Map = require("map.js");
 var Position = require("Position.js");
-var Interactable = require("Interactable.js");
+var InteractionComponent = require("InteractionComponent.js");
 var PushTrigger = require("PushTrigger.js");
-
-var map;
 
 module.exports = function(manager, context) {
 	var map = new Map();
