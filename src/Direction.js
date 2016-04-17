@@ -19,4 +19,12 @@ Direction.prototype.getDeltaY = function() {
 	return this.value === Direction.UP ? -1 : (this.value === Direction.DOWN ? 1 : 0);
 };
 
+Direction.getDeltaX = function(direction) {
+	return direction === Direction.LEFT ? -1 : (direction === Direction.RIGHT ? 1 : 0);
+};
+
+Direction.getDeltaY = function(direction) {
+	return direction === Direction.UP ? -1 : (direction === Direction.DOWN ? 1 : 0);
+};
+
 module.exports = Direction;

@@ -22,6 +22,8 @@ var SpriteBatch = function(capacity) {
 
 	this.vertices = new Float32Array(this.size);
 	this.vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.DYNAMIC_DRAW);
 
 	var len = capacity * 6;
 	var indices = new Uint16Array(len);
@@ -44,17 +46,16 @@ SpriteBatch.prototype.flush = function() {
 	gl.uniformMatrix4fv(projectionMatrixUniform, false, this.projectionMatrix);
 	gl.uniformMatrix4fv(mvMatrixUniform, false, this.mvMatrix);
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.DYNAMIC_DRAW);
-
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, this.lastTexture);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices);
 	gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 16, 0);
 	gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 16, 8);
 
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
 	gl.drawElements(gl.TRIANGLES, this.idx / 16 * 6, gl.UNSIGNED_SHORT, 0);
 
 	this.idx = 0;

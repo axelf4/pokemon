@@ -1,6 +1,6 @@
 var MovementComponent = function(controller) {
 	this.timer = 0;
-	this.delay = 0.2;
+	this.delay = 200;
 	this.controllerStack = new Array();
 	if (controller) this.controllerStack.push(controller);
 };

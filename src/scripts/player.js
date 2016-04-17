@@ -60,7 +60,7 @@ module.exports = function(manager, context) {
 
 	var textureRegion = new texture.Region();
 	textureRegion.loadFromFile(manager, "assets/lucas.png");
-	var animation = new Animation(.25, Animation.getSheetFromTexture(4, 2, 2, 32, 32, 4, 2));
+	var animation = new Animation(250, Animation.getSheetFromTexture(4, 2, 2, 32, 32, 4, 2));
 	var spriteComponent = new SpriteComponent(textureRegion, animation);
 	spriteComponent.offsetX = -8;
 	spriteComponent.offsetY = -16;

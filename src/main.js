@@ -183,22 +183,29 @@ audio.loadAudio(manager, "assets/masara-town.mp3", function(buffer) {
 	source.loop = true;
 });
 
+var mapRenderer = null;
+
 var lastTime = performance.now();
 var time = 0;
 var requestID;
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
-	var dt = (timestamp - lastTime) / 1000;
-	time += dt;
+	var dt = timestamp - lastTime;
 	lastTime = timestamp;
+	time += dt;
 
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	spriteBatch.projectionMatrix = projectionMatrix;
 	spriteBatch.mvMatrix = mvMatrix;
 
-	map.drawLayer(spriteBatch, map.layers[0]);
-	map.drawLayer(spriteBatch, map.layers[1]);
+	if (!mapRenderer) {
+		mapRenderer = new Map.MapRenderer(map);
+	} else {
+		mapRenderer.draw();
+	}
+	// map.drawLayer(spriteBatch, map.layers[0]);
+	// map.drawLayer(spriteBatch, map.layers[1]);
 
 	var mask = fowl.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
 	for (var entity = 0, length = em.count; entity < length; entity++) {
@@ -221,8 +228,6 @@ var update = function(timestamp) {
 		}
 	}
 
-	map.drawLayer(spriteBatch, map.layers[2]);
-
 	gui.prepareNode(container);
 	container.width = 640;
 	container.height = 480;
@@ -232,6 +237,11 @@ var update = function(timestamp) {
 	}
 
 	spriteBatch.flush();
+
+	/*var error = gl.getError();
+	if (error !== gl.NO_ERROR && error !== gl.CONTEXT_LOST_WEBGL) {
+		console.error("OpenGL error.");
+	}*/
 
 	if (input.pressedKeys.indexOf(32) !== -1) {
 		if (context.getDialogue()) {

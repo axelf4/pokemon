@@ -55,7 +55,7 @@ module.exports = function(manager, context) {
 	em.addComponent(jorryt, new Direction());
 	var textureRegion = new texture.Region();
 	textureRegion.loadFromFile(manager, "assets/dancer.png");
-	var animation = new Animation(.5, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
+	var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
 	var spriteComponent = new SpriteComponent(textureRegion, animation);
 	spriteComponent.offsetX = -8;
 	spriteComponent.offsetY = -16;

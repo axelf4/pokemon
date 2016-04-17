@@ -5,7 +5,7 @@ var RandomMovementController = function() {
 };
 RandomMovementController.prototype.getTarget = function(dt, context, position, entity) {
 	this.timer += dt;
-	if (this.timer < 2) {
+	if (this.timer < 2000) {
 		return null;
 	}
 	this.timer = 0;
