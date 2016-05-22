@@ -1,97 +1,124 @@
 var texture = require("texture.js");
-var loader = require("Loader.js");
+var loader = require("loader.js");
 var renderer = require("renderer.js");
 var glMatrix = require("gl-matrix");
+var path = require("path");
+var base64 = require("base64-js");
 
 var gl = renderer.gl;
 var vec2 = glMatrix.vec2;
 
-var Map = function() {};
-// TODO also add option to load base64, xml, csv
-// Loads a TMX map in the JSON format
-Map.prototype.fromJSON = function(manager, data, url) {
-	this.mapWidth = data.width;
-	this.mapHeight = data.height;
-	this.tileWidth = data.tilewidth;
-	this.tileHeight = data.tileheight;
-	this.tilesets = [];
-	var lastSet;
-	var dirname = url.replace(/\\/g, '/').replace(/\/[^\/]*\/?$/, '') + '/';
-	for (var i = 0, length = data.tilesets.length; i < length; i++) {
-		var node = data.tilesets[i];
-		var tileset = new TileSet();
-		tileset.firstGid = node.firstgid;
-		var loadTextures = function() {
-			if (lastSet) lastSet.lastGid = tileset.firstGid - 1;
-			tileset.tilesAcross = tileset.imageWidth / tileset.tileWidth;
-			tileset.texture = new texture.Region();
-			tileset.texture.loadFromFile(manager, tileset.imagePath);
-		};
-		if (node.source) {
-			var resolved = dirname + node.source;
-			manager.start();
-			loader.loadFile(resolved, function() {
-				var parser = new DOMParser();
-				var xmlDoc = parser.parseFromString(this.responseText, "application/xml");
-				var root = xmlDoc.documentElement;
-				tileset.name = root.getAttribute("name");
-				tileset.tileWidth = parseInt(root.getAttribute("tilewidth"));
-				tileset.tileHeight = parseInt(root.getAttribute("tileheight"));
-				var image = root.getElementsByTagName("image")[0];
-				tileset.imagePath = dirname + image.getAttribute("source");
-				tileset.imageWidth = parseInt(image.getAttribute("width"));
-				tileset.imageHeight = parseInt(image.getAttribute("height"));
-				loadTextures();
-				manager.end();
-			});
-		} else {
-			tileset.name = node.name;
-			tileset.tileWidth = node.tilewidth;
-			tileset.tileHeight = node.tileheight;
-			tileset.imageWidth = node.imagewidth;
-			tileset.imageHeight = node.imageheight;
-			tileset.imagePath = dirname + node.image;
-			loadTextures();
-		}
-		this.tilesets.push(tileset);
-		lastSet = tileset;
-	}
-	lastSet.lastGid = 10000;
-	this.layers = [];
-	for (var i = 0, length = data.layers.length; i < length; i++) {
-		var node = data.layers[i];
-		var layer = {};
-		// TODO parse object layers and imagelayers too
-		layer.name = node.name;
-		layer.x = node.x;
-		layer.y = node.y;
-		layer.width = node.width;
-		layer.height = node.height;
-		layer.data = node.data;
-		layer.tilesetForGid = [];
-		for (var j = 0; j < layer.data.length; j++) {
-			var gid = layer.data[j];
-			var cellTileset;
-			for (var k = this.tilesets.length; k--;) {
-				var tileset = this.tilesets[k];
-				if (tileset.firstGid <= gid) {
-					cellTileset = tileset;
-					break;
-				}
-			}
-			layer.tilesetForGid[gid] = cellTileset;
-		}
-		layer.visible = node.visible;
-		this.layers.push(layer);
-	}
+// TODO make maps the JSON format and the maprenderer load the images
+exports.loadMapFromJSON = function(data) {
+	return data;
 };
+
+var TileSet = function() {
+};
+TileSet.prototype.getTileX = function(id) {
+	return id % this.tilesAcross;
+};
+TileSet.prototype.getTileY = function(id) {
+	return Math.floor(id / this.tilesAcross);
+};
+
+var Map = function() {};
+
+var loadMap = function(url) {
+	return new Promise(function(resolve, reject) {
+		loader.loadXMLHttpRequest(url, "document", function() {
+			var dirname = path.dirname(url); // url.replace(/\\/g, '/').replace(/\/[^\/]*\/?$/, '') + '/';
+			var root = this.responseXML.documentElement;
+			var map = new Map();
+			if (root.getAttribute("version") !== "1.0") throw new Error("invalid map format");
+			map.width = parseInt(root.getAttribute("width"));
+			map.height = parseInt(root.getAttribute("height"));
+			map.tilewidth = parseInt(root.getAttribute("tilewidth"));
+			map.tileheight = parseInt(root.getAttribute("tileheight"));
+
+			var tilesets = map.tilesets = [];
+			var tilesetNodes = root.getElementsByTagName("tileset");
+			var tilesetPromises = [];
+			for (var i = 0, length = tilesetNodes.length; i < length; i++) {
+				tilesetPromises.push(new Promise(function(resolve, reject) {
+					var tilesetNode = tilesetNodes[i];
+					var tileset = tilesets[i] = new TileSet();
+					tileset.firstgid = tilesetNode.getAttribute("firstgid");
+					var source = tilesetNode.getAttribute("source");
+					if (source) {
+						loader.load(path.join(dirname, source), function() {
+							var parser = new DOMParser();
+							var xmlDoc = parser.parseFromString(this.responseText, "application/xml");
+							var tilesetRoot = xmlDoc.documentElement;
+							tileset.name = tilesetRoot.getAttribute("name");
+							tileset.tilewidth = parseInt(tilesetRoot.getAttribute("tilewidth"));
+							tileset.tileheight = parseInt(tilesetRoot.getAttribute("tileheight"));
+							var image = tilesetRoot.getElementsByTagName("image")[0];
+							tileset.imagePath = path.join(dirname, image.getAttribute("source"));
+							tileset.imageWidth = parseInt(image.getAttribute("width"));
+							tileset.imageHeight = parseInt(image.getAttribute("height"));
+							resolve();
+						});
+					} else {
+						tileset.name = tilesetNode.getAttribute("name");
+						tileset.tilewidth = parseInt(tilesetNode.getAttribute("tilewidth"));
+						tileset.tileheight = parseInt(tilesetNode.getAttribute("tileheight"));
+						var image = tilesetNode.getElementsByTagName("image")[0];
+						tileset.imagePath = path.join(dirname, image.getAttribute("source"));
+						// TODO get the dimensions from the actual image
+						tileset.imageWidth = parseInt(image.getAttribute("width"));
+						tileset.imageHeight = parseInt(image.getAttribute("height"));
+						resolve();
+					}
+				}));
+			}
+			Promise.all(tilesetPromises).then(function() {
+				for (var i = 0; i < tilesets.length; i++) {
+					tileset = tilesets[i];
+					tileset.tilesAcross = tileset.imageWidth / tileset.tilewidth;
+					tileset.texture = new texture.Region();
+					tileset.texture.loadFromFile(tileset.imagePath);
+				}
+			}).then(function() {
+				map.layers = Array.prototype.map.call(root.getElementsByTagName("layer"), function(layerNode) {
+					var layer = {};
+					layer.name = layerNode.getAttribute("name");
+					layer.data = [];
+					var data = layerNode.getElementsByTagName("data")[0];
+					var encoding = data.getAttribute("encoding");
+					if (encoding === "csv") {
+						var array = data.textContent.split(",");
+						for (var i = 0; i < array.length; i++) {
+							layer.data[i] = parseInt(array[i]);
+						}
+					} else if (encoding === "base64") {
+
+					} else throw new Error("Unsupported encoding for TML layer data.");
+					/*
+					if (data.getAttribute("encoding") !== "base64" || !!data.getAttribute("compression")) throw new Error("Bad encoding or compression.");
+					var buffer = new Buffer(text, 'base64');
+					for (var i = 0, length = map.width * map.height; i < length; i++) {
+						// TODO account for flips
+						layer.data[i] = buffer.readUInt32LE(i);
+					}
+					*/
+					return layer;
+				});
+				resolve(map);
+			});
+		});
+	});
+};
+exports.loadMap = loadMap;
+
 Map.prototype.getTilesetByGID = function(gid) {
-	for (var i = 0; i < tilesets.length; i++) {
+	for (var i = tilesets.length; i >= 0; --i) {
 		var tileset = tilesets[i];
-		if (tileset.firstGid <= gid && tileset.lastGid >= gid) return tileset;
+		if (tileset.firstGid <= gid) return tileset;
 	}
 	return null;
 };
+
 Map.prototype.draw = function(spriteBatch) {
 	for (var i = this.tilesets.length; i--;) {
 		var tileset = this.tilesets[i];
@@ -119,6 +146,7 @@ Map.prototype.draw = function(spriteBatch) {
 		}
 	}
 };
+
 Map.prototype.drawLayer = function(spriteBatch, layer) {
 	var data = layer.data;
 	for (var row = layer.x, length = layer.x + layer.width; row < length; row++) {
@@ -141,37 +169,35 @@ Map.prototype.drawLayer = function(spriteBatch, layer) {
 	}
 };
 
-var TileSet = function() {
-};
-TileSet.prototype.getTileX = function(id) {
-	return id % this.tilesAcross;
-};
-TileSet.prototype.getTileY = function(id) {
-	return Math.floor(id / this.tilesAcross);
+exports.getLayerIdByName = function(map, name) {
+	for (var i = 0, length = map.layers.length; i < length; i++) {
+		if (map.layers[i].name === name) return i;
+	}
+	throw new Error("Map has no layer called " + name + ".");
 };
 
-var MapRenderer = function(map) {
+var MapRenderer = exports.MapRenderer = function(map) {
 	this.map = map;
-	if (map.tileWidth !== map.tileHeight) console.error("Dimensions doesn't match.");
-	this.tileSize = map.tileWidth;
-	var components = 3;
+	if (map.tilewidth !== map.tileheight) throw new Error("Tile dimensions do not match.");
+	this.tileSize = map.tilewidth;
 
+	// Upload the layers
+	var components = 3;
 	var layers = this.layers = new Array();
 	for (var i = 0; i < map.layers.length; i++) {
 		var layer = map.layers[i];
-		if (!layer.visible) continue;
-		var width = layer.width;
-		var height = layer.height;
+		// if (!layer.visible) continue; // Commented because visible should only affect the Tiled editor
+		var width = map.width;
+		var height = map.height;
 
 		for (var tsId = map.tilesets.length; tsId--;) {
 			var tileset = map.tilesets[tsId];
 			var tilesetUsed = false, otherTilesetsUsed = false;
-			var data = new Uint8Array(width * height * components);
-			var idx = 0;
-			for (var col = layer.y, length = layer.y + layer.height; col < length; col++) {
-				for (var row = layer.x, length = layer.x + layer.width; row < length; row++) {
-					var gid = layer.data[row + col * layer.width];
-					if (gid >= tileset.firstGid) {
+			var data = new Uint8Array(width * height * components), idx = 0;
+			for (var col = 0, length = height; col < length; col++) {
+				for (var row = 0, length = width; row < length; row++) {
+					var gid = layer.data[row + col * width];
+					if (gid >= tileset.firstgid) {
 						tilesetUsed = true;
 						data[idx++] = tileset.getTileX(gid) - 1;
 						data[idx++] = tileset.getTileY(gid);
@@ -186,18 +212,20 @@ var MapRenderer = function(map) {
 			}
 			if (!tilesetUsed) continue;
 
-			var texture = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, texture);
+			var tiles = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, tiles);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, data);
 
 			this.layers.push({
 				layer: layer,
+				layerId: i,
 				width: width,
 				height: height,
 				tileset: tileset,
-				tiles: texture,
+				sprites: tileset.texture,
+				tiles: tiles,
 			});
 
 			if (!otherTilesetsUsed) break;
@@ -273,11 +301,25 @@ var MapRenderer = function(map) {
 	this.viewOffsetLoc = gl.getUniformLocation(this.program, "viewOffset");
 	this.inverseTileTextureSizeLoc = gl.getUniformLocation(this.program, "inverseTileTextureSize");
 	this.inverseSpriteTextureSizeLoc = gl.getUniformLocation(this.program, "inverseSpriteTextureSize");
-
 };
+
 Map.MapRenderer = MapRenderer;
 
-MapRenderer.prototype.draw = function() {
+MapRenderer.prototype.getRenderList = function(layers) {
+	var list = [];
+	for (var i = 0, length = layers.length; i < length; i++) {
+		outer:
+		for ( var j = 0; j < this.layers.length; j++) {
+			if (this.layers[j].layerId === layers[i]) {
+			   	list.push(this.layers[j]);
+				break outer;
+			}
+		}
+	}
+	return list;
+};
+
+MapRenderer.prototype.draw = function(layers) {
 	var x = 0, y = 0;
 	gl.useProgram(this.program);
 
@@ -294,21 +336,21 @@ MapRenderer.prototype.draw = function() {
 
 	var scrollScaleX = 1, scrollScaleY = 1;
 
+	layers = layers || this.layers;
+
 	// Draw each layer of the map
-	for (var i = 0, length = this.layers.length; i < length; i++) {
-		var layer = this.layers[i];
+	for (var i = 0, length = layers.length; i < length; i++) {
+		var layer = layers[i];
 
 		gl.uniform2f(this.viewOffsetLoc, Math.floor(x * scrollScaleX), Math.floor(y * scrollScaleY));
-		gl.uniform2f(this.inverseTileTextureSizeLoc, 1 / layer.width, 1 / layer.height);
-		gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / layer.tileset.texture.width, 1 / layer.tileset.texture.height);
+		gl.uniform2f(this.inverseTileTextureSizeLoc, 1 / this.map.width, 1 / this.map.height);
+		gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / layer.sprites.width, 1 / layer.sprites.height);
 
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, layer.tileset.texture.texture);
+		gl.bindTexture(gl.TEXTURE_2D, layer.sprites.texture);
 		gl.activeTexture(gl.TEXTURE1);
 		gl.bindTexture(gl.TEXTURE_2D, layer.tiles);
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	}
 };
-
-module.exports = Map;

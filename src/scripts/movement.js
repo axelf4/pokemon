@@ -3,10 +3,11 @@ var Position = require("Position.js");
 var Direction = require("Direction.js");
 var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
+var game = require("Game.js");
 
 var mask = fowl.getMask([Position, OldPosition, Direction, MovementComponent]);
 
-var update = function(dt, em, context) {
+var update = function(dt, em) {
 	for (var entity = 0, length = em.count; entity < length; entity++) {
 		if (em.matches(entity, mask)) {
 			var position = pos = em.getComponent(entity, Position);
@@ -21,7 +22,7 @@ var update = function(dt, em, context) {
 				movement.timer = 0;
 				var controller = movement.getController();
 				if (controller) {
-					var newDirection = controller.getTarget(dt, context, position, entity);
+					var newDirection = controller.getTarget(dt, position, entity);
 					pos.x += Direction.getDeltaX(newDirection);
 					pos.y += Direction.getDeltaY(newDirection);
 				}
@@ -30,6 +31,6 @@ var update = function(dt, em, context) {
 	}
 };
 
-module.exports = function(manager, context) {
-	context.addUpdateHook(update);
+module.exports = function() {
+	game.addUpdateHook(update);
 };

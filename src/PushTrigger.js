@@ -1,3 +1,4 @@
+var game = require("Game.js");
 var Position = require("Position.js");
 var OldPosition = require("OldPosition.js");
 
@@ -9,14 +10,14 @@ var PushTrigger = function(x, y, script) {
 };
 
 PushTrigger.createWarp = function(mapScript, targetX, targetY) {
-	return function(context) {
-		var em = context.em;
-		var pos = em.getComponent(context.player, Position);
-		var oldpos = em.getComponent(context.player, OldPosition);
+	return function() {
+		var em = game.em;
+		var pos = em.getComponent(game.player, Position);
+		var oldpos = em.getComponent(game.player, OldPosition);
 		oldpos.x = pos.x = targetX;
 		oldpos.y = pos.y = targetY;
-		context.clearLevel();
-		context.loadScript(mapScript);
+		game.clearLevel();
+		game.loadScript(mapScript);
 	};
 };
 

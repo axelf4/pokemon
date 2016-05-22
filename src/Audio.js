@@ -1,11 +1,13 @@
+var loader = require("loader.js");
+
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-var loadAudio = function(manager, url, callback) {
-	manager.start();
-	manager.loadXMLHttpRequest(url, "arraybuffer", function(audioData) {
-		audioCtx.decodeAudioData(audioData, function(buffer) {
+var loadAudio = function(url, callback) {
+	loader.start();
+	loader.loadXMLHttpRequest(url, "arraybuffer", function() {
+		audioCtx.decodeAudioData(this.response, function(buffer) {
 			callback(buffer);
-			manager.end();
+			loader.end();
 		}); // function(e) { console.log("Error with decoding audio data" + e.err);
 	});
 };

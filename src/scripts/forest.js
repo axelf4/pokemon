@@ -10,6 +10,8 @@ var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
+var loader = require("loader.js");
+var game = require("Game.js");
 
 var thread = function(fn) {
 	var gen = fn();
@@ -25,25 +27,27 @@ var thread = function(fn) {
 	next();
 };
 
-module.exports = function(manager, context) {
-	var map = new Map();
-	manager.loadJSON("assets/forest.json", function(response) {
-		map.fromJSON(manager, response, "assets/forest.json");
+module.exports = function() {
+	var promise = Map.loadMap("assets/forest.tmx");
+	promise.then(function(map) {
+		game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 	});
-	context.setMap(map);
 
-	context.pushTriggers.push(new PushTrigger(3, 13, PushTrigger.createWarp("ballettown.js", 22, 0)));
+	// game.setMapFromJSON("assets/forest.json", ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 
-	var em = context.em;
+	game.pushTriggers.push(new PushTrigger(3, 13, PushTrigger.createWarp("ballettown.js", 22, 0)));
+
+	var em = game.em;
 
 	var item = em.createEntity();
 	em.addComponent(item, new Position(13, 5));
-	em.addComponent(item, new InteractionComponent(function(context) {
+	em.addComponent(item, new InteractionComponent(function() {
 		thread(function*() {
-			var playerMovement = context.em.getComponent(context.player, MovementComponent);
+			var playerMovement = game.em.getComponent(game.player, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
-			yield context.showDialogue("It's a pokéball. What did you expect?");
-			yield context.showDialogue("Hello");
+			yield game.showDialogue("It's a pokéball. What did you expect?");
+			yield game.wait(1000);
+			yield game.showDialogue("Hello");
 			playerMovement.popController();
 		});
 	}));
@@ -54,7 +58,7 @@ module.exports = function(manager, context) {
 	em.addComponent(jorryt, new OldPosition(x, y));
 	em.addComponent(jorryt, new Direction());
 	var textureRegion = new texture.Region();
-	textureRegion.loadFromFile(manager, "assets/dancer.png");
+	textureRegion.loadFromFile("assets/dancer.png");
 	var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
 	var spriteComponent = new SpriteComponent(textureRegion, animation);
 	spriteComponent.offsetX = -8;
@@ -62,14 +66,14 @@ module.exports = function(manager, context) {
 	em.addComponent(jorryt, spriteComponent);
 	var controller = new RandomMovementController();
 	em.addComponent(jorryt, new MovementComponent(controller));
-	em.addComponent(jorryt, new InteractionComponent(function(context) {
+	em.addComponent(jorryt, new InteractionComponent(function() {
 		thread(function*() {
-			var playerMovement = context.em.getComponent(context.player, MovementComponent);
-			var entityMovement = context.em.getComponent(jorryt, MovementComponent);
+			var playerMovement = game.em.getComponent(game.player, MovementComponent);
+			var entityMovement = game.em.getComponent(jorryt, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
 			entityMovement.pushController(new StillMovementController());
-			yield context.showDialogue("I could be a girl, you could be a boy. Transsexuality is so fun!");
-			yield context.showDialogue("What's up with that jar of nutella? Still fighting the good fight.");
+			yield game.showDialogue("I could be a girl, you could be a boy. Transsexuality is so fun!");
+			yield game.showDialogue("What's up with that jar of nutella? Still fighting the good fight.");
 			playerMovement.popController();
 			entityMovement.popController();
 		});

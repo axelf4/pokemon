@@ -9,11 +9,11 @@ module.exports = {
 		],
 	},
     output: {
+        // path: path.join(__dirname, 'build'),
         path: __dirname,
-        filename: "bundle.js"
+        filename: "bundle.js",
     },
-	debug: true,
-	devtool: "source-map",
+	devtool: "eval",
     module: {
         loaders: [
             { test: /\.css$/, loader: "style!css" },

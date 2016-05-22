@@ -1,11 +1,12 @@
 var parse = require("parse-bmfont-ascii");
 var texture = require("texture.js");
+var loader = require("loader.js");
 
 var log2PageSize = 9;
 var pageSize = 1 << log2PageSize;
 var pages = 0x10000 / pageSize;
 
-var Font = function(manager) {
+var Font = function() {
 	this.glyphs = new Array(pages);
 	this.pageTextures = [];
 
@@ -13,12 +14,12 @@ var Font = function(manager) {
 
 	for (var i = 0; i < pages; i++) this.glyphs[i] = [];
 
-	manager.loadXMLHttpRequest("assets/font.fnt", "text", function(response) {
-		var font = parse(response);
+	loader.loadXMLHttpRequest("assets/font.fnt", "text", function() {
+		var font = parse(this.response);
 		font.pages.forEach(function(page, index) {
 			var textureRegion = new texture.Region();
 			self.pageTextures[index] = textureRegion;
-			textureRegion.loadFromFile(manager, "assets/" + page);
+			textureRegion.loadFromFile("assets/" + page);
 		});
 		font.chars.forEach(function(glyph) {
 			self.setGlyph(glyph.id, glyph);

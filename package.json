@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "A pokemon game am i right?",
   "author": "Axel Forsman",
+  "scripts": {},
   "dependencies": {
+    "base64-js": "^1.1.2",
     "bitset": "axelf4/bitset",
     "fowl": "axelf4/fowl",
     "gl-matrix": "^2.3.2",

@@ -1,4 +1,5 @@
 var gl = require("renderer.js").gl;
+var loader = require("loader.js");
 
 function isPowerOfTwo(x) {
 	return (x & (x - 1)) == 0;
@@ -12,8 +13,8 @@ function nextHighestPowerOfTwo(x) {
 	return x + 1;
 }
 
-var loadTexture = function(manager, src, callback) {
-	manager.start();
+var loadTexture = function(src, callback) {
+	loader.start();
 	var texture = gl.createTexture();
 	var image = new Image();
 	image.crossOrigin = "anonymous";
@@ -37,7 +38,7 @@ var loadTexture = function(manager, src, callback) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		// gl.generateMipmap(gl.TEXTURE_2D);
 		if (callback) callback(texture, image.width, image.height);
-		manager.end();
+		loader.end();
 	};
 	image.src = src;
 	return texture;
@@ -46,9 +47,9 @@ var loadTexture = function(manager, src, callback) {
 var TextureRegion = function(texture, x, y, width, height) {
 	this.texture = texture;
 };
-TextureRegion.prototype.loadFromFile = function(manager, src, callback) {
+TextureRegion.prototype.loadFromFile = function(src, callback) {
 	var self = this;
-	loadTexture(manager, src, function(texture, width, height) {
+	loadTexture(src, function(texture, width, height) {
 		self.texture = texture;
 		self.width = width;
 		self.height = height;
