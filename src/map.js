@@ -332,9 +332,11 @@ MapRenderer.prototype.draw = function(layers) {
 	gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
 	gl.vertexAttribPointer(textureLocation, 2, gl.FLOAT, false, 16, 8);
 
-	gl.uniform2fv(this.viewportSizeLoc, this.scaledViewportSize);
 
 	var scrollScaleX = 1, scrollScaleY = 1;
+	gl.uniform2f(this.viewOffsetLoc, Math.floor(x * scrollScaleX), Math.floor(y * scrollScaleY));
+	gl.uniform2fv(this.viewportSizeLoc, this.scaledViewportSize);
+	gl.uniform2f(this.inverseTileTextureSizeLoc, 1 / this.map.width, 1 / this.map.height);
 
 	layers = layers || this.layers;
 
@@ -342,8 +344,6 @@ MapRenderer.prototype.draw = function(layers) {
 	for (var i = 0, length = layers.length; i < length; i++) {
 		var layer = layers[i];
 
-		gl.uniform2f(this.viewOffsetLoc, Math.floor(x * scrollScaleX), Math.floor(y * scrollScaleY));
-		gl.uniform2f(this.inverseTileTextureSizeLoc, 1 / this.map.width, 1 / this.map.height);
 		gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / layer.sprites.width, 1 / layer.sprites.height);
 
 		gl.activeTexture(gl.TEXTURE0);

@@ -5,8 +5,6 @@ var SpriteBatch = require("SpriteBatch.js");
 var sign = require("sign.js");
 var LoadingManager = require("LoadingManager.js");
 var Animation = require("Animation.js");
-var flex = require("flex.js");
-var gui = require("gui.js");
 var input = require("input.js");
 var texture = require("texture.js");
 var StackLayout = require("StackLayout.js");
@@ -35,9 +33,18 @@ var gameFrame = new game.GameFrame();
 container.addWidget(gameFrame);
 gameFrame.focus();
 
-var lastTime = performance.now();
-var time = 0;
+var lastTime = (performance || Date).now();
+var time = 0; // Total elapsed time
 var requestID;
+var traverse = function(node, dt, time, spriteBatch) {
+		if (node.dirty) node.manager.layout(node);
+		if (node.update) node.update(dt, time, spriteBatch);
+		var children = node.children;
+		if (children) for (var i = 0, length = children.length; i < length; i++) {
+			var child = children[i];
+			traverse(child, dt, time, spriteBatch);
+		}
+};
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
 	var dt = timestamp - lastTime;
@@ -52,17 +59,7 @@ var update = function(timestamp) {
 	// gui.prepareNode(container);
 	container.width = 640;
 	container.height = 480;
-	var node = container;
-	do {
-		if (node.dirty) node.manager.layout(node);
-		if (node.update) node.update(dt, time, spriteBatch);
-		var children = node.children;
-		node = null;
-		for (var i = 0, length = children.length; i < length; i++) {
-			var child = children[i];
-			if (child.focused) node = child;
-		}
-	} while (node);
+	traverse(container, dt, time, spriteBatch);
 
 	spriteBatch.flush();
 

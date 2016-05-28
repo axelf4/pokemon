@@ -24,6 +24,15 @@ Widget.prototype.removeWidget = function(child) {
 	child.parent = null;
 };
 
+// Removes this widget from its parent.
+Widget.prototype.remove = function() {
+	this.getParent().removeWidget(this);
+};
+
+Widget.prototype.getParent = function() {
+	return this.parent;
+};
+
 Widget.prototype.focus = function() {
 	// Make sure the parent is focused
 	var parent = this;

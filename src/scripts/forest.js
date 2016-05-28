@@ -43,12 +43,11 @@ module.exports = function() {
 	em.addComponent(item, new Position(13, 5));
 	em.addComponent(item, new InteractionComponent(function() {
 		thread(function*() {
-			var playerMovement = game.em.getComponent(game.player, MovementComponent);
-			playerMovement.pushController(new StillMovementController());
+			game.lock();
 			yield game.showDialogue("It's a pokéball. What did you expect?");
 			yield game.wait(1000);
 			yield game.showDialogue("Hello");
-			playerMovement.popController();
+			game.release();
 		});
 	}));
 
@@ -68,7 +67,7 @@ module.exports = function() {
 	em.addComponent(jorryt, new MovementComponent(controller));
 	em.addComponent(jorryt, new InteractionComponent(function() {
 		thread(function*() {
-			var playerMovement = game.em.getComponent(game.player, MovementComponent);
+			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
 			var entityMovement = game.em.getComponent(jorryt, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
 			entityMovement.pushController(new StillMovementController());

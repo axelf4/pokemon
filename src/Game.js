@@ -10,8 +10,10 @@ var Font = require("font.js");
 var flex = require("flex.js");
 var gui = require("gui.js");
 var container = require("container.js");
+var playerFactory = require("playerFactory.js");
+var StillMovementController = require("StillMovementController.js");
+var Dialog = require("Dialog.js");
 
-var DialogueBox = require("DialogueBox.js");
 var Position = require("Position.js");
 var Direction = require("Direction.js");
 var SpriteComponent = require("SpriteComponent.js");
@@ -23,27 +25,21 @@ var MovementComponent = require("MovementComponent.js");
 var font = new Font();
 
 var dialogue;
-var showDialogue = (function() {
-	var ninePatchTexture, ninePatch;
-	loader.loadFile("textures/frame.9.png", function(file) {
-		ninePatchTexture = new texture.Region();
-		ninePatchTexture.loadFromFile(file, function() {
-			ninePatch = NinePatch.fromTexture(ninePatchTexture.texture, 24, 24);
-		});
-	});
-	return function(text) {
-		return new Promise(function(resolve, reject) {
-			var callback = function() { resolve(); };
-			dialogue = new DialogueBox.DialogueBox(ninePatchTexture, ninePatch, font, text, callback);
-			dialogue.style = {};
-			dialogue.style.width = 640;
-			dialogue.style.height = 100;
-			dialogue.style.align = flex.ALIGN_FLEX_END;
+var showDialogue = function(text) {
+	return new Promise(function(resolve, reject) {
+		var callback = function() { resolve(); };
+		dialog = new Dialog(text, callback);
+		dialog.style = {};
+		dialog.style.width = 640;
+		dialog.style.height = 100;
+		dialog.style.align = flex.ALIGN_FLEX_END;
 
-			container.addWidget(dialogue);
-		});
-	};
-})();
+		container.addWidget(dialog);
+	});
+};
+
+exports.say = showDialogue;
+exports.showDialogue = showDialogue;
 
 fowl.registerComponents(
 		Position,
@@ -52,8 +48,7 @@ fowl.registerComponents(
 		PlayerComponent,
 		InteractionComponent,
 		OldPosition,
-		MovementComponent
-		);
+		MovementComponent);
 var em = exports.em = new fowl.EntityManager();
 
 var updateHooks = [];
@@ -75,12 +70,6 @@ var setMap = exports.setMap = function(value, backgroundLayers, foregroundLayers
 	foregroundLayers = foregroundLayers.map(callback);
 	backgroundRenderList = mapRenderer.getRenderList(backgroundLayers);
 	foregroundRenderList = mapRenderer.getRenderList(foregroundLayers);
-};
-
-exports.setMapFromJSON = function(url, foregroundLayers, backgroundLayers) {
-	loader.loadJSON(url, function(response) {
-		setMap(response, url, foregroundLayers, backgroundLayers);
-	});
 };
 
 exports.getEntityAtCell = function(em, x, y) {
@@ -112,12 +101,18 @@ exports.removeUpdateHook = function(hook) {
 	updateHooks.splice(idx, 1);
 };
 
-exports.getContainer = function() { return container; };
+var player = playerFactory.createPlayer(em);
+exports.getPlayer = function() { return player; }
 
-exports.getDialogue = function() { return dialogue; };
+exports.lock = function() {
+	var playerMovement = em.getComponent(player, MovementComponent);
+	playerMovement.pushController(new StillMovementController());
+};
 
-exports.say = showDialogue;
-exports.showDialogue = showDialogue;
+exports.release = function() {
+	var playerMovement = em.getComponent(player, MovementComponent);
+	playerMovement.popController();
+};
 
 exports.advanceOrHideDialogue = function() {
 	gui.removeWidgetFromParent(container, dialogue);
@@ -151,8 +146,6 @@ exports.clearLevel = function() {
 	this.pushTriggers = [];
 };
 
-exports.player = null;
-
 exports.save = JSON.parse(window.localStorage.getItem("gameSave"));
 
 exports.saveTheGame = function() {
@@ -168,7 +161,6 @@ exports.wait = function(ms) {
 };
 
 loadScript("movement.js");
-loadScript("player.js");
 loadScript("forest.js");
 
 audio.loadAudio("assets/masara-town.mp3", function(buffer) {
