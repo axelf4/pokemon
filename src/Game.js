@@ -9,7 +9,7 @@ var Widget = require("Widget.js");
 var Font = require("font.js");
 var flex = require("flex.js");
 var gui = require("gui.js");
-var container = require("container.js");
+var scene = require("scene.js");
 var playerFactory = require("playerFactory.js");
 var StillMovementController = require("StillMovementController.js");
 var Dialog = require("Dialog.js");
@@ -34,7 +34,7 @@ var showDialogue = function(text) {
 		dialog.style.height = 100;
 		dialog.style.align = flex.ALIGN_FLEX_END;
 
-		container.addWidget(dialog);
+		scene.addWidget(dialog);
 	});
 };
 
@@ -114,12 +114,12 @@ exports.release = function() {
 	playerMovement.popController();
 };
 
-exports.advanceOrHideDialogue = function() {
+/*exports.advanceOrHideDialogue = function() {
 	gui.removeWidgetFromParent(container, dialogue);
 	if (dialogue.callback) dialogue.callback(); // Resolve the promise
 	dialogue = null;
 	return true;
-};
+};*/
 
 exports.isSolid = function(x, y) {
 	// Check for entity at cell

@@ -9,7 +9,7 @@ var input = require("input.js");
 var texture = require("texture.js");
 var StackLayout = require("StackLayout.js");
 var loader = require("loader.js");
-var container = require("container.js");
+var scene = require("scene.js");
 
 var gl = renderer.gl;
 var vec3 = glMatrix.vec3;
@@ -30,8 +30,8 @@ var manager = new LoadingManager();
 
 var game = require("Game.js");
 var gameFrame = new game.GameFrame();
-container.addWidget(gameFrame);
-gameFrame.focus();
+// scene.addWidget(gameFrame);
+// gameFrame.focus();
 
 var lastTime = (performance || Date).now();
 var time = 0; // Total elapsed time
@@ -45,21 +45,38 @@ var traverse = function(node, dt, time, spriteBatch) {
 			traverse(child, dt, time, spriteBatch);
 		}
 };
+
+
+// TODO temporary
+var font = require("font.js");
+var testFont = new font();
+var MeasureSpec = require("MeasureSpec.js");
+var Label = require("Label.js");
+var testLabel = new Label(testFont, "Lorem ipsum lol hello.\nAxel\nmy name is. I see you like meatballs! abcdefghijklmnopqrstuvwxyzåäö");
+var testNo = false;
+
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
 	var dt = timestamp - lastTime;
 	lastTime = timestamp;
 	time += dt;
 
+	gl.clearColor(1.0, 1.0, 1.0, 1.0); // TODO TEMPORARY
+
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	spriteBatch.projectionMatrix = projectionMatrix;
 	spriteBatch.mvMatrix = mvMatrix;
 
-	// gui.prepareNode(container);
-	container.width = 640;
-	container.height = 480;
-	traverse(container, dt, time, spriteBatch);
+	scene.width = 640;
+	scene.height = 480;
+	// traverse(scene, dt, time, spriteBatch);
+
+	if (!testNo) {
+		testLabel.layout(new MeasureSpec(MeasureSpec.exactly, 200), new MeasureSpec(MeasureSpec.unspecified, undefined));
+		testNo = true;
+	}
+	testLabel.draw(spriteBatch);
 
 	spriteBatch.flush();
 

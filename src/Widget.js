@@ -1,27 +1,15 @@
 var Widget = function() {
-	// TODO try without these
-	this.width = 0;
-	this.height = 0;
-	this.top = 0;
-	this.left = 0;
+	this.dirty = false;
 
-	this.children = [];
 	this.focused = false;
 	this.parent = null;
-};
 
-Widget.prototype.addWidget = function(child) {
-	if (child.parent) throw new Error("Widget already had parrent.");
-	this.children.push(child);
-	this.dirty = true;
-	child.parent = this;
-};
+	this.measuredWidth = this.measuredHeight = 0;
 
-Widget.prototype.removeWidget = function(child) {
-	var i = this.children.indexOf(child);
-	this.children.splice(i, 1);
-	this.dirty = true;
-	child.parent = null;
+	this.x = 0;
+	this.y = 0;
+	this.width = 0;
+	this.height = 0;
 };
 
 // Removes this widget from its parent.
@@ -31,6 +19,36 @@ Widget.prototype.remove = function() {
 
 Widget.prototype.getParent = function() {
 	return this.parent;
+};
+
+Widget.prototype.setPosition = function(x, y) {
+	this.x = x;
+	this.y = y;
+};
+
+Widget.prototype.setDimension = function(width, height) {
+	this.width = width;
+	this.height = height;
+};
+
+Widget.prototype.layout = function() {
+	throw new Error("Widget must override the layout method.");
+};
+
+Widget.prototype.invalidate = function() {
+	this.dirty = true;
+};
+
+Widget.prototype.invalidateHierarchy = function() {
+	var widget = this;
+	do {
+		widget.invalidate();
+	} while (widget = widget.getParent());
+};
+
+Widget.prototype.validate = function() {
+	if (this.dirty) this.layout();
+	this.dirty = false;
 };
 
 Widget.prototype.focus = function() {
