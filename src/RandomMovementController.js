@@ -1,10 +1,10 @@
-var game = require("Game.js");
 var Direction = require("Direction.js");
 
 var RandomMovementController = function() {
 	this.timer = 0;
 };
-RandomMovementController.prototype.getTarget = function(dt, position, entity) {
+
+RandomMovementController.prototype.getTarget = function(game, dt, position, entity) {
 	this.timer += dt;
 	if (this.timer < 2000) {
 		return null;

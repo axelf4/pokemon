@@ -1,11 +1,13 @@
 var Widget = require("Widget.js");
 var MeasureSpec = require("MeasureSpec.js");
 var isWhitespace = require("isWhitespace.js");
+var align = require("align.js");
 
 var Label = function(font, text) {
 	Widget.call(this);
 	this.font = font;
 	this.text = text || "";
+	this.justify = this.align = align.START;
 };
 Label.prototype = Object.create(Widget.prototype);
 Label.prototype.constructor = Label;
@@ -32,12 +34,12 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 	var glyphLines = this.glyphLines = [];
 	var advance = 0;
-	var last = start;
 	var maxWidth = 0;
 	var numLines = 0;
-
 	var start = 0;
+	var last = start;
 	var end = this.text.length;
+
 	for (var index = start; index < end; ++index) {
 		var addLine = false;
 		var ch = this.text.charAt(index);
@@ -51,7 +53,7 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 			var glyph = this.font.getGlyph(charCode);
 
 			advance += glyph.xadvance;
-			if (advance > wrappingWidth) {
+			if (wrappingWidth && advance > wrappingWidth) {
 				// Find a spot to wrap
 				var cursor = index;
 				while (cursor > last) {
@@ -70,18 +72,22 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 			}
 		}
 
-		if (addLine || !(index + 1 < end)) {
+		var lastCharInString = !(index + 1 < end);
+		if (addLine || lastCharInString) {
+			var endIndex = lastCharInString ? index + 1 : index;
+
+			var lineWidth = this.font.getBounds(this.text, last, endIndex).width;
+			maxWidth = Math.max(maxWidth, lineWidth);
+
 			glyphLines.push({
 				x: 0,
 				start: last,
-				end: index,
-				str: this.text.substring(last, index),
+				end: endIndex,
+				lineWidth: lineWidth,
+				str: this.text.substring(last, endIndex),
 			});
 
-			var lineWidth = this.font.getBounds(this.text, last, index).width;
-			maxWidth = Math.max(maxWidth, lineWidth);
 			numLines++;
-
 			advance = 0;
 			last = nextLast;
 			// while (isWhitespace(this.text.charAt(index + 1))) ++index; // Strip whitespace at the beginning of the next line
@@ -89,12 +95,37 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	}
 
 	var width = maxWidth;
+	if (widthMeasureSpec.getMode() === MeasureSpec.EXACTLY) width = widthMeasureSpec.getSize();
 	var height = this.font.lineHeight * numLines;
+	var contentHeight = height;
+	if (heightMeasureSpec.getMode() === MeasureSpec.EXACTLY) height = heightMeasureSpec.getSize();
 	this.setDimension(width, height);
+
+	// Align content
+	if (this.align !== align.START) {
+		for (var i = 0, length = glyphLines.length; i < length; ++i) {
+			var glyphLine = glyphLines[i];
+			if (this.align === align.END) glyphLine.x = width - glyphLine.lineWidth;
+			else if (this.align === align.CENTER) glyphLine.x = (width - glyphLine.lineWidth) / 2;
+			else throw new Error("Invalid value for align.");
+		}
+	}
+	this.offsetY = 0;
+	switch (this.justify) {
+		case align.START: break;
+		case align.END:
+						  this.offsetY = height - contentHeight;
+						  break;
+		case align.CENTER:
+						  this.offsetY = (height - contentHeight) / 2;
+						  break;
+		default:
+						  throw new Error("Invalid value for justify.");
+	}
 };
 
 Label.prototype.draw = function(batch) {
-	var y = this.y;
+	var y = this.y + this.offsetY;
 	for (var i = 0; i < this.glyphLines.length; ++i) {
 		var line = this.glyphLines[i];
 		this.font.drawText(batch, this.x + line.x, y, line.str);

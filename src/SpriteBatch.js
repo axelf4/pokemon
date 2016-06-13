@@ -18,9 +18,6 @@ var SpriteBatch = function(capacity) {
 		indices[i] = j;
 		indices[i + 1] = j + 1;
 		indices[i + 2] = j + 2;
-		// indices[i + 3] = j + 2;
-		// indices[i + 4] = j + 3;
-		// indices[i + 5] = j;
 		indices[i + 3] = j;
 		indices[i + 4] = j + 2;
 		indices[i + 5] = j + 3;
@@ -96,6 +93,15 @@ SpriteBatch.prototype.draw = function(texture, x1, y1, x2, y2, u1, v1, u2, v2) {
 	this.vertices[this.idx + 15] = v2;
 
 	this.idx += 16;
+};
+
+SpriteBatch.prototype.getMVMatrix = function() {
+	return this.mvMatrix;
+};
+
+SpriteBatch.prototype.setMVMatrix = function(matrix) {
+	this.flush();
+	this.mvMatrix = matrix;
 };
 
 module.exports = SpriteBatch;

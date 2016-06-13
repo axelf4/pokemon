@@ -1,20 +1,20 @@
 var Widget = function() {
-	this.dirty = false;
-
-	this.focused = false;
 	this.parent = null;
+	this.valid = false;
+	this.focused = false;
 
-	this.measuredWidth = this.measuredHeight = 0;
+	this.y = this.x = 0;
+	this.height = this.width = 0;
 
-	this.x = 0;
-	this.y = 0;
-	this.width = 0;
-	this.height = 0;
+	this.marginLeft = this.marginRight = this.marginTop = this.marginBottom = 0;
+
+	this.style = {};
 };
 
 // Removes this widget from its parent.
 Widget.prototype.remove = function() {
 	this.getParent().removeWidget(this);
+	this.invalidate();
 };
 
 Widget.prototype.getParent = function() {
@@ -29,27 +29,22 @@ Widget.prototype.setPosition = function(x, y) {
 Widget.prototype.setDimension = function(width, height) {
 	this.width = width;
 	this.height = height;
+	this.valid = true; // TODO maybe should not be here
 };
 
 Widget.prototype.layout = function() {
 	throw new Error("Widget must override the layout method.");
 };
 
+// Invalidates this widget and upwards it's hierarchy.
 Widget.prototype.invalidate = function() {
-	this.dirty = true;
-};
-
-Widget.prototype.invalidateHierarchy = function() {
 	var widget = this;
 	do {
-		widget.invalidate();
+		widget.valid = false;
 	} while (widget = widget.getParent());
 };
 
-Widget.prototype.validate = function() {
-	if (this.dirty) this.layout();
-	this.dirty = false;
-};
+Widget.prototype.update = function() {};
 
 Widget.prototype.focus = function() {
 	// Make sure the parent is focused
@@ -63,6 +58,10 @@ Widget.prototype.focus = function() {
 		parent.focused = true;
 	}
 	this.focused = true; // Focus the widget
+};
+
+Widget.prototype.margin = function(value) {
+	this.marginLeft = this.marginRight = this.marginTop = this.marginBottom = value;
 };
 
 module.exports = Widget;

@@ -1,3 +1,4 @@
+// TODO switch the order of the parameters
 var MeasureSpec = function(mode, size) {
 	this.mode = mode;
 	this.size = size;

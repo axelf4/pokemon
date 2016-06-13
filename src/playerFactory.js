@@ -7,13 +7,12 @@ var InteractionComponent = require("InteractionComponent.js");
 var MovementComponent = require("MovementComponent.js");
 var Animation = require("Animation.js");
 var texture = require("texture.js");
-var game = require("Game.js");
 
 var keys = input.keys;
 
 var PlayerMovementController = function() {};
 
-PlayerMovementController.prototype.getTarget = function(dt, position, entity) {
+PlayerMovementController.prototype.getTarget = function(game, dt, position, entity) {
 	var em = game.em;
 	var pos = em.getComponent(entity, Position);
 	var direction = em.getComponent(entity, Direction);

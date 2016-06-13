@@ -9,51 +9,31 @@ var input = require("input.js");
 var texture = require("texture.js");
 var StackLayout = require("StackLayout.js");
 var loader = require("loader.js");
-var scene = require("scene.js");
+var root = require("root.js");
+var Game = require("Game.js");
 
 var gl = renderer.gl;
 var vec3 = glMatrix.vec3;
 var mat4 = glMatrix.mat4;
 
-console.log("----- Starting the game lol -----");
-
-var spriteBatch = new SpriteBatch();
+console.log("----- Starting the game -----");
 
 var projectionMatrix = mat4.create();
 mat4.ortho(projectionMatrix, 0, 640, 480, 0, -1, 1);
 var mvMatrix = mat4.create();
-mat4.identity(mvMatrix);
-var translation = vec3.create();
-mat4.translate(mvMatrix, mvMatrix, translation);
+
+var spriteBatch = new SpriteBatch();
+spriteBatch.projectionMatrix = projectionMatrix;
+spriteBatch.mvMatrix = mvMatrix;
 
 var manager = new LoadingManager();
-
-var game = require("Game.js");
-var gameFrame = new game.GameFrame();
-// scene.addWidget(gameFrame);
-// gameFrame.focus();
 
 var lastTime = (performance || Date).now();
 var time = 0; // Total elapsed time
 var requestID;
-var traverse = function(node, dt, time, spriteBatch) {
-		if (node.dirty) node.manager.layout(node);
-		if (node.update) node.update(dt, time, spriteBatch);
-		var children = node.children;
-		if (children) for (var i = 0, length = children.length; i < length; i++) {
-			var child = children[i];
-			traverse(child, dt, time, spriteBatch);
-		}
-};
 
-
-// TODO temporary
-var font = require("font.js");
-var testFont = new font();
-var MeasureSpec = require("MeasureSpec.js");
-var Label = require("Label.js");
-var testLabel = new Label(testFont, "Lorem ipsum lol hello.\nAxel\nmy name is. I see you like meatballs! abcdefghijklmnopqrstuvwxyzåäö");
-var testNo = false;
+var game = new Game();
+root.setWidget(game);
 
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
@@ -61,22 +41,12 @@ var update = function(timestamp) {
 	lastTime = timestamp;
 	time += dt;
 
-	gl.clearColor(1.0, 1.0, 1.0, 1.0); // TODO TEMPORARY
-
+	// gl.clearColor(1.0, 1.0, 1.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	spriteBatch.projectionMatrix = projectionMatrix;
-	spriteBatch.mvMatrix = mvMatrix;
-
-	scene.width = 640;
-	scene.height = 480;
-	// traverse(scene, dt, time, spriteBatch);
-
-	if (!testNo) {
-		testLabel.layout(new MeasureSpec(MeasureSpec.exactly, 200), new MeasureSpec(MeasureSpec.unspecified, undefined));
-		testNo = true;
-	}
-	testLabel.draw(spriteBatch);
+	root.update(dt, time);
+	root.traverse(640, 480);
+	root.draw(spriteBatch, dt, time);
 
 	spriteBatch.flush();
 
@@ -84,12 +54,6 @@ var update = function(timestamp) {
 	if (error !== gl.NO_ERROR && error !== gl.CONTEXT_LOST_WEBGL) {
 		console.error("OpenGL error.");
 	}*/
-
-	if (input.pressedKeys.indexOf(32) !== -1) {
-		// if (context.getDialogue()) {
-			// context.advanceOrHideDialogue();
-		// }
-	}
 
 	input.pressedKeys.length = 0;
 };
@@ -101,4 +65,5 @@ loader.onstart = function() {
 loader.onload = function() {
 	window.requestAnimationFrame(update);
 };
+
 loader.check();

@@ -11,7 +11,6 @@ var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
 var loader = require("loader.js");
-var game = require("Game.js");
 
 var thread = function(fn) {
 	var gen = fn();
@@ -27,7 +26,7 @@ var thread = function(fn) {
 	next();
 };
 
-module.exports = function() {
+module.exports = function(game) {
 	var promise = Map.loadMap("assets/forest.tmx");
 	promise.then(function(map) {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
@@ -44,9 +43,9 @@ module.exports = function() {
 	em.addComponent(item, new InteractionComponent(function() {
 		thread(function*() {
 			game.lock();
-			yield game.showDialogue("It's a pokéball. What did you expect?");
-			yield game.wait(1000);
-			yield game.showDialogue("Hello");
+			yield game.showDialog("It's a pokéball. What did you expect?");
+			// yield game.wait(1000);
+			yield game.showDialog("Hello");
 			game.release();
 		});
 	}));
@@ -71,8 +70,8 @@ module.exports = function() {
 			var entityMovement = game.em.getComponent(jorryt, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
 			entityMovement.pushController(new StillMovementController());
-			yield game.showDialogue("I could be a girl, you could be a boy. Transsexuality is so fun!");
-			yield game.showDialogue("What's up with that jar of nutella? Still fighting the good fight.");
+			yield game.showDialog("I could be a girl, you could be a boy. Transsexuality is so fun!");
+			yield game.showDialog("What's up with that jar of nutella? Still fighting the good fight.");
 			playerMovement.popController();
 			entityMovement.popController();
 		});
