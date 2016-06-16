@@ -10,6 +10,7 @@
     "fowl": "axelf4/fowl",
     "gl-matrix": "^2.3.2",
     "lerp": "^1.0.3",
+    "next-multiple": "^1.0.0",
     "parse-bmfont-ascii": "^1.0.6"
   },
   "devDependencies": {

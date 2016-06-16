@@ -26,8 +26,4 @@ Dialog.prototype.update = function(dt, time) {
 	}
 };
 
-/*Dialog.prototype.draw = function(batch, dt, time) {
-	Container.prototype.draw.apply(this, arguments);
-};*/
-
 module.exports = Dialog;

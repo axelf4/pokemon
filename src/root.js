@@ -1,4 +1,4 @@
-var MeasureSpec = require("MeasureSpec.js");
+var measureSpec = require("measureSpec.js");
 
 exports.width = -1;
 exports.height = -1;
@@ -18,14 +18,16 @@ exports.setWidget = function(widget) {
 exports.traverse = function(desiredWidth, desiredHeight) {
 	if (desiredWidth !== this.width || desiredHeight !== this.height) {
 	   this.valid = false;
+	   this.width = desiredWidth;
+	   this.height = desiredHeight;
 	}
 
 	if (this.valid) return;
 
 	if (!this.widget) return;
 
-	var widthMeasureSpec = new MeasureSpec(MeasureSpec.EXACTLY, desiredWidth);
-	var heightMeasureSpec = new MeasureSpec(MeasureSpec.EXACTLY, desiredHeight);
+	var widthMeasureSpec = measureSpec.make(desiredWidth, measureSpec.EXACTLY);
+	var heightMeasureSpec = measureSpec.make(desiredHeight, measureSpec.EXACTLY);
 	this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 
 	this.valid = true;

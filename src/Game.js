@@ -6,7 +6,7 @@ var NinePatch = require("NinePatch.js");
 var audio = require("Audio.js");
 var Map = require("map.js");
 var Widget = require("Widget.js");
-var playerFactory = require("playerFactory.js");
+var player = require("player.js");
 var StillMovementController = require("StillMovementController.js");
 var resources = require("resources.js");
 var Stack = require("Stack.js");
@@ -38,13 +38,14 @@ var Game = function() {
 	var map, mapRenderer;
 	this.mapRenderer = null;
 	var foregroundRenderList, backgroundRenderList;
-	this.spriteSystemMask = fowl.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
+
+	this.em = new fowl.EntityManager();
+	this.spriteSystemMask = this.em.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
+	this.collisionSystemMask = this.em.getMask([Position]);
 
 	this.updateHooks = [];
 
-	this.em = new fowl.EntityManager();
-
-	this.player = playerFactory.createPlayer(this.em);
+	this.player = player.createPlayer(this.em);
 
 	this.uiLayer = new Panel();
 	this.uiLayer.justify = Panel.ALIGN_FLEX_END;
@@ -58,10 +59,13 @@ Game.prototype = Object.create(Stack.prototype);
 Game.prototype.constructor = Game;
 
 Game.prototype.update = function(dt, time) {
+	// In-line the inherited function to avoid dynamic lookup
+	// Stack.prototype.update.call(this, dt, time);
+	for (var i = 0, length = this.children.length; i < length; ++i) {
+		this.children[i].update(dt, time);
+	}
+
 	var em = this.em;
-
-	Stack.prototype.update.call(this, dt, time);
-
 	// Call all the registered update hooks
 	for (var i = 0, length = this.updateHooks.length; i < length; i++) {
 		this.updateHooks[i](this, dt, em);
@@ -126,20 +130,6 @@ Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.foregroundRenderList = this.mapRenderer.getRenderList(foregroundLayers);
 };
 
-Game.prototype.getEntityAtCell = function(em, x, y) {
-	var result = null;
-	var mask = fowl.getMask([Position]);
-	for (var entity = 0, length = em.count; entity < length; entity++) {
-		if (em.matches(entity, mask)) {
-			var position = em.getComponent(entity, Position);
-			if (position.x === x && position.y === y) {
-				result = entity;
-			}
-		}
-	}
-	return result;
-};
-
 Game.prototype.loadScript = function(name) {
 	var self = this;
 	require(["./scripts/" + name], function(script) {
@@ -170,16 +160,24 @@ Game.prototype.release = function() {
 	playerMovement.popController();
 };
 
-Game.prototype.isSolid = function(x, y) {
-	// Check for entity at cell
-	var mask = fowl.getMask([Position]);
+Game.prototype.getEntityAtCell = function(x, y) {
 	var em = this.em;
-	for (var entity = 0, length = this.em.count; entity < length; entity++) {
-		if (em.matches(entity, mask)) {
+	var result = null;
+	for (var entity = 0, length = em.count; entity < length; entity++) {
+		if (em.matches(entity, this.collisionSystemMask)) {
 			var position = em.getComponent(entity, Position);
-			if (position.x === x && position.y === y) return true;
+			if (position.x === x && position.y === y) {
+				result = entity;
+				break;
+			}
 		}
 	}
+	return result;
+};
+
+Game.prototype.isSolid = function(x, y) {
+	// Check for entity at cell
+	if (this.getEntityAtCell(x, y)) return true;
 	// Check for collidable tile at cell
 	var layer;
 	var map = this.map;

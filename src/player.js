@@ -20,7 +20,7 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 	// TODO move this to external system
 	if (input.pressedKeys.indexOf(32) !== -1) {
 		// Player interacting with shit
-		var entity2 = game.getEntityAtCell(em, pos.x + direction.getDeltaX(), pos.y + direction.getDeltaY());
+		var entity2 = game.getEntityAtCell(pos.x + direction.getDeltaX(), pos.y + direction.getDeltaY());
 		if (entity2 !== null) {
 			var interactable = em.getComponent(entity2, InteractionComponent);
 			if (interactable) interactable.callback(game);

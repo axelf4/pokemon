@@ -18,8 +18,8 @@ module.exports = {
         loaders: [
             { test: /\.css$/, loader: "style!css" },
 			{ test: /\.glsl$/, loader: "webpack-glsl" },
-			{ test: /bitset/, loader: "exports?BitSet" },
-			{ test: /fowl/, loader: "imports?BitSet=bitset!exports?fowl" },
+			{ test: /bitset/, loader: "exports?BitsetModule" },
+			{ test: /fowl/, loader: "imports?BitsetModule=bitset!exports?fowl" },
 			{ test: /flex\.js/, loader: "exports?flex" },
         ]
     }

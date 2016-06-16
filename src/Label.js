@@ -1,5 +1,5 @@
 var Widget = require("Widget.js");
-var MeasureSpec = require("MeasureSpec.js");
+var measureSpec = require("measureSpec.js");
 var isWhitespace = require("isWhitespace.js");
 var align = require("align.js");
 
@@ -29,8 +29,15 @@ var computeVisibleGlyphs = function(font, str, start, end, maxAdvance) {
 };
 
 Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
+	var widthMode = measureSpec.getMode(widthMeasureSpec);
+	var heightMode = measureSpec.getMode(heightMeasureSpec);
+	var widthSize = measureSpec.getSize(widthMeasureSpec);
+	var heightSize = measureSpec.getSize(heightMeasureSpec);
+
 	var wrappingWidth = 0;
-	if (widthMeasureSpec.getMode() === MeasureSpec.exactly || widthMeasureSpec.getMode() === MeasureSpec.atMost) wrappingWidth = widthMeasureSpec.getSize();
+	if (widthMode === measureSpec.exactly || widthMode === measureSpec.atMost) {
+		wrappingWidth = widthSize;
+	}
 
 	var glyphLines = this.glyphLines = [];
 	var advance = 0;
@@ -95,10 +102,10 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	}
 
 	var width = maxWidth;
-	if (widthMeasureSpec.getMode() === MeasureSpec.EXACTLY) width = widthMeasureSpec.getSize();
+	if (widthMode === measureSpec.EXACTLY) width = widthSize;
 	var height = this.font.lineHeight * numLines;
 	var contentHeight = height;
-	if (heightMeasureSpec.getMode() === MeasureSpec.EXACTLY) height = heightMeasureSpec.getSize();
+	if (heightMode === measureSpec.EXACTLY) height = heightSize;
 	this.setDimension(width, height);
 
 	// Align content

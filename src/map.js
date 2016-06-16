@@ -328,10 +328,9 @@ MapRenderer.prototype.draw = function(layers) {
 	var positionLocation = 0;
 	var textureLocation = 1;
 	gl.enableVertexAttribArray(positionLocation);
-	gl.enableVertexAttribArray(textureLocation);
 	gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
+	gl.enableVertexAttribArray(textureLocation);
 	gl.vertexAttribPointer(textureLocation, 2, gl.FLOAT, false, 16, 8);
-
 
 	var scrollScaleX = 1, scrollScaleY = 1;
 	gl.uniform2f(this.viewOffsetLoc, Math.floor(x * scrollScaleX), Math.floor(y * scrollScaleY));
@@ -340,15 +339,25 @@ MapRenderer.prototype.draw = function(layers) {
 
 	layers = layers || this.layers;
 
+	var lastTexture = null;
+
 	// Draw each layer of the map
 	for (var i = 0, length = layers.length; i < length; i++) {
 		var layer = layers[i];
+		var sprites = layer.sprites;
 
-		gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / layer.sprites.width, 1 / layer.sprites.height);
+		// If the last layer used the same sprite: don't update it
+		if (lastTexture !== sprites.texture) {
+			gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / sprites.width, 1 / sprites.height);
 
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, layer.sprites.texture);
-		gl.activeTexture(gl.TEXTURE1);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, sprites.texture);
+
+			gl.activeTexture(gl.TEXTURE1);
+		}
+		lastTexture = sprites.texture;
+
+		// The layer texture is always unique
 		gl.bindTexture(gl.TEXTURE_2D, layer.tiles);
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

@@ -1,6 +1,6 @@
 var Widget = require("Widget.js");
 var WidgetGroup = require("WidgetGroup.js");
-var MeasureSpec = require("MeasureSpec.js");
+var measureSpec = require("measureSpec.js");
 
 var Stack = function() {
 	WidgetGroup.call(this);
@@ -9,10 +9,10 @@ Stack.prototype = Object.create(WidgetGroup.prototype);
 Stack.prototype.constructor = Stack;
 
 Stack.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
-	var widthMode = widthMeasureSpec.getMode();
-	var heightMode = heightMeasureSpec.getMode();
-	var widthSize = widthMeasureSpec.getSize();
-	var heightSize = heightMeasureSpec.getSize();
+	var widthMode = measureSpec.getMode(widthMeasureSpec);
+	var heightMode = measureSpec.getMode(heightMeasureSpec);
+	var widthSize = measureSpec.getSize(widthMeasureSpec);
+	var heightSize = measureSpec.getSize(heightMeasureSpec);
 
 	var width = 0, height = 0;
 
@@ -23,8 +23,8 @@ Stack.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 		var marginColumn = child.marginTop + child.marginBottom;
 
 		var childWidthMeasureSpec, childHeightMeasureSpec;
-		childWidthMeasureSpec = new MeasureSpec(widthMode, widthSize - marginRow);
-		childHeightMeasureSpec = new MeasureSpec(heightMode, heightSize - marginColumn);
+		childWidthMeasureSpec = measureSpec.adjust(widthMeasureSpec, -marginRow);
+		childHeightMeasureSpec = measureSpec.adjust(heightMeasureSpec, -marginColumn);
 		child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
 		child.setPosition(child.marginLeft, child.marginTop);
 
