@@ -252,11 +252,11 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 	// TODO cleanup this
 	var mainMeasureSpec = mainAxis === DIRECTION_ROW ? widthMeasureSpec : heightMeasureSpec;
-	if (measureSpec.getMode(mainMeasureSpec) === measureSpec.exactly) {
+	if (measureSpec.getMode(mainMeasureSpec) === measureSpec.EXACTLY) {
 		mainSize = measureSpec.getSize(mainMeasureSpec);
 	}
 	var crossMeasureSpec = crossAxis === DIRECTION_ROW ? widthMeasureSpec : heightMeasureSpec;
-	if (measureSpec.getMode(crossMeasureSpec) === measureSpec.exactly) {
+	if (measureSpec.getMode(crossMeasureSpec) === measureSpec.EXACTLY) {
 		crossSize = measureSpec.getSize(crossMeasureSpec);
 	}
 
