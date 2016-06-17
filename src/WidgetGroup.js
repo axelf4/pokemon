@@ -34,9 +34,11 @@ WidgetGroup.prototype.update = function(dt, time) {
 WidgetGroup.prototype.drawChildren = function(batch, dt, time) {
 	var oldMatrix = batch.getMVMatrix();
 	var transform = mat4.create();
-	var translation = vec3.fromValues(this.x, this.y, 0);
-	mat4.fromTranslation(transform, translation);
-	batch.setMVMatrix(transform);
+	mat4.fromTranslation(transform, vec3.fromValues(this.x, this.y, 0));
+	var newMatrix = mat4.create();
+	mat4.multiply(newMatrix, oldMatrix, transform);
+
+	batch.setMVMatrix(newMatrix);
 
 	for (var i = 0, length = this.children.length; i < length; ++i) {
 		var child = this.children[i];
