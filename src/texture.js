@@ -46,6 +46,10 @@ var loadTexture = function(src, callback) {
 
 var TextureRegion = function(texture, x, y, width, height) {
 	this.texture = texture;
+	this.x = x || 0;
+	this.y = y || 0;
+	this.width = width || 0;
+	this.height = height || 0;
 };
 TextureRegion.prototype.loadFromFile = function(src, callback) {
 	var self = this;
