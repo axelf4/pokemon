@@ -1,8 +1,8 @@
 var MovementComponent = function(controller) {
+	if (!controller) throw new ReferenceError("The specified controller must not be null.");
 	this.timer = 0;
 	this.delay = 200;
-	this.controllerStack = new Array();
-	if (controller) this.controllerStack.push(controller);
+	this.controllerStack = [controller];
 };
 
 MovementComponent.prototype.getInterp = function() {

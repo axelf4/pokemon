@@ -13,6 +13,7 @@ var Stack = require("Stack.js");
 var Panel = require("Panel.js");
 var Dialog = require("Dialog.js");
 var align = require("align.js");
+var MovementSystem = require("MovementSystem.js");
 
 var Position = require("Position.js");
 var Direction = require("Direction.js");
@@ -42,6 +43,7 @@ var Game = function() {
 	this.em = new fowl.EntityManager();
 	this.spriteSystemMask = this.em.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
 	this.collisionSystemMask = this.em.getMask([Position]);
+	this.movementSystem = new MovementSystem(this);
 
 	this.updateHooks = [];
 
@@ -52,7 +54,6 @@ var Game = function() {
 	this.uiLayer.direction = Panel.DIRECTION_COLUMN;
 	this.addWidget(this.uiLayer);
 
-	this.loadScript("movement.js");
 	this.loadScript("forest.js");
 };
 Game.prototype = Object.create(Stack.prototype);
@@ -66,8 +67,9 @@ Game.prototype.update = function(dt, time) {
 	}
 
 	var em = this.em;
+	this.movementSystem.update(dt, time);
 	// Call all the registered update hooks
-	for (var i = 0, length = this.updateHooks.length; i < length; i++) {
+	for (var i = 0, length = this.updateHooks.length; i < length; ++i) {
 		this.updateHooks[i](this, dt, em);
 	}
 };
