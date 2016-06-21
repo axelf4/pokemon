@@ -22,9 +22,8 @@ MovementSystem.prototype.update = function(dt, time) {
 			if (movement.timer >= movement.delay || position.x === oldpos.x && position.y === oldpos.y) {
 				oldpos.x = position.x;
 				oldpos.y = position.y;
-				movement.timer = 0;
-				var controller = movement.getController();
-				var newDirection = controller.getTarget(this.game, dt, position, entity);
+				movement.timer = Math.max(0, movement.timer - movement.delay);
+				var newDirection = movement.getController().getTarget(this.game, dt, position, entity);
 				position.x += Direction.getDeltaX(newDirection);
 				position.y += Direction.getDeltaY(newDirection);
 			}
