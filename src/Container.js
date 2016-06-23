@@ -16,6 +16,7 @@ loader.loadFile("textures/frame.9.png", function(file) {
 
 var Container = function() {
 	WidgetGroup.call(this);
+	this.drawBackground = true; // Hack
 };
 Container.prototype = Object.create(WidgetGroup.prototype);
 Container.prototype.constructor = Container;
@@ -45,7 +46,7 @@ Container.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 };
 
 Container.prototype.draw = function(batch, dt, time) {
-	if (ninePatch) {
+	if (ninePatch && this.drawBackground) {
 		ninePatch.draw(batch, ninePatchTexture.texture, this.x, this.y, this.width, this.height);
 	}
 

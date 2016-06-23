@@ -5,7 +5,8 @@ var LoadingManager = require("LoadingManager.js");
 var input = require("input.js");
 var loader = require("loader.js");
 var root = require("root.js");
-var Game = require("Game.js");
+var BattleScene = require("BattleScene.js");
+var LoadingScreen = require("LoadingScreen.js");
 
 var gl = renderer.gl;
 var vec3 = glMatrix.vec3;
@@ -23,8 +24,11 @@ spriteBatch.setMVMatrix(mvMatrix);
 
 var manager = new LoadingManager();
 
-var game = new Game();
-root.setWidget(game);
+input.setInputListener(root);
+
+var loadingScreen = new LoadingScreen();
+root.setWidget(loadingScreen);
+var battleScene = new BattleScene();
 
 var lastTime = (performance || Date).now();
 var time = 0; // Total elapsed time
@@ -36,6 +40,7 @@ var update = function(timestamp) {
 	lastTime = timestamp;
 	time += dt;
 
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	root.update(dt, time);
@@ -53,12 +58,14 @@ var update = function(timestamp) {
 	input.pressedKeys.length = 0;
 };
 
+update();
+
 loader.onstart = function() {
-	window.cancelAnimationFrame(requestID);
+	// window.cancelAnimationFrame(requestID);
 };
 
 loader.onload = function() {
-	window.requestAnimationFrame(update);
+	root.setWidget(battleScene);
 };
 
 loader.check();

@@ -41,6 +41,12 @@ exports.draw = function(batch, dt, time) {
 	this.widget.draw(batch, dt, time);
 };
 
+exports.onKey = function(type, keyCode) {
+	this.widget.onKey(type, keyCode);
+};
+
+exports.requestChildFocus = function() {};
+
 exports.getParent = function() {
 	return null;
 };

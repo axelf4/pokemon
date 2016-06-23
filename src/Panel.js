@@ -97,16 +97,6 @@ var getFlexShrinkFactor = function(node) {
 	return 0;
 };
 
-// no reordering with order
-// overflow is undefined behavior
-// ! Container properties
-// direction: row | column, initial = row
-// justify: flex-start | center | flex-end | space-between | space-around, initial = flex-start
-// ! Child properties
-// flex: <positive-number>, initial = 0
-// align: flex-start | center | flex-end | stretch, initial = flex-start
-// margin
-// min-max
 Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	var widthMode = measureSpec.getMode(widthMeasureSpec);
 	var heightMode = measureSpec.getMode(heightMeasureSpec);

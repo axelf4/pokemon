@@ -18,8 +18,8 @@ var Dialog = function(text, callback) {
 Dialog.prototype = Object.create(Container.prototype);
 Dialog.prototype.constructor = Dialog;
 
-Dialog.prototype.update = function(dt, time) {
-	if (input.pressedKeys.indexOf(32) !== -1) {
+Dialog.prototype.onKey = function(type, keyCode) {
+	if (type === input.KEY_ACTION_DOWN && keyCode === 32) {
 		// TODO advance multipage text
 		this.remove();
 		if (this.callback) this.callback();

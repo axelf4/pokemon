@@ -18,15 +18,20 @@ MovementSystem.prototype.update = function(dt, time) {
 			var direction = em.getComponent(entity, Direction);
 			var movement = em.getComponent(entity, MovementComponent);
 
-			movement.timer += dt;
-			if (movement.timer >= movement.delay || position.x === oldpos.x && position.y === oldpos.y) {
-				oldpos.x = position.x;
-				oldpos.y = position.y;
-				movement.timer = Math.max(0, movement.timer - movement.delay);
-				var newDirection = movement.getController().getTarget(this.game, dt, position, entity);
-				position.x += Direction.getDeltaX(newDirection);
-				position.y += Direction.getDeltaY(newDirection);
+			var still = position.x === oldpos.x && position.y === oldpos.y;
+			if (!still) {
+				movement.timer += dt;
+				if (movement.timer >= movement.delay) {
+					oldpos.x = position.x;
+					oldpos.y = position.y;
+				} else {
+					continue;
+				}
 			}
+			movement.timer = Math.max(0, movement.timer - movement.delay);
+			var newDirection = movement.getController().getTarget(this.game, dt, position, entity);
+			position.x += Direction.getDeltaX(newDirection);
+			position.y += Direction.getDeltaY(newDirection);
 		}
 	}
 };

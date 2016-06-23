@@ -2,14 +2,21 @@ var Widget = function() {
 	this.parent = null;
 	this.valid = false;
 	this.focused = false;
+	this.flags = 0;
 
 	this.y = this.x = 0;
 	this.height = this.width = 0;
 
-	this.marginLeft = this.marginRight = this.marginTop = this.marginBottom = 0;
+	this.marginLeft = this.marginRight = this.marginTop = this.marginBottom = 0; // TODO move to layoutParams
 
-	this.style = {};
+	this.style = {}; // TODO remove
 };
+
+// TODO add layoutParams
+var MEASURED_STATE_TOO_SMALL = 0x01000000;
+var FLAG_LAYOUT_REQUIRED = 0x1;
+var CLIP_TO_PADDING_MASK; // TODO
+var FLAG_FOCUSED = Widget.FLAG_FOCUSED = 0x2;
 
 // Removes this widget from its parent.
 Widget.prototype.remove = function() {
@@ -37,27 +44,29 @@ Widget.prototype.layout = function() {
 };
 
 // Invalidates this widget and upwards it's hierarchy.
-Widget.prototype.invalidate = function() {
-	var widget = this;
-	do {
-		widget.valid = false;
-	} while (widget = widget.getParent());
+Widget.prototype.requestLayout = Widget.prototype.invalidate = function() {
+	this.valid = false;
+
+	if (this.parent) this.parent.invalidate();
 };
 
+// TODO remove
 Widget.prototype.update = function() {};
 
-Widget.prototype.focus = function() {
-	// Make sure the parent is focused
-	var parent = this;
-	while (parent = parent.parent) {
-		// Unfocus any siblings
-		var siblings = parent.children;
-		for (var i = 0, length = siblings.length; i < length; i++) {
-			siblings[i].focused = false;
-		}
-		parent.focused = true;
+Widget.prototype.clearFocus = function() {
+	if (this.flags & FLAG_FOCUSED) {
+		this.flags &= ~FLAG_FOCUSED;
 	}
-	this.focused = true; // Focus the widget
+};
+
+Widget.prototype.requestFocus = function() {
+	if ((this.flags & FLAG_FOCUSED) === 0) {
+		this.flags |= FLAG_FOCUSED;
+
+		if (this.parent) {
+			this.parent.requestChildFocus(this);
+		}
+	}
 };
 
 Widget.prototype.margin = function(value) {

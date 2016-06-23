@@ -35,7 +35,7 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	var heightSize = measureSpec.getSize(heightMeasureSpec);
 
 	var wrappingWidth = 0;
-	if (widthMode === measureSpec.exactly || widthMode === measureSpec.atMost) {
+	if (widthMode === measureSpec.EXACTLY || widthMode === measureSpec.AT_MOST) {
 		wrappingWidth = widthSize;
 	}
 

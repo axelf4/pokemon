@@ -23,7 +23,11 @@ NinePatch.prototype.draw = function(batch, texture, x, y, width, height) {
 	var lowerHeight = this.patches[6].height;
 	var centerWidth = width - (leftWidth + rightWidth);
 	var centerHeight = height - (upperHeight + lowerHeight);
-	if (centerWidth < 0 || centerHeight < 0) throw new RangeError("Specified size is too small for nine-patch image.");
+	if (centerWidth < 0 || centerHeight < 0) {
+		// throw new RangeError("Specified size is too small for nine-patch image.");
+		console.log("Specified size is too small for nine-patch image.");
+		return;
+	}
 
 	this.drawPatch(batch, this.texture, this.patches[0], x, y, leftWidth, upperHeight);
 	this.drawPatch(batch, texture, this.patches[1], x + leftWidth, y, centerWidth, upperHeight);
