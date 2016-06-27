@@ -121,13 +121,13 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	switch (this.justify) {
 		case align.START: break;
 		case align.END:
-						  this.offsetY = height - contentHeight;
-						  break;
+			this.offsetY = height - contentHeight;
+			break;
 		case align.CENTER:
-						  this.offsetY = (height - contentHeight) / 2;
-						  break;
+			this.offsetY = (height - contentHeight) / 2;
+			break;
 		default:
-						  throw new Error("Invalid value for justify.");
+			throw new Error("Invalid value for justify.");
 	}
 };
 

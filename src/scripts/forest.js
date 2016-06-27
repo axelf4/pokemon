@@ -11,20 +11,7 @@ var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
 var loader = require("loader.js");
-
-var thread = function(fn) {
-	var gen = fn();
-	if (typeof gen.next !== "function") return;
-	var next = function(err, res) {
-		var ret = gen.next(res);
-		if (ret.done) return;
-
-		if (typeof ret.value.then === "function") {
-			ret.value.then(next);
-		} else ret.value(next);
-	};
-	next();
-};
+var thread = require("thread.js");
 
 module.exports = function(game) {
 	var promise = Map.loadMap("assets/forest.tmx");

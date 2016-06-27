@@ -1,5 +1,5 @@
-var Container = require("Container.js");
 var input = require("input.js");
+var Container = require("Container.js");
 var Label = require("Label.js");
 var align = require("align.js");
 var resources = require("resources.js");

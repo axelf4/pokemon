@@ -5,6 +5,7 @@ var align = require("align.js");
 var resources = require("resources.js");
 var input = require("input.js");
 
+// TODO add arrow instead of border
 var Option = function(text) {
 	Container.call(this);
 	this.drawBackground = false;
@@ -15,8 +16,11 @@ var Option = function(text) {
 Option.prototype = Object.create(Container.prototype);
 Option.prototype.constructor = Option;
 
-var Select = function(optionNames, optionsPerLine) {
+// multichoice
+var Select = function(optionNames, optionsPerLine, callback) {
 	Container.call(this);
+	this.callback = callback;
+	this.optionsPerLine = optionsPerLine;
 
 	var mainPanel = new Panel();
 	mainPanel.direction = Panel.DIRECTION_ROW;
@@ -30,11 +34,13 @@ var Select = function(optionNames, optionsPerLine) {
 		var column = new Panel();
 		column.direction = Panel.DIRECTION_COLUMN;
 		column.style.align = align.STRETCH;
+		// column.marginRight = 10; // Pokemon Emerald-like
 		mainPanel.addWidget(column);
 		columns[i] = column;
 	}
 
-	var options = this.options = [];
+	var rectangleShape = optionNames.length % optionsPerLine === 0;
+	var options = this.options = new Array(optionNames.length);
 
 	for (var i = 0; i < optionNames.length; ++i) {
 		var columnIndex = i % columnCount;
@@ -42,7 +48,8 @@ var Select = function(optionNames, optionsPerLine) {
 
 		var name = optionNames[i];
 		var option = new Option(name);
-		option.style.align = align.CENTER;
+		option.style.align = align.STRETCH;
+		if (rectangleShape) option.flex = 1;
 		columns[columnIndex].addWidget(option);
 
 		// Store the option for future use
@@ -56,18 +63,24 @@ var Select = function(optionNames, optionsPerLine) {
 Select.prototype = Object.create(Container.prototype);
 Select.prototype.constructor = Select;
 
-Select.prototype.update = function(dt, time) {
-	var oldCursorX = this.cursorX, oldCursorY = this.cursorY;
+Select.prototype.onKey = function(type, keyCode) {
+	if (type !== input.KEY_ACTION_DOWN) return;
+
+	// If enter was pressed
+	if (keyCode === 32) {
+		var selectedOption = this.cursorX + this.cursorY * this.optionsPerLine;
+		this.callback(selectedOption);
+		return;
+	}
 
 	var newCursorX = this.cursorX, newCursorY = this.cursorY;
-
-	if (input.keyPressed(65)) {
+	if (keyCode === 65) {
 		--newCursorX;
-	} else if (input.keyPressed(68)) {
+	} else if (keyCode === 68) {
 		++newCursorX;
-	} else if (input.keyPressed(87)) {
+	} else if (keyCode === 87) {
 		--newCursorY;
-	} else if (input.keyPressed(83)) {
+	} else if (keyCode === 83) {
 		++newCursorY;
 	}
 

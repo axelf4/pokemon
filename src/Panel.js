@@ -61,8 +61,8 @@ var isColumnAxis = function(axis) {
 	return axis === DIRECTION_COLUMN;
 };
 
-function isStyleDimDefined(node, axis) {
-	return node.style[dim[axis]] !== undefined && node.style[dim[axis]] >= 0;
+var isStyleDimDefined = function(node, axis) {
+	return node.style[dim[axis]];
 }
 
 var getLayoutSize = function(item, axis) {

@@ -27,22 +27,13 @@ WidgetGroup.prototype.removeWidget = function(child) {
 	this.invalidate();
 };
 
-WidgetGroup.removeAllWidgets = function() {
+WidgetGroup.prototype.removeAllWidgets = function() {
 	this.focused = null;
 	for (var i = 0, length = this.children.length; i < length; ++i) {
 		this.children[i].parent = null;
 	}
-	this.children.clear();
+	this.children = [];
 	this.invalidate();
-};
-
-WidgetGroup.prototype.update = function(dt, time) {
-	for (var i = 0, length = this.children.length; i < length; ++i) {
-		var child = this.children[i];
-		if (child && child.update) {
-			child.update(dt, time);
-		}
-	}
 };
 
 WidgetGroup.prototype.onKey = function(type, keyCode) {
@@ -52,20 +43,25 @@ WidgetGroup.prototype.onKey = function(type, keyCode) {
 };
 
 WidgetGroup.prototype.drawChildren = function(batch, dt, time) {
-	var oldMatrix = batch.getMVMatrix();
-	var transform = mat4.create();
-	mat4.fromTranslation(transform, vec3.fromValues(this.x, this.y, 0));
-	var newMatrix = mat4.create();
-	mat4.multiply(newMatrix, oldMatrix, transform);
+	var setTransform = this.x !== 0 || this.y !== 0;
+	if (setTransform) {
+		var oldMatrix = batch.getMVMatrix();
+		var transform = mat4.create();
+		mat4.fromTranslation(transform, vec3.fromValues(this.x, this.y, 0));
+		var newMatrix = mat4.create();
+		mat4.multiply(newMatrix, oldMatrix, transform);
 
-	batch.setMVMatrix(newMatrix);
+		batch.setMVMatrix(newMatrix);
+	}
 
 	for (var i = 0, length = this.children.length; i < length; ++i) {
 		var child = this.children[i];
 		child.draw(batch, dt, time);
 	}
 
-	batch.setMVMatrix(oldMatrix);
+	if (setTransform) {
+		batch.setMVMatrix(oldMatrix);
+	}
 };
 
 WidgetGroup.prototype.clearFocus = function() {

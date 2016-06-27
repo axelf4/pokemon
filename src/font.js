@@ -29,6 +29,7 @@ var Font = function() {
 		});
 	});
 };
+
 Font.prototype.setGlyph = function(id, glyph) {
 	this.glyphs[Math.floor(id / pageSize)][id & pageSize - 1] = glyph;
 };

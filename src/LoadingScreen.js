@@ -1,23 +1,16 @@
-var Widget = require("Widget.js");
+var State = require("State.js");
 var renderer = require("renderer.js");
 var measureSpec = require("measureSpec.js");
 
 var gl = renderer.gl;
 
 var LoadingScreen = function() {
-	Widget.call(this);
+	State.call(this);
 };
-LoadingScreen.prototype = Object.create(Widget.prototype);
+LoadingScreen.prototype = Object.create(State.prototype);
 LoadingScreen.prototype.constructor = LoadingScreen;
 
-LoadingScreen.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
-	var width = 0, height = 0;
-	if (measureSpec.getMode(widthMeasureSpec) === measureSpec.EXACTLY) width = measureSpec.getSize(widthMeasureSpec);
-	if (measureSpec.getMode(heightMeasureSpec) === measureSpec.EXACTLY) height = measureSpec.getSize(heightMeasureSpec);
-	this.setDimension(width, height);
-};
-
-LoadingScreen.prototype.draw = function(dt, time, batch) {
+LoadingScreen.prototype.draw = function(batch, dt, time) {
 	gl.clearColor(1.0, 0.0, 1.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 };
