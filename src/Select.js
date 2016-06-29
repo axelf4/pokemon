@@ -17,10 +17,10 @@ Option.prototype = Object.create(Container.prototype);
 Option.prototype.constructor = Option;
 
 // multichoice
-var Select = function(optionNames, optionsPerLine, callback) {
+var Select = function(optionNames, columnCount, listener) {
 	Container.call(this);
-	this.callback = callback;
-	this.optionsPerLine = optionsPerLine;
+	this.columnCount = columnCount;
+	this.listener = listener;
 
 	var mainPanel = new Panel();
 	mainPanel.direction = Panel.DIRECTION_ROW;
@@ -28,18 +28,18 @@ var Select = function(optionNames, optionsPerLine, callback) {
 	mainPanel.margin(4);
 	this.addWidget(mainPanel);
 
-	var columnCount = optionsPerLine;
+	var rectangleShape = optionNames.length % columnCount === 0;
 	var columns = new Array(columnCount);
 	for (var i = 0; i < columnCount; ++i) {
 		var column = new Panel();
 		column.direction = Panel.DIRECTION_COLUMN;
 		column.style.align = align.STRETCH;
 		// column.marginRight = 10; // Pokemon Emerald-like
+		if (rectangleShape) column.justify = Panel.ALIGN_SPACE_AROUND;
 		mainPanel.addWidget(column);
 		columns[i] = column;
 	}
 
-	var rectangleShape = optionNames.length % optionsPerLine === 0;
 	var options = this.options = new Array(optionNames.length);
 
 	for (var i = 0; i < optionNames.length; ++i) {
@@ -49,7 +49,6 @@ var Select = function(optionNames, optionsPerLine, callback) {
 		var name = optionNames[i];
 		var option = new Option(name);
 		option.style.align = align.STRETCH;
-		if (rectangleShape) option.flex = 1;
 		columns[columnIndex].addWidget(option);
 
 		// Store the option for future use
@@ -63,24 +62,30 @@ var Select = function(optionNames, optionsPerLine, callback) {
 Select.prototype = Object.create(Container.prototype);
 Select.prototype.constructor = Select;
 
-Select.prototype.onKey = function(type, keyCode) {
+Select.prototype.onKey = function(type, key) {
 	if (type !== input.KEY_ACTION_DOWN) return;
 
-	// If enter was pressed
-	if (keyCode === 32) {
-		var selectedOption = this.cursorX + this.cursorY * this.optionsPerLine;
-		this.callback(selectedOption);
+	// If space was pressed
+	if (key === " ") {
+		var selectedOption = this.cursorX + this.cursorY * this.columnCount;
+		this.listener(selectedOption);
+		return;
+	}
+
+	// Shift was pressed; return no option
+	if (key === "Shift") {
+		this.listener(-1);
 		return;
 	}
 
 	var newCursorX = this.cursorX, newCursorY = this.cursorY;
-	if (keyCode === 65) {
+	if (key === "a") {
 		--newCursorX;
-	} else if (keyCode === 68) {
+	} else if (key === "d") {
 		++newCursorX;
-	} else if (keyCode === 87) {
+	} else if (key === "w") {
 		--newCursorY;
-	} else if (keyCode === 83) {
+	} else if (key === "s") {
 		++newCursorY;
 	}
 
@@ -92,6 +97,10 @@ Select.prototype.onKey = function(type, keyCode) {
 		this.cursorX = newCursorX;
 		this.cursorY = newCursorY;
 	}
+};
+
+Select.prototype.setOnSelectListener = function(listener) {
+	this.listener = listener;
 };
 
 module.exports = Select;

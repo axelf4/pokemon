@@ -17,27 +17,26 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 	var pos = em.getComponent(entity, Position);
 	var direction = em.getComponent(entity, Direction);
 
-	// TODO move this to external system
-	if (input.pressedKeys.indexOf(32) !== -1) {
+	if (input.pressedKeys[" "]) {
 		// Player interacting with shit
-		var entity2 = game.getEntityAtCell(pos.x + direction.getDeltaX(), pos.y + direction.getDeltaY());
-		if (entity2 !== null) {
-			var interactable = em.getComponent(entity2, InteractionComponent);
-			if (interactable) interactable.callback(game);
+		var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(), pos.y + direction.getDeltaY());
+		if (interactable !== null) {
+			var interaction = em.getComponent(interactable, InteractionComponent);
+			if (interaction) interaction.callback(game);
 		}
 	}
 
 	var dx = 0, dy = 0;
-	if (keys[65]) {
+	if (keys["a"]) {
 		direction.value = Direction.LEFT;
 		dx = -1;
-	} else if (keys[68]) {
+	} else if (keys["d"]) {
 		direction.value = Direction.RIGHT;
 		dx = 1;
-	} else if (keys[87]) {
+	} else if (keys["w"]) {
 		direction.value = Direction.UP;
 		dy = -1;
-	} else if (keys[83]) {
+	} else if (keys["s"]) {
 		direction.value = Direction.DOWN;
 		dy = 1;
 	}

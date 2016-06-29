@@ -1,13 +1,15 @@
 var Widget = function() {
 	this.parent = null;
 	this.focused = false;
-	this.flags = 0;
+	this.flags = FOCUSABLE;
 
 	this.y = this.x = 0;
 	this.height = this.width = 0;
 
 	this.marginLeft = this.marginRight = this.marginTop = this.marginBottom = 0; // TODO move to layoutParams
 	this.style = {}; // TODO move to layoutParams
+
+	// this.measureCache = {}; // TODO
 };
 
 var FLAG_LAYOUT_REQUIRED = Widget.FLAG_LAYOUT_REQUIRED = 0x1;
@@ -49,7 +51,11 @@ Widget.prototype.isLayoutRequested = function() {
 Widget.prototype.requestLayout = Widget.prototype.invalidate = function() {
 	this.flags |= FLAG_LAYOUT_REQUIRED;
 
-	if (this.parent && !this.parent.isLayoutRequested()) this.parent.requestLayout();
+	// this.measureCache = {}; // Flush the cache
+
+	if (this.parent && !this.parent.isLayoutRequested()) {
+		this.parent.requestLayout();
+	}
 };
 
 Widget.prototype.isFocusable = function() {

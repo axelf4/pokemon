@@ -20,9 +20,9 @@ State.prototype.resize = function(width, height) {
 	this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 };
 
-State.prototype.onKey = function(type, keyCode) {
+State.prototype.onKey = function(type, key) {
 	if (this.widget) {
-		this.widget.onKey(type, keyCode);
+		this.widget.onKey(type, key);
 	}
 };
 

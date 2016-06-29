@@ -128,20 +128,18 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 				childWidthMeasureSpec = measureSpec.make(item.style.width, measureSpec.EXACTLY);
 			} else if (crossAxis === DIRECTION_ROW && widthMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
 				childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.EXACTLY);
-			} else if (widthSize) {
-				childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.AT_MOST);
 			} else {
-				childWidthMeasureSpec = measureSpec.make(0, measureSpec.UNSPECIFIED);
+				var mode = widthSize ? measureSpec.AT_MOST : measureSpec.UNSPEDIFIED;
+				childWidthMeasureSpec = measureSpec.make(widthSize, mode);
 			}
 
 			if (isStyleDimDefined(item, DIRECTION_COLUMN)) {
 				childHeightMeasureSpec = measureSpec.make(item.style.height, measureSpec.EXACTLY);
 			} else if (crossAxis === DIRECTION_COLUMN && heightMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
 				childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.EXACTLY);
-			} else if (heightSize) {
-				childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.AT_MOST);
 			} else {
-				childHeightMeasureSpec = measureSpec.make(0, measureSpec.UNSPECIFIED);
+				var mode = heightSize ? measureSpec.AT_MOST : measureSpec.UNSPEDIFIED;
+				childHeightMeasureSpec = measureSpec.make(heightSize, mode);
 			}
 
 			// Measure the child

@@ -13,7 +13,6 @@ catch (e) {}
 // If we don't have a GL context, give up now
 if (!gl) alert("Unable to initialize WebGL. Your browser may not support it.");
 
-gl.clearColor(0.0, 0.0, 0.0, 1.0);
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 

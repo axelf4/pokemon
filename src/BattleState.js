@@ -9,15 +9,44 @@ var Select = require("Select.js");
 var promiseWhile = require("promiseWhile.js");
 var thread = require("thread.js");
 var stateManager = require("stateManager.js");
+var pokemon = require("pokemon.js");
+var move = require("move.js");
+
+// Note: these are numbered in order of priority
+var ACTION_TYPE_ATTACK = 0;
+var ACTION_TYPE_SWITCH_POKEMON = 1;
+var ACTION_TYPE_RUN = 2;
+// var ACTION_TYPE_USE_ITEM = 2;
+
+var Action = function(type, pokemon, isPlayer) {
+	this.type = type;
+	this.pokemon = pokemon;
+	this.isPlayer = isPlayer;
+
+	// Action specific
+	this.move = null;
+	this.nextPokemon = null;
+};
+
+Action.prototype.getType = function() {
+	return this.type;
+};
+
+/**
+ * @see http://bulbapedia.bulbagarden.net/wiki/Escape
+ */
+var canFlee = function(speed, enemySpeed, escapeAttempts) {
+	return Math.random() * 255 < (speed * 128 / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
+};
 
 var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 	State.call(this);
-
 	this.nextState = nextState;
+	var playerPokemon = playerTrainer.getPrimaryPokemon();
+	var enemyPokemon = enemyTrainer.getPrimaryPokemon();
 
-	var widget = new Panel();
+	var widget = this.widget = new Panel();
 	widget.direction = Panel.DIRECTION_COLUMN;
-	this.widget = widget;
 
 	var view = new Panel();
 	view.direction = Panel.DIRECTION_COLUMN;
@@ -26,7 +55,7 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 	widget.addWidget(view);
 
 	// TODO add healthbars
-	var dig = new Dialog("Hello");
+	var dig = new Dialog("Slowpoke vs Snoop Dogg");
 	dig.flex = 1;
 	dig.style.align = align.STRETCH;
 	view.addWidget(dig);
@@ -44,7 +73,6 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 	info = new Panel();
 	info.direction = Panel.DIRECTION_ROW;
 	info.style.height = 100;
-	info.style.align = align.STRETCH;
 	widget.addWidget(info);
 
 	var showDialog = function(text) {
@@ -60,32 +88,130 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 	thread(function*() {
 		var battling = true;
 
-		var selected = yield new Promise(function(resolve, reject) {
-			var dialog = new Dialog("Slowpoke the almighty wants to kill your ugly ass. Hello my name is Axel and i live in Mölndal.");
-			dialog.style.align = align.STRETCH;
-			dialog.flex = 1;
-			info.addWidget(dialog);
-			var select = new Select(["FIGTH", "BAG", "POKéMON", "RUN"], 2, selected => resolve(selected));
-			select.style.align = align.STRETCH;
-			info.addWidget(select);
-			select.requestFocus();
-		});
-		console.log(selected);
+		yield showDialog(enemyTrainer.getName() + " wants to fight!\n" + enemyTrainer.getName() + " sent out " + pokemon.getName(enemyPokemon) + "!");
+		yield showDialog("Go! " + pokemon.getName(playerPokemon) + "!");
 
-		switch (selected) {
-		case 0: // Fight
-			break;
-		case 1: // Bag
-			break;
-		case 2: // Pokemon
-			break;
-		case 3: // Run
-			info.removeAllWidgets();
-			battling = false;
-			yield showDialog("Got away safely!");
-			break;
-		default:
-			throw new Error("Invalid selected value.");
+		var escapeAttempts = 0;
+
+		while (battling) {
+			var playerAction = null;
+			while (!playerAction) {
+				var selected = yield new Promise(function(resolve, reject) {
+					var dialog = new Dialog("What will " + pokemon.getName(playerPokemon) + " do?");
+					dialog.style.align = align.STRETCH;
+					dialog.flex = 1;
+					info.addWidget(dialog);
+					var select = new Select(["FIGTH", "BAG", "POKéMON", "RUN"], 2, resolve);
+					select.style.align = align.STRETCH;
+					info.addWidget(select);
+					select.requestFocus();
+				});
+				info.removeAllWidgets();
+				switch (selected) {
+					case -1: break; // Shift was pressed
+					case 0: // Fight
+							 var moveId = yield new Promise(function(resolve, reject) {
+								 var moveNames = pokemon.getMoves(playerPokemon).map(value => move.getName(value));
+								 var select = new Select(moveNames, 2, resolve);
+								 select.style.align = align.STRETCH;
+								 select.flex = 1;
+								 info.addWidget(select);
+								 select.requestFocus();
+							 });
+							 info.removeAllWidgets();
+							 if (moveId !== -1) {
+								 var selectedMove = pokemon.getMoves(playerPokemon)[moveId];
+								 playerAction = new Action(ACTION_TYPE_ATTACK, playerPokemon, true);
+								 playerAction.move = selectedMove;
+							 }
+							 break;
+					case 1: // Bag
+							 yield showDialog("There's a time and place for everything, but not now...");
+							 break;
+					case 2: // Pokemon
+							 yield showDialog("Cannot switch pokemons yet.");
+							 break;
+					case 3: // Run
+							 // TODO can't escape against trainers
+							 playerAction = new Action(ACTION_TYPE_RUN, playerPokemon, true);
+							 break;
+					default:
+							 throw new Error("Invalid selected value.");
+				}
+			}
+
+			// TODO select enemy action
+			var enemyAction = new Action(ACTION_TYPE_ATTACK, enemyPokemon, false);
+			enemyAction.move = pokemon.getMoves(enemyPokemon)[0];
+
+			var queue = [playerAction, enemyAction].sort((a, b) => {
+				var aType = a.getType(), bType = b.getType();
+				if (aType === ACTION_TYPE_ATTACK && bType === ACTION_TYPE_ATTACK) {
+					if (move.getPriority(a.move) !== move.getPriority(b.move)) {
+						return move.getPriority(b.move) - move.getPriority(a.move);
+					}
+					return pokemon.getSpeed(b.pokemon) - pokemon.getSpeed(a.pokemon);
+				}
+				return bType - aType;
+			});
+
+			for (var i = 0, length = queue.length; i < length && battling; ++i) {
+				var action = queue[i];
+
+				// Generic variables for the user/target of an attack
+				var attacker, defender;
+				if (action.isPlayer) {
+					attacker = playerPokemon;
+					defender = enemyPokemon;
+				} else {
+					attacker = enemyPokemon;
+					defender = playerPokemon;
+				}
+
+				switch (action.getType()) {
+					case ACTION_TYPE_RUN:
+						if (attacker !== playerPokemon) throw new Error("Fleeing to yet implemented for enemy pokemons.");
+						if (canFlee(pokemon.getSpeed(playerPokemon), pokemon.getSpeed(enemyPokemon), ++escapeAttempts)) {
+							yield showDialog("Got away safely!");
+							battling = false;
+						} else {
+							yield showDialog("Can't escape! Don't try to run away you pussy.");
+						}
+						break;
+					case ACTION_TYPE_ATTACK:
+						yield showDialog(pokemon.getName(attacker) + " used " + move.getName(action.move) + "!");
+						if (Math.random() * 99 >= move.getAccuracy(action.move)) {
+							yield showDialog("But it missed.");
+						} else {
+							// TODO calculate damage and effects
+							// It's not very effective...
+							yield showDialog("It's super effective!");
+							var L = pokemon.getLevel(attacker), P = move.getPower(action.move), A = pokemon.getAttack(attacker), D = pokemon.getDefense(defender);
+							var damage = Math.floor(Math.floor(Math.floor(2 * L / 5 + 2) * A * P / D) / 50) + 2;
+							yield showDialog("It dealt " + damage + " damage!");
+							defender.hp = Math.max(0, defender.hp - damage);
+						}
+						break;
+					default:
+						throw new Error("Invalid action.");
+				}
+
+				console.log("defender hp: " + defender.hp + " isDefenderPlayer: " + !action.isPlayer);
+
+				// Check both parties' health since a move can kill it's user
+				if (pokemon.getHP(playerPokemon) <= 0) {
+					yield showDialog(pokemon.getName(playerPokemon) + " fainted!");
+					yield showDialog(playerTrainer.getName() + " is out of usable POKéMON!");
+					yield showDialog(playerTrainer.getName() + " blacked out!");
+					yield showDialog("Game over.");
+					window.close();
+					battling = false;
+				}
+				if (pokemon.getHP(enemyPokemon) <= 0) {
+					yield showDialog("Foe " + pokemon.getName(enemyPokemon) + " fainted!");
+					battling = false;
+				}
+			}
 		}
 
 		stateManager.setState(nextState);

@@ -5,10 +5,10 @@ var align = require("align.js");
 var resources = require("resources.js");
 
 // msgbox
-var Dialog = function(text, callback) {
+var Dialog = function(text, listener) {
 	Container.call(this);
 	this.text = text;
-	this.callback = callback;
+	this.listener = listener;
 
 	var label = new Label(resources.font, text);
 	label.justify = label.align = align.START;
@@ -18,12 +18,16 @@ var Dialog = function(text, callback) {
 Dialog.prototype = Object.create(Container.prototype);
 Dialog.prototype.constructor = Dialog;
 
-Dialog.prototype.onKey = function(type, keyCode) {
-	if (type === input.KEY_ACTION_DOWN && keyCode === 32) {
+Dialog.prototype.onKey = function(type, key) {
+	if (type === input.KEY_ACTION_DOWN && key === " ") {
 		// TODO advance multipage text
 		this.remove();
-		if (this.callback) this.callback();
+		if (this.listener) this.listener();
 	}
+};
+
+Dialog.prototype.setOnClickListener = function(listener) {
+	this.listener = listener;
 };
 
 module.exports = Dialog;

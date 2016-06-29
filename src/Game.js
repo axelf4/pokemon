@@ -14,6 +14,7 @@ var Panel = require("Panel.js");
 var Dialog = require("Dialog.js");
 var align = require("align.js");
 var MovementSystem = require("MovementSystem.js");
+var State = require("State.js");
 
 var Position = require("Position.js");
 var Direction = require("Direction.js");
@@ -33,8 +34,24 @@ fowl.registerComponents(
 		OldPosition,
 		MovementComponent);
 
-var Game = function() {
+/*var GameSurface = function(game) {
 	Stack.call(this);
+	this.game = game;
+
+	this.uiLayer = new Panel();
+	this.uiLayer.justify = Panel.ALIGN_FLEX_END;
+	this.uiLayer.direction = Panel.DIRECTION_COLUMN;
+	this.addWidget(this.uiLayer);
+};
+GameSurface.prototype = Object.create(Stack.prototype);
+GameSurface.prototype.constructor = GameSurface;*/
+
+var Game = function() {
+	State.call(this);
+
+	this.widget = new Panel();
+	this.widget.justify = Panel.ALIGN_FLEX_END;
+	this.widget.direction = Panel.DIRECTION_COLUMN;
 
 	var map, mapRenderer;
 	this.mapRenderer = null;
@@ -49,23 +66,12 @@ var Game = function() {
 
 	this.player = player.createPlayer(this.em);
 
-	this.uiLayer = new Panel();
-	this.uiLayer.justify = Panel.ALIGN_FLEX_END;
-	this.uiLayer.direction = Panel.DIRECTION_COLUMN;
-	this.addWidget(this.uiLayer);
-
 	this.loadScript("forest.js");
 };
-Game.prototype = Object.create(Stack.prototype);
+Game.prototype = Object.create(State.prototype);
 Game.prototype.constructor = Game;
 
 Game.prototype.update = function(dt, time) {
-	// In-line the inherited function to avoid dynamic lookup
-	// Stack.prototype.update.call(this, dt, time);
-	for (var i = 0, length = this.children.length; i < length; ++i) {
-		this.children[i].update(dt, time);
-	}
-
 	var em = this.em;
 	this.movementSystem.update(dt, time);
 	// Call all the registered update hooks
@@ -101,7 +107,7 @@ Game.prototype.draw = function(batch, dt, time) {
 
 	this.mapRenderer.draw(this.foregroundRenderList);
 
-	Stack.prototype.draw.call(this, batch, dt, time);
+	State.prototype.draw.call(this, batch, dt, time);
 };
 
 Game.prototype.say = Game.prototype.showDialog = function(text) {
@@ -111,7 +117,8 @@ Game.prototype.say = Game.prototype.showDialog = function(text) {
 		dialog = new Dialog(text, callback);
 		dialog.style.height = 100;
 		dialog.style.align = align.STRETCH;
-		self.uiLayer.addWidget(dialog);
+		self.widget.addWidget(dialog);
+		dialog.requestFocus();
 	});
 };
 
@@ -171,6 +178,13 @@ Game.prototype.getEntityAtCell = function(x, y) {
 			if (position.x === x && position.y === y) {
 				result = entity;
 				break;
+			}
+			if (em.hasComponent(entity, OldPosition)) {
+				var oldpos = em.getComponent(entity, OldPosition);
+				if (oldpos.x === x && oldpos.y === y) {
+					result = entity;
+					break;
+				}
 			}
 		}
 	}
