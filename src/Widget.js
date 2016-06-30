@@ -1,7 +1,7 @@
 var Widget = function() {
 	this.parent = null;
 	this.focused = false;
-	this.flags = FOCUSABLE;
+	this.flags = 0;
 
 	this.y = this.x = 0;
 	this.height = this.width = 0;
@@ -16,7 +16,6 @@ var FLAG_LAYOUT_REQUIRED = Widget.FLAG_LAYOUT_REQUIRED = 0x1;
 var FLAG_FOCUSED = Widget.FLAG_FOCUSED = 0x2;
 var FOCUSABLE = 0x4;
 var MEASURED_STATE_TOO_SMALL = 0x01000000;
-var CLIP_TO_PADDING_MASK; // TODO
 
 // Removes this widget from its parent.
 Widget.prototype.remove = function() {
@@ -62,6 +61,18 @@ Widget.prototype.isFocusable = function() {
 	return this.flags & FOCUSABLE;
 };
 
+Widget.prototype.setFocusable = function(focusable) {
+	if (focusable) this.flags |= FOCUSABLE;
+	else this.flags &= ~FOCUSABLE;
+};
+
+Widget.prototype.hasFocus = function() {
+	return this.flags & FLAG_FOCUSED;
+};
+
+/**
+ * Blurs the widget.
+ */
 Widget.prototype.clearFocus = function() {
 	if (this.flags & FLAG_FOCUSED) {
 		this.flags &= ~FLAG_FOCUSED;
@@ -69,6 +80,9 @@ Widget.prototype.clearFocus = function() {
 };
 
 Widget.prototype.requestFocus = function() {
+	if ((this.flags & FOCUSABLE) !== FOCUSABLE) {
+		return false;
+	}
 	if ((this.flags & FLAG_FOCUSED) === 0) {
 		this.flags |= FLAG_FOCUSED;
 
@@ -76,6 +90,7 @@ Widget.prototype.requestFocus = function() {
 			this.parent.requestChildFocus(this);
 		}
 	}
+	return true;
 };
 
 Widget.prototype.margin = function(value) {

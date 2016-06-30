@@ -105,7 +105,7 @@ loader.onstart = function() {
 };
 
 loader.onload = function() {
-	stateManager.setState(game);
+	stateManager.setState(battleState);
 };
 
 loader.check();

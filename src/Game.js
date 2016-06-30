@@ -15,6 +15,7 @@ var Dialog = require("Dialog.js");
 var align = require("align.js");
 var MovementSystem = require("MovementSystem.js");
 var State = require("State.js");
+var WidgetGroup = require("WidgetGroup.js");
 
 var Position = require("Position.js");
 var Direction = require("Direction.js");
@@ -34,17 +35,19 @@ fowl.registerComponents(
 		OldPosition,
 		MovementComponent);
 
-/*var GameSurface = function(game) {
+/*var GameScreen = function(game) {
 	Stack.call(this);
 	this.game = game;
+	this.setFocusable(true);
+	this.setDescendantFocusability(WidgetGroup.FOCUS_AFTER_DESCENDANTS);
 
 	this.uiLayer = new Panel();
 	this.uiLayer.justify = Panel.ALIGN_FLEX_END;
 	this.uiLayer.direction = Panel.DIRECTION_COLUMN;
 	this.addWidget(this.uiLayer);
 };
-GameSurface.prototype = Object.create(Stack.prototype);
-GameSurface.prototype.constructor = GameSurface;*/
+GameScreen.prototype = Object.create(Stack.prototype);
+GameScreen.prototype.constructor = GameScreen;*/
 
 var Game = function() {
 	State.call(this);
@@ -225,9 +228,9 @@ Game.prototype.wait = function(ms) {
 	});
 };
 
-audio.loadAudio("assets/masara-town.mp3", function(buffer) {
+/*audio.loadAudio("assets/masara-town.mp3", function(buffer) {
 	var source = audio.playAudio(buffer);
 	source.loop = true;
-});
+});*/
 
 module.exports = Game;

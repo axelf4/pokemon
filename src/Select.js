@@ -19,6 +19,7 @@ Option.prototype.constructor = Option;
 // multichoice
 var Select = function(optionNames, columnCount, listener) {
 	Container.call(this);
+	this.setFocusable(true);
 	this.columnCount = columnCount;
 	this.listener = listener;
 
