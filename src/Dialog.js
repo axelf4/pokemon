@@ -10,6 +10,7 @@ var Dialog = function(text, listener) {
 	this.text = text;
 	this.listener = listener;
 	this.setFocusable(true);
+	this.setBackground(resources.frame);
 
 	var label = new Label(resources.font, text);
 	label.justify = label.align = align.START;

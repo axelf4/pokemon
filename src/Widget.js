@@ -1,7 +1,6 @@
 var Widget = function() {
 	this.parent = null;
-	this.focused = false;
-	this.flags = 0;
+	// this.flags = 0;
 
 	this.y = this.x = 0;
 	this.height = this.width = 0;
@@ -11,11 +10,15 @@ var Widget = function() {
 
 	// this.measureCache = {}; // TODO
 };
+Widget.prototype.flags = 0;
 
 var FLAG_LAYOUT_REQUIRED = Widget.FLAG_LAYOUT_REQUIRED = 0x1;
 var FLAG_FOCUSED = Widget.FLAG_FOCUSED = 0x2;
 var FOCUSABLE = 0x4;
 var MEASURED_STATE_TOO_SMALL = 0x01000000;
+var FOCUS_AFTER_DESCENDANTS = 0x40000;
+var FOCUS_BEFORE_DESCENDANTS = 0x20000;
+var FOCUS_BLOCK_DESCENDANTS = 0x60000;
 
 // Removes this widget from its parent.
 Widget.prototype.remove = function() {
@@ -73,15 +76,25 @@ Widget.prototype.hasFocus = function() {
 /**
  * Blurs the widget.
  */
-Widget.prototype.clearFocus = function() {
+Widget.prototype.blur = Widget.prototype.clearFocus = function(propagate) {
 	if (this.flags & FLAG_FOCUSED) {
 		this.flags &= ~FLAG_FOCUSED;
+
+		if (propagate && this.parent !== null) {
+			this.parent.clearChildFocus(this);
+		}
 	}
 };
 
 Widget.prototype.requestFocus = function() {
 	if ((this.flags & FOCUSABLE) !== FOCUSABLE) {
 		return false;
+	}
+	// If an ancestor is blocking focus
+	var parent = this.getParent();
+	while (parent !== null) {
+		if (parent.getDescendantFocusability() === FOCUS_BLOCK_DESCENDANTS) return false;
+		parent = parent.getParent();
 	}
 	if ((this.flags & FLAG_FOCUSED) === 0) {
 		this.flags |= FLAG_FOCUSED;
@@ -95,6 +108,14 @@ Widget.prototype.requestFocus = function() {
 
 Widget.prototype.margin = function(value) {
 	this.marginLeft = this.marginRight = this.marginTop = this.marginBottom = value;
+};
+
+Widget.prototype.getRootWidget = function() {
+	var parent = this;
+	while (parent.getParent() !== null) {
+		parent = parent.getParent();
+	}
+	return parent;
 };
 
 module.exports = Widget;

@@ -13,7 +13,7 @@ var FOCUS_BLOCK_DESCENDANTS = 0x60000;
 var WidgetGroup = function() {
 	Widget.call(this);
 	this.children = [];
-	this.focused = false;
+	this.focused = null; // The currently focused child or null
 	this.groupFlags = 0;
 
 	this.groupFlags |= FOCUS_BEFORE_DESCENDANTS;
@@ -33,20 +33,38 @@ WidgetGroup.prototype.addWidget = function(child) {
 };
 
 WidgetGroup.prototype.removeWidget = function(child) {
-	if (child === this.focused) this.focused = null;
+	var clearChildFocus = false;
+	if (child === this.focused) {
+		child.blur();
+		clearChildFocus = true;
+	}
 	child.parent = null;
 	var i = this.children.indexOf(child);
 	this.children.splice(i, 1);
 	this.invalidate();
+	if (clearChildFocus) {
+		this.clearChildFocus(child);
+		this.getRootWidget().requestFocus();
+	}
 };
 
 WidgetGroup.prototype.removeAllWidgets = function() {
-	this.focused = null;
+	var clearChildFocus = false;
+	var focused = this.focused;
 	for (var i = 0, length = this.children.length; i < length; ++i) {
+		var child = this.children[i];
+		if (focused === child) {
+			child.blur();
+			clearChildFocus = true;
+		}
 		this.children[i].parent = null;
 	}
 	this.children = [];
 	this.invalidate();
+	if (clearChildFocus) {
+		this.clearChildFocus(focused);
+		this.getRootWidget().requestFocus();
+	}
 };
 
 WidgetGroup.prototype.onKey = function(type, keyCode) {
@@ -55,7 +73,7 @@ WidgetGroup.prototype.onKey = function(type, keyCode) {
 	}
 };
 
-WidgetGroup.prototype.drawChildren = function(batch, dt, time) {
+WidgetGroup.prototype.draw = WidgetGroup.prototype.drawChildren = function(batch, dt, time) {
 	var setTransform = this.x !== 0 || this.y !== 0;
 	if (setTransform) {
 		var oldMatrix = batch.getMVMatrix();
@@ -86,14 +104,23 @@ WidgetGroup.prototype.clearFocus = function() {
 };
 
 WidgetGroup.prototype.clearChildFocus = function(child) {
+	this.focused = null;
+	if (this.parent !== null) {
+		this.parent.clearChildFocus(this);
+	}
 };
 
 WidgetGroup.prototype.requestChildFocus = function(child) {
-	if (this.getDescendantFocusability === FOCUS_BLOCK_DESCENDANTS) {
+	if (this.getDescendantFocusability() === FOCUS_BLOCK_DESCENDANTS) {
 		return;
 	}
 
+	this.blur();
+
 	if (this.focused !== child) {
+		if (this.focused !== null) {
+			this.focused.blur();
+		}
 		this.focused = child;
 	}
 
@@ -151,8 +178,8 @@ WidgetGroup.prototype.getDescendantFocusability = function() {
 	return this.groupFlags & FLAG_MASK_FOCUSABILITY;
 };
 
-WidgetGroup.prototype.setDescendantFocusability = function(focusablitity) {
-	switch (focusablitity) {
+WidgetGroup.prototype.setDescendantFocusability = function(focusability) {
+	switch (focusability) {
 		case FOCUS_BEFORE_DESCENDANTS:
 		case FOCUS_AFTER_DESCENDANTS:
 		case FOCUS_BLOCK_DESCENDANTS:

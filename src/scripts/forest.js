@@ -5,7 +5,7 @@ var texture = require("texture.js");
 var Animation = require("Animation.js");
 var PushTrigger = require("PushTrigger.js");
 var SpriteComponent = require("SpriteComponent.js");
-var Direction = require("Direction.js");
+var DirectionComponent = require("DirectionComponent.js");
 var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
@@ -41,7 +41,7 @@ module.exports = function(game) {
 	var x = 12, y = 5;
 	em.addComponent(jorryt, new Position(x, y));
 	em.addComponent(jorryt, new OldPosition(x, y));
-	em.addComponent(jorryt, new Direction());
+	em.addComponent(jorryt, new DirectionComponent());
 	var textureRegion = new texture.Region();
 	textureRegion.loadFromFile("assets/dancer.png");
 	var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));

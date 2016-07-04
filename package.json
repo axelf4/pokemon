@@ -6,7 +6,7 @@
   "scripts": {},
   "dependencies": {
     "base64-js": "^1.1.2",
-    "bitset": "axelf4/bitset",
+    "BitSetModule": "^1.0.0",
     "fowl": "axelf4/fowl",
     "gl-matrix": "^2.3.2",
     "lerp": "^1.0.3",
@@ -14,6 +14,13 @@
     "parse-bmfont-ascii": "^1.0.6"
   },
   "devDependencies": {
+    "babel-core": "^6.10.4",
+    "babel-loader": "^6.2.4",
+    "babel-polyfill": "^6.9.1",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1",
     "webpack-glsl-loader": "^1.0.1"
   }
 }

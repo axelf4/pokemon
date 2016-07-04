@@ -8,7 +8,6 @@ var input = require("input.js");
 // TODO add arrow instead of border
 var Option = function(text) {
 	Container.call(this);
-	this.drawBackground = false;
 	var label = new Label(resources.font, text);
 	label.margin(8);
 	this.addWidget(label);
@@ -22,6 +21,7 @@ var Select = function(optionNames, columnCount, listener) {
 	this.setFocusable(true);
 	this.columnCount = columnCount;
 	this.listener = listener;
+	this.setBackground(resources.frame);
 
 	var mainPanel = new Panel();
 	mainPanel.direction = Panel.DIRECTION_ROW;
@@ -58,7 +58,7 @@ var Select = function(optionNames, columnCount, listener) {
 	}
 
 	this.cursorY = this.cursorX = 0;
-	options[this.cursorX][this.cursorY].drawBackground = true;
+	options[this.cursorX][this.cursorY].setBackground(resources.frame);
 };
 Select.prototype = Object.create(Container.prototype);
 Select.prototype.constructor = Select;
@@ -93,8 +93,8 @@ Select.prototype.onKey = function(type, key) {
 	if ((newCursorX !== this.cursorX || newCursorY !== this.cursorY)
 			&& typeof this.options[newCursorX] !== 'undefined'
 			&& typeof this.options[newCursorX][newCursorY] !== 'undefined') {
-		this.options[this.cursorX][this.cursorY].drawBackground = false;
-		this.options[newCursorX][newCursorY].drawBackground = true;
+		this.options[this.cursorX][this.cursorY].setBackground(null);
+		this.options[newCursorX][newCursorY].setBackground(resources.frame);
 		this.cursorX = newCursorX;
 		this.cursorY = newCursorY;
 	}

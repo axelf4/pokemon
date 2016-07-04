@@ -70,7 +70,7 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 		});
 	});
 
-	info = new Panel();
+	var info = new Panel();
 	info.direction = Panel.DIRECTION_ROW;
 	info.style.height = 100;
 	widget.addWidget(info);

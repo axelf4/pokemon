@@ -16,7 +16,8 @@ NinePatch.prototype.drawPatch = function(batch, texture, patch, x, y, width, hei
 	batch.draw(texture, x, y, x + width, y + height, u1, v1, u2, v2);
 };
 
-NinePatch.prototype.draw = function(batch, texture, x, y, width, height) {
+NinePatch.prototype.draw = function(batch, x, y, width, height) {
+	var texture = this.texture;
 	var leftWidth = this.patches[0].width;
 	var rightWidth = this.patches[2].width;
 	var upperHeight = this.patches[0].height;
@@ -29,7 +30,7 @@ NinePatch.prototype.draw = function(batch, texture, x, y, width, height) {
 		return;
 	}
 
-	this.drawPatch(batch, this.texture, this.patches[0], x, y, leftWidth, upperHeight);
+	this.drawPatch(batch, texture, this.patches[0], x, y, leftWidth, upperHeight);
 	this.drawPatch(batch, texture, this.patches[1], x + leftWidth, y, centerWidth, upperHeight);
 	this.drawPatch(batch, texture, this.patches[2], x + leftWidth + centerWidth, y, rightWidth, upperHeight);
 

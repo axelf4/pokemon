@@ -1,4 +1,4 @@
-var Direction = require("Direction.js");
+var direction = require("direction.js");
 
 var RandomMovementController = function() {
 	this.timer = 0;
@@ -11,15 +11,14 @@ RandomMovementController.prototype.getTarget = function(game, dt, position, enti
 	}
 	this.timer = 0;
 	var possible = [];
-	if (!game.isSolid(position.x - 1, position.y)) possible.push(Direction.LEFT);
-	if (!game.isSolid(position.x + 1, position.y)) possible.push(Direction.RIGHT);
-	if (!game.isSolid(position.x, position.y - 1)) possible.push(Direction.UP);
-	if (!game.isSolid(position.x, position.y + 1)) possible.push(Direction.DOWN);
+	if (!game.isSolid(position.x - 1, position.y)) possible.push(direction.LEFT);
+	if (!game.isSolid(position.x + 1, position.y)) possible.push(direction.RIGHT);
+	if (!game.isSolid(position.x, position.y - 1)) possible.push(direction.UP);
+	if (!game.isSolid(position.x, position.y + 1)) possible.push(direction.DOWN);
 	if (possible.length > 0) {
-		var i = Math.floor(Math.random() * possible.length);
-		return possible[i];
+		return possible[Math.floor(Math.random() * possible.length)];
 	}
-	return null;
+	return direction.NO_DIRECTION;
 };
 
 module.exports = RandomMovementController;

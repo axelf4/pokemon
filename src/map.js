@@ -74,7 +74,7 @@ var loadMap = function(url) {
 			}
 			Promise.all(tilesetPromises).then(function() {
 				for (var i = 0; i < tilesets.length; i++) {
-					tileset = tilesets[i];
+					var tileset = tilesets[i];
 					tileset.tilesAcross = tileset.imageWidth / tileset.tilewidth;
 					tileset.texture = new texture.Region();
 					tileset.texture.loadFromFile(tileset.imagePath);

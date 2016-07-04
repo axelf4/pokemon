@@ -1,6 +1,7 @@
 var input = require("input.js");
+var direction = require("direction.js");
 var Position = require("Position.js");
-var Direction = require("Direction.js");
+var DirectionComponent = require("DirectionComponent.js");
 var SpriteComponent = require("SpriteComponent.js");
 var OldPosition = require("OldPosition.js");
 var InteractionComponent = require("InteractionComponent.js");
@@ -10,34 +11,25 @@ var texture = require("texture.js");
 
 var keys = input.keys;
 
-var PlayerMovementController = function() {};
+var PlayerMovementController = exports.PlayerMovementController = function() {};
 
 PlayerMovementController.prototype.getTarget = function(game, dt, position, entity) {
 	var em = game.em;
 	var pos = em.getComponent(entity, Position);
-	var direction = em.getComponent(entity, Direction);
-
-	if (input.pressedKeys[" "]) {
-		// Player interacting with shit
-		var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(), pos.y + direction.getDeltaY());
-		if (interactable !== null) {
-			var interaction = em.getComponent(interactable, InteractionComponent);
-			if (interaction) interaction.callback(game);
-		}
-	}
+	var dir = em.getComponent(entity, DirectionComponent);
 
 	var dx = 0, dy = 0;
 	if (keys["a"]) {
-		direction.value = Direction.LEFT;
+		dir.value = direction.LEFT;
 		dx = -1;
 	} else if (keys["d"]) {
-		direction.value = Direction.RIGHT;
+		dir.value = direction.RIGHT;
 		dx = 1;
 	} else if (keys["w"]) {
-		direction.value = Direction.UP;
+		dir.value = direction.UP;
 		dy = -1;
 	} else if (keys["s"]) {
-		direction.value = Direction.DOWN;
+		dir.value = direction.DOWN;
 		dy = 1;
 	}
 
@@ -51,19 +43,19 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 				pushTrigger.script();
 			}
 		}
-		// Move and update position
+		// Check for collision if there were no trigger
 		if (!triggered && !game.isSolid(pos.x + dx, pos.y + dy)) {
-			return direction.value;
+			return dir.value;
 		}
 	}
-	return null;
+	return direction.NO_DIRECTION;
 };
 
 exports.createPlayer = function(em) {
 	var player = em.createEntity();
 	em.addComponent(player, new Position());
 	em.addComponent(player, new OldPosition());
-	em.addComponent(player, new Direction(Direction.DOWN));
+	em.addComponent(player, new DirectionComponent(direction.DOWN));
 	em.addComponent(player, new MovementComponent(new PlayerMovementController()));
 
 	var textureRegion = new texture.Region();

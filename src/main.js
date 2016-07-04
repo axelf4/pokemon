@@ -10,6 +10,8 @@ var LoadingScreen = require("LoadingScreen.js");
 var BattleState = require("BattleState.js");
 var Widget = require("Widget.js");
 var Game = require("Game.js");
+// require("babel-core/register");
+// require("babel-polyfill");
 
 var Trainer = require("Trainer.js");
 var pokemon = require("pokemon.js");
@@ -38,6 +40,8 @@ input.setListener((type, key) => {
 var loadingScreen = new LoadingScreen();
 stateManager.setState(loadingScreen);
 
+var game = new Game();
+
 var slowpoke = {
 	name: "Slowpoke",
 	moves: [move.TACKLE, move.FLAMETHROWER, move.HYDROPUMP, move.PURSUIT],
@@ -62,12 +66,9 @@ var snoopDogg = {
 
 var playerTrainer = new Trainer("Axel", [slowpoke]);
 var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
-var battleState = new BattleState(loadingScreen, playerTrainer, enemyTrainer);
-
-// var game = new Game();
+var battleState;
 
 var lastTime = (performance || Date).now();
-var time = 0; // Total elapsed time
 var requestID;
 var width, height;
 
@@ -75,19 +76,18 @@ var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
 	var dt = timestamp - lastTime;
 	lastTime = timestamp;
-	time += dt;
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	var state = stateManager.getState();
-	state.update(dt, time);
+	state.update(dt, timestamp);
 	if (width !== 640 || height !== 480 || (state.widget && state.widget.flags & Widget.FLAG_LAYOUT_REQUIRED)) {
 		width = 640;
 		height = 480;
 		state.resize(width, height);
 	}
-	state.draw(batch, dt, time);
+	state.draw(batch, dt, timestamp);
 
 	batch.flush();
 
@@ -95,7 +95,6 @@ var update = function(timestamp) {
 	if (error !== gl.NO_ERROR && error !== gl.CONTEXT_LOST_WEBGL) {
 		console.error("OpenGL error.");
 	}*/
-	input.pressedKeys.length = 0;
 };
 
 window.requestAnimationFrame(update);
@@ -105,7 +104,8 @@ loader.onstart = function() {
 };
 
 loader.onload = function() {
-	stateManager.setState(battleState);
+	if (battleState) stateManager.setState(battleState);
+	else battleState = new BattleState(game, playerTrainer, enemyTrainer);
 };
 
 loader.check();

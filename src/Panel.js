@@ -33,47 +33,39 @@ Panel.ALIGN_SPACE_AROUND = ALIGN_SPACE_AROUND;
 var pos = ['x', 'y'];
 var dim = ['width', 'height'];
 
-var getLeadingMargin = function(item, axis) {
-	return axis === DIRECTION_ROW ? item.marginLeft : item.marginTop;
+var getLeadingMargin = function(child, axis) {
+	return axis === DIRECTION_ROW ? child.marginLeft : child.marginTop;
 };
 
-var getTrailingMargin = function(item, axis) {
-	return axis === DIRECTION_ROW ? item.marginRight : item.marginBottom;
+var getTrailingMargin = function(child, axis) {
+	return axis === DIRECTION_ROW ? child.marginRight : child.marginBottom;
 };
 
-var getMargin = function(item, axis) {
-	return getLeadingMargin(item, axis) + getTrailingMargin(item, axis);
+var getMargin = function(child, axis) {
+	return getLeadingMargin(child, axis) + getTrailingMargin(child, axis);
 };
 
-var isFlex = function(item) {
-	return item.flex != undefined && item.flex !== 0;
+var isFlex = function(child) {
+	return child.flex != undefined && child.flex !== 0;
 };
 
 var getPerpendicularAxis = function(axis) {
 	return axis === DIRECTION_ROW ? DIRECTION_COLUMN : DIRECTION_ROW;
 };
 
-var isRowAxis = function(axis) {
-	return axis === DIRECTION_ROW;
-};
-
-var isColumnAxis = function(axis) {
-	return axis === DIRECTION_COLUMN;
-};
-
 var isStyleDimDefined = function(node, axis) {
 	return node.style[dim[axis]];
 }
 
-var getLayoutSize = function(item, axis) {
-	return item[dim[axis]];
+var getLayoutSize = function(child, axis) {
+	return child[dim[axis]];
 };
 
-function getDimWithMargin(node, axis) {
+var getDimWithMargin = function(node, axis) {
 	return node[dim[axis]] + getMargin(node, axis);
-}
+};
 
-var getAlignItem = function(child) {
+var getAlign = function(child) {
 	if (child.style.align) return child.style.align; // TODO get rid of style property
 	return ALIGN_FLEX_START;
 };
@@ -105,27 +97,27 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	var mainAxis = this.direction, crossAxis = getPerpendicularAxis(mainAxis);
 
 	var mainMeasureSpec = mainAxis === DIRECTION_ROW ? widthMeasureSpec : heightMeasureSpec;
+	var crossMeasureSpec = crossAxis === DIRECTION_ROW ? widthMeasureSpec : heightMeasureSpec;
 	var availableMain = measureSpec.getSize(mainMeasureSpec);
 
-	// Determine basis for each item
+	// Determine basis for each child
 	var sizeConsumed = 0; // Dimensions of the content in the main axis
 	var totalFlexGrowFactors = 0;
 	var totalFlexShrinkScaledFactors = 0;
-
 	for (var i = 0, length = this.children.length; i < length; i++) {
-		var item = this.children[i];
+		var child = this.children[i];
 
-		if (isStyleDimDefined(item, mainAxis)) {
-			item.basis = item.style[dim[mainAxis]];
-		} else if (!isFlexBasisAuto(item) && availableMain) {
-			item.basis = 0;
+		if (isStyleDimDefined(child, mainAxis)) {
+			child.basis = child.style[dim[mainAxis]];
+		} else if (!isFlexBasisAuto(child) && availableMain) {
+			child.basis = 0;
 		} else {
 			// Determine the base size by performing layout
 			var childWidthMeasureSpec, childHeightMeasureSpec;
-			var align = getAlignItem(item);
+			var align = getAlign(child);
 
-			if (isStyleDimDefined(item, DIRECTION_ROW)) {
-				childWidthMeasureSpec = measureSpec.make(item.style.width, measureSpec.EXACTLY);
+			if (isStyleDimDefined(child, DIRECTION_ROW)) {
+				childWidthMeasureSpec = measureSpec.make(child.style.width, measureSpec.EXACTLY);
 			} else if (crossAxis === DIRECTION_ROW && widthMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
 				childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.EXACTLY);
 			} else {
@@ -133,8 +125,8 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 				childWidthMeasureSpec = measureSpec.make(widthSize, mode);
 			}
 
-			if (isStyleDimDefined(item, DIRECTION_COLUMN)) {
-				childHeightMeasureSpec = measureSpec.make(item.style.height, measureSpec.EXACTLY);
+			if (isStyleDimDefined(child, DIRECTION_COLUMN)) {
+				childHeightMeasureSpec = measureSpec.make(child.style.height, measureSpec.EXACTLY);
 			} else if (crossAxis === DIRECTION_COLUMN && heightMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
 				childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.EXACTLY);
 			} else {
@@ -143,68 +135,62 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 			}
 
 			// Measure the child
-			item.layout(childWidthMeasureSpec, childHeightMeasureSpec);
-			item.basis = getLayoutSize(item, mainAxis);
+			child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
+			child.basis = getLayoutSize(child, mainAxis);
 		}
 
-		sizeConsumed += item.basis + getMargin(item, mainAxis);
+		sizeConsumed += child.basis + getMargin(child, mainAxis);
 
-		if (isFlex(item)) {
-			totalFlexGrowFactors += getFlexGrowFactor(item);
-			totalFlexShrinkScaledFactors += getFlexShrinkFactor(item) * item.basis;
+		if (isFlex(child)) {
+			totalFlexGrowFactors += getFlexGrowFactor(child);
+			totalFlexShrinkScaledFactors += getFlexShrinkFactor(child) * child.basis;
 		}
 	}
 
+	var leadingMainSize = 0, betweenMain = 0;
+
 	// Layout flexible children and allocate empty space
-	var leadingMainSize = 0;
-	var betweenMain = 0;
-	var remainingSpace = 0; // The remaining availible space in the main axis
-	if (availableMain) remainingSpace = availableMain - sizeConsumed;
+	var remainingSpace = availableMain ? availableMain - sizeConsumed : 0; // The remaining available space in the main axis
 	for (var i = 0, length = this.children.length; i < length; ++i) {
-		var item = this.children[i];
-		var childBasis = item.basis;
-		var updatedMainSize = childBasis;
+		var child = this.children[i];
+		var childBasis = child.basis;
+		var childMainSize = childBasis;
 
 		if (remainingSpace < 0) {
-			var flexShrinkScaledFactor = getFlexShrinkFactor(item) * childBasis;
-			if (flexShrinkScaledFactor !== 0) {
-				updatedMainSize = childBasis + remainingSpace / totalFlexShrinkScaledFactors * flexShrinkScaledFactor;
-			}
+			var flexShrinkScaledFactor = getFlexShrinkFactor(child) * childBasis;
+			if (flexShrinkScaledFactor !== 0) childMainSize = childBasis + remainingSpace / totalFlexShrinkScaledFactors * flexShrinkScaledFactor;
 		} else if (remainingSpace > 0) {
-			var flexGrowFactor = getFlexGrowFactor(item);
-			if (flexGrowFactor !== 0) {
-				updatedMainSize = childBasis + remainingSpace / totalFlexGrowFactors * flexGrowFactor;
-			}
+			var flexGrowFactor = getFlexGrowFactor(child);
+			if (flexGrowFactor !== 0) childMainSize = childBasis + remainingSpace / totalFlexGrowFactors * flexGrowFactor;
 		}
 
 		var childWidthMeasureSpec, childHeightMeasureSpec;
 		if (mainAxis === DIRECTION_ROW) {
-			childWidthMeasureSpec = measureSpec.make(updatedMainSize, measureSpec.EXACTLY);
+			childWidthMeasureSpec = measureSpec.make(childMainSize, measureSpec.EXACTLY);
 
-			if (isStyleDimDefined(item, DIRECTION_COLUMN)) {
-				childHeightMeasureSpec = measureSpec.make(item.style.height, measureSpec.EXACTLY);
-			} else if (heightSize && heightMode === measureSpec.EXACTLY && getAlignItem(item) === ALIGN_STRETCH) {
+			if (isStyleDimDefined(child, DIRECTION_COLUMN)) {
+				childHeightMeasureSpec = measureSpec.make(child.style.height, measureSpec.EXACTLY);
+			} else if (heightSize && heightMode === measureSpec.EXACTLY && getAlign(child) === ALIGN_STRETCH) {
 				childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.EXACTLY);
 			} else {
 				var mode = heightSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
 				childHeightMeasureSpec = measureSpec.make(heightSize, mode);
 			}
 		} else {
-			childHeightMeasureSpec = measureSpec.make(updatedMainSize, measureSpec.EXACTLY);
+			childHeightMeasureSpec = measureSpec.make(childMainSize, measureSpec.EXACTLY);
 
-			if (isStyleDimDefined(item, DIRECTION_ROW)) {
-				childWidthMeasureSpec = measureSpec.make(item.style.width, measureSpec.EXACTLY);
-			} else if (widthSize && widthMode === measureSpec.EXACTLY && getAlignItem(item) === ALIGN_STRETCH) {
+			if (isStyleDimDefined(child, DIRECTION_ROW)) {
+				childWidthMeasureSpec = measureSpec.make(child.style.width, measureSpec.EXACTLY);
+			} else if (widthSize && widthMode === measureSpec.EXACTLY && getAlign(child) === ALIGN_STRETCH) {
 				childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.EXACTLY);
 			} else {
 				var mode = widthSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
 				childWidthMeasureSpec = measureSpec.make(widthSize, mode);
 			}
 		}
-		item.layout(childWidthMeasureSpec, childHeightMeasureSpec);
+		child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
 	}
-	if (totalFlexGrowFactors === 0 && remainingSpace > 0) {
-		if (measureSpec.getMode(mainMeasureSpec) === measureSpec.AT_MOST) remainingSpace = 0;
+	if (totalFlexGrowFactors === 0 && remainingSpace > 0 && measureSpec.getMode(mainMeasureSpec) === measureSpec.EXACTLY) {
 		// Allocate remaining space according to justifyContent.
 		switch (this.justify) {
 			case ALIGN_FLEX_START: break;
@@ -215,9 +201,7 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 				leadingMainSize = remainingSpace;
 				break;
 			case ALIGN_SPACE_BETWEEN:
-				if (this.children.length - 1 !== 0) {
-					betweenMain = remainingSpace / (this.children.length - 1);
-				}
+				if (this.children.length > 1) betweenMain = remainingSpace / (this.children.length - 1);
 				break;
 			case ALIGN_SPACE_AROUND:
 				betweenMain = remainingSpace / this.children.length;
@@ -228,65 +212,55 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 		}
 	}
 
-	var mainSize = leadingMainSize;
-	var crossSize = 0;
+	var mainSize = leadingMainSize, crossSize = 0;
+
 	// Position elements in the main axis
 	for (var i = 0, length = this.children.length; i < length; i++) {
-		var item = this.children[i];
-		item[pos[mainAxis]] = mainSize + getLeadingMargin(item, mainAxis);
-		mainSize += betweenMain + getDimWithMargin(item, mainAxis);
-		crossSize = Math.max(crossSize, getDimWithMargin(item, crossAxis));
+		var child = this.children[i];
+		child[pos[mainAxis]] = mainSize + getLeadingMargin(child, mainAxis);
+		mainSize += betweenMain + getDimWithMargin(child, mainAxis);
+		crossSize = Math.max(crossSize, getDimWithMargin(child, crossAxis));
 	}
 
-	// TODO cleanup this
-	var mainMeasureSpec = mainAxis === DIRECTION_ROW ? widthMeasureSpec : heightMeasureSpec;
-	if (measureSpec.getMode(mainMeasureSpec) === measureSpec.EXACTLY) {
-		mainSize = measureSpec.getSize(mainMeasureSpec);
-	}
-	var crossMeasureSpec = crossAxis === DIRECTION_ROW ? widthMeasureSpec : heightMeasureSpec;
-	if (measureSpec.getMode(crossMeasureSpec) === measureSpec.EXACTLY) {
-		crossSize = measureSpec.getSize(crossMeasureSpec);
-	}
+	// If the dimensions are definite: use them
+	if (measureSpec.getMode(mainMeasureSpec) === measureSpec.EXACTLY) mainSize = measureSpec.getSize(mainMeasureSpec);
+	if (measureSpec.getMode(crossMeasureSpec) === measureSpec.EXACTLY) crossSize = measureSpec.getSize(crossMeasureSpec);
 
 	// Position elements in the cross axis
 	for (var i = 0, length = this.children.length; i < length; i++) {
-		var item = this.children[i];
+		var child = this.children[i];
 		var leadingCrossDim = 0;
-		var align = getAlignItem(item);
+		var align = getAlign(child);
 		if (align === ALIGN_STRETCH) {
-			var childWidth = item.width;
-			var childHeight = item.height;
+			var childWidth = child.width, childHeight = child.height;
 			var isCrossSizeDefinite = false;
 			if (mainAxis === DIRECTION_ROW) {
-				isCrossSizeDefinite = isStyleDimDefined(item, DIRECTION_COLUMN);
-				childHeight = crossSize - getMargin(item, DIRECTION_COLUMN);
+				isCrossSizeDefinite = isStyleDimDefined(child, DIRECTION_COLUMN);
+				childHeight = crossSize - getMargin(child, DIRECTION_COLUMN);
 			} else {
-				isCrossSizeDefinite = isStyleDimDefined(item, DIRECTION_ROW);
-				childWidth = crossSize - getMargin(item, DIRECTION_ROW);
+				isCrossSizeDefinite = isStyleDimDefined(child, DIRECTION_ROW);
+				childWidth = crossSize - getMargin(child, DIRECTION_ROW);
 			}
+			// If the cross size of the child wasn't already definite
 			if (!isCrossSizeDefinite) {
 				var childWidthMeasureSpec = measureSpec.make(childWidth, childWidth ? measureSpec.EXACTLY : measureSpec.UNSPECIFIED);
 				var childHeightMeasureSpec = measureSpec.make(childHeight, childHeight ? measureSpec.EXACTLY : measureSpec.UNSPECIFIED);
-				item.layout(childWidthMeasureSpec, childHeightMeasureSpec);
+				child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
 			}
 		} else if (align !== ALIGN_FLEX_START) {
-			var remainingCrossDim = crossSize - getDimWithMargin(item, crossAxis);
+			var remainingCrossDim = crossSize - getDimWithMargin(child, crossAxis);
 
 			if (align === ALIGN_CENTER) leadingCrossDim += remainingCrossDim / 2;
 			else if (align === ALIGN_FLEX_END) leadingCrossDim += remainingCrossDim;
 			else throw new Error("Invalid align value.");
 		}
-		item[pos[crossAxis]] = leadingCrossDim + getLeadingMargin(item, crossAxis);
+		child[pos[crossAxis]] = leadingCrossDim + getLeadingMargin(child, crossAxis);
 	}
 
 	// Set the implicit width and height
 	var measuredWidth = mainAxis === DIRECTION_ROW ? mainSize : crossSize;
 	var measuredHeight = mainAxis === DIRECTION_ROW ? crossSize : mainSize;
 	this.setDimension(measuredWidth, measuredHeight);
-};
-
-Panel.prototype.draw = function(batch, dt, time) {
-	this.drawChildren(batch, dt, time);
 };
 
 module.exports = Panel;

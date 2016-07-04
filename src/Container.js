@@ -5,18 +5,9 @@ var NinePatch = require("NinePatch.js");
 var loader = require("loader.js");
 var texture = require("texture.js");
 
-// TODO move into skin
-var ninePatchTexture, ninePatch;
-loader.loadFile("textures/frame.9.png", function(file) {
-	ninePatchTexture = new texture.Region();
-	ninePatchTexture.loadFromFile(file, function() {
-		ninePatch = NinePatch.fromTexture(ninePatchTexture.texture, 24, 24);
-	});
-});
-
 var Container = function() {
 	WidgetGroup.call(this);
-	this.drawBackground = true; // Hack
+	this.background = null;
 };
 Container.prototype = Object.create(WidgetGroup.prototype);
 Container.prototype.constructor = Container;
@@ -41,16 +32,19 @@ Container.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	// TODO handle aligning
 	child.setPosition(child.marginLeft, child.marginTop);
 
-	var childWidth = child.width, childHeight = child.height;
-	this.setDimension(childWidth + marginRow, childHeight + marginColumn);
+	this.setDimension(child.width + marginRow, child.height + marginColumn);
 };
 
 Container.prototype.draw = function(batch, dt, time) {
-	if (ninePatch && this.drawBackground) {
-		ninePatch.draw(batch, ninePatchTexture.texture, this.x, this.y, this.width, this.height);
+	if (this.background) {
+		this.background.draw(batch, this.x, this.y, this.width, this.height);
 	}
 
 	this.drawChildren(batch, dt, time);
+};
+
+Container.prototype.setBackground = function(background) {
+	this.background = background;
 };
 
 module.exports = Container;
