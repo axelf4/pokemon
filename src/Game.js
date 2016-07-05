@@ -5,6 +5,7 @@ var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
 var audio = require("Audio.js");
 var Map = require("map.js");
+var MapRenderer = require("CachedMapRenderer.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var StillMovementController = require("StillMovementController.js");
@@ -115,7 +116,9 @@ var Game = function() {
 
 	var map, mapRenderer;
 	this.mapRenderer = null;
-	var foregroundRenderList, backgroundRenderList;
+	this.foregroundRenderList = null;
+	this.backgroundRenderList = null;
+	this.metaLayer = -1; // Index of meta layer or -1
 
 	this.em = new fowl.EntityManager();
 	this.spriteSystemMask = this.em.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
@@ -156,7 +159,7 @@ Game.prototype.getMap = function() { return map; };
 
 Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.map = map;
-	this.mapRenderer = new Map.MapRenderer(map);
+	this.mapRenderer = new MapRenderer(map);
 	var callback = function(item) {
 		if (typeof item === "string" || item instanceof String) {
 			return Map.getLayerIdByName(map, item);
@@ -167,6 +170,12 @@ Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	foregroundLayers = foregroundLayers.map(callback);
 	this.backgroundRenderList = this.mapRenderer.getRenderList(backgroundLayers);
 	this.foregroundRenderList = this.mapRenderer.getRenderList(foregroundLayers);
+	this.metaLayer = -1;
+	for (var i = 0, length = map.layers.length; i < length; ++i) {
+		if (map.layers[i].name === "meta") {
+			this.metaLayer = i;
+		}
+	}
 };
 
 Game.prototype.loadScript = function(name) {
@@ -228,13 +237,8 @@ Game.prototype.isSolid = function(x, y) {
 	// Check for entity at cell
 	if (this.getEntityAtCell(x, y) !== null) return true;
 	// Check for collidable tile at cell
-	var layer;
-	var map = this.map;
-	for (var i = 0, length = map.layers.length; i < length; i++) {
-		if (map.layers[i].name === "meta") {
-			return map.layers[i].data[x + map.width * y];
-		}
-	}
+	var map = this.map, metaLayer = this.metaLayer;
+	if (metaLayer !== -1) return map.layers[metaLayer].data[x + map.width * y];
 	throw new Error("Current map has no meta layer.");
 };
 

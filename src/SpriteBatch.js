@@ -26,10 +26,30 @@ var SpriteBatch = function(capacity) {
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
+	var vertexShaderSource =
+		"attribute vec2 aVertexPosition;" +
+		"attribute vec2 aTextureCoord;" +
 
+		"uniform mat4 uMVMatrix;" +
+		"uniform mat4 uPMatrix;" +
+
+		"varying highp vec2 vTextureCoord;" +
+
+		"void main(void) {" +
+		"	gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
+		"	vTextureCoord = aTextureCoord;" +
+		"}";
+	var fragmentShaderSource =
+		"precision mediump float;" +
+		"varying highp vec2 vTextureCoord;" +
+		"uniform sampler2D uSampler;" +
+
+		"void main(void) {" +
+		"	gl_FragColor = texture2D(uSampler, vTextureCoord);" +
+		"}";
 	this.program = renderer.createProgram({
-		vertexShader: require("vertex.glsl"),
-		fragmentShader: require("fragment.glsl"),
+		vertexShader: vertexShaderSource,
+		fragmentShader: fragmentShaderSource
 	});
 	gl.useProgram(this.program);
 	this.vertexPositionAttribute = gl.getAttribLocation(this.program, "aVertexPosition");

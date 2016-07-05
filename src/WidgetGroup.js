@@ -17,6 +17,8 @@ var WidgetGroup = function() {
 	this.groupFlags = 0;
 
 	this.groupFlags |= FOCUS_BEFORE_DESCENDANTS;
+
+	this.transform = mat4.create();
 };
 WidgetGroup.prototype = Object.create(Widget.prototype);
 WidgetGroup.prototype.constructor = WidgetGroup;
@@ -76,13 +78,11 @@ WidgetGroup.prototype.onKey = function(type, keyCode) {
 WidgetGroup.prototype.draw = WidgetGroup.prototype.drawChildren = function(batch, dt, time) {
 	var setTransform = this.x !== 0 || this.y !== 0;
 	if (setTransform) {
+		var transform = this.transform;
 		var oldMatrix = batch.getMVMatrix();
-		var transform = mat4.create();
 		mat4.fromTranslation(transform, vec3.fromValues(this.x, this.y, 0));
-		var newMatrix = mat4.create();
-		mat4.multiply(newMatrix, oldMatrix, transform);
-
-		batch.setMVMatrix(newMatrix);
+		mat4.multiply(transform, oldMatrix, transform);
+		batch.setMVMatrix(transform);
 	}
 
 	for (var i = 0, length = this.children.length; i < length; ++i) {
