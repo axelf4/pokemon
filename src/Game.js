@@ -1,6 +1,5 @@
 var fowl = require("fowl");
 var lerp = require("lerp");
-var loader = require("loader.js");
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
 var audio = require("Audio.js");
@@ -108,13 +107,14 @@ GameScreen.prototype.onKey = function(type, key) {
 	}
 };
 
-var Game = function() {
+var Game = function(loader) {
 	State.call(this);
+	this.loader = loader;
 
 	this.widget = new GameScreen(this);
 	this.widget.requestFocus();
 
-	var map, mapRenderer;
+	this.map = null;
 	this.mapRenderer = null;
 	this.foregroundRenderList = null;
 	this.backgroundRenderList = null;
@@ -127,7 +127,7 @@ var Game = function() {
 
 	this.updateHooks = [];
 
-	this.player = player.createPlayer(this.em);
+	this.player = player.createPlayer(loader, this.em);
 
 	this.loadScript("forest.js");
 };
@@ -179,10 +179,7 @@ Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 };
 
 Game.prototype.loadScript = function(name) {
-	var self = this;
-	require(["./scripts/" + name], function(script) {
-		script(self);
-	});
+	this.loader.loadScript(name).then(script => script(this, this.loader));
 };
 
 Game.prototype.addUpdateHook = function(hook) {
@@ -256,9 +253,7 @@ Game.prototype.saveTheGame = function() {
 
 Game.prototype.wait = function(ms) {
 	return new Promise(function(resolve, reject) {
-		window.setTimeout(function() {
-			resolve();
-		}, ms);
+		window.setTimeout(resolve, ms);
 	});
 };
 

@@ -10,7 +10,7 @@ var vec2 = glMatrix.vec2;
 
 // TODO make maps the JSON format and the maprenderer load the images
 exports.loadMapFromJSON = function(data) {
-	return data;
+	throw new Error("Not yet implemented.");
 };
 
 var TileSet = function() {
@@ -24,88 +24,84 @@ TileSet.prototype.getTileY = function(id) {
 
 var Map = function() {};
 
-var loadMap = function(url) {
-	return new Promise(function(resolve, reject) {
-		loader.loadXMLHttpRequest(url, "document", function() {
-			var dirname = path.dirname(url); // url.replace(/\\/g, '/').replace(/\/[^\/]*\/?$/, '') + '/';
-			var root = this.responseXML.documentElement;
-			var map = new Map();
-			if (root.getAttribute("version") !== "1.0") throw new Error("invalid map format");
-			map.width = parseInt(root.getAttribute("width"));
-			map.height = parseInt(root.getAttribute("height"));
-			map.tilewidth = parseInt(root.getAttribute("tilewidth"));
-			map.tileheight = parseInt(root.getAttribute("tileheight"));
+var loadMap = function(loader, url) {
+	return loader.loadXML(url).then(function(dom) {
+		var dirname = path.dirname(url); // url.replace(/\\/g, '/').replace(/\/[^\/]*\/?$/, '') + '/';
+		var root = dom.documentElement;
+		var map = new Map();
+		if (root.getAttribute("version") !== "1.0") throw new Error("invalid map format");
+		map.width = parseInt(root.getAttribute("width"));
+		map.height = parseInt(root.getAttribute("height"));
+		map.tilewidth = parseInt(root.getAttribute("tilewidth"));
+		map.tileheight = parseInt(root.getAttribute("tileheight"));
 
-			var tilesets = map.tilesets = [];
-			var tilesetNodes = root.getElementsByTagName("tileset");
-			var tilesetPromises = [];
-			for (var i = 0, length = tilesetNodes.length; i < length; i++) {
-				tilesetPromises.push(new Promise(function(resolve, reject) {
-					var tilesetNode = tilesetNodes[i];
-					var tileset = tilesets[i] = new TileSet();
-					tileset.firstgid = tilesetNode.getAttribute("firstgid");
-					var source = tilesetNode.getAttribute("source");
-					if (source) {
-						loader.load(path.join(dirname, source), function() {
-							var parser = new DOMParser();
-							var xmlDoc = parser.parseFromString(this.responseText, "application/xml");
-							var tilesetRoot = xmlDoc.documentElement;
-							tileset.name = tilesetRoot.getAttribute("name");
-							tileset.tilewidth = parseInt(tilesetRoot.getAttribute("tilewidth"));
-							tileset.tileheight = parseInt(tilesetRoot.getAttribute("tileheight"));
-							var image = tilesetRoot.getElementsByTagName("image")[0];
-							tileset.imagePath = path.join(dirname, image.getAttribute("source"));
-							tileset.imageWidth = parseInt(image.getAttribute("width"));
-							tileset.imageHeight = parseInt(image.getAttribute("height"));
-							resolve();
-						});
-					} else {
-						tileset.name = tilesetNode.getAttribute("name");
-						tileset.tilewidth = parseInt(tilesetNode.getAttribute("tilewidth"));
-						tileset.tileheight = parseInt(tilesetNode.getAttribute("tileheight"));
-						var image = tilesetNode.getElementsByTagName("image")[0];
+		var tilesets = map.tilesets = [];
+		var tilesetNodes = root.getElementsByTagName("tileset");
+		var tilesetPromises = [];
+		for (var i = 0, length = tilesetNodes.length; i < length; i++) {
+			tilesetPromises.push(new Promise(function(resolve, reject) {
+				var tilesetNode = tilesetNodes[i];
+				var tileset = tilesets[i] = new TileSet();
+				tileset.firstgid = tilesetNode.getAttribute("firstgid");
+				var source = tilesetNode.getAttribute("source");
+				if (source) {
+					loader.loadXML(path.join(dirname, source)).then(function(dom) {
+						var tilesetRoot = dom.documentElement;
+						tileset.name = tilesetRoot.getAttribute("name");
+						tileset.tilewidth = parseInt(tilesetRoot.getAttribute("tilewidth"));
+						tileset.tileheight = parseInt(tilesetRoot.getAttribute("tileheight"));
+						var image = tilesetRoot.getElementsByTagName("image")[0];
 						tileset.imagePath = path.join(dirname, image.getAttribute("source"));
-						// TODO get the dimensions from the actual image
 						tileset.imageWidth = parseInt(image.getAttribute("width"));
 						tileset.imageHeight = parseInt(image.getAttribute("height"));
-						resolve();
-					}
-				}));
-			}
-			Promise.all(tilesetPromises).then(function() {
-				for (var i = 0; i < tilesets.length; i++) {
-					var tileset = tilesets[i];
-					tileset.tilesAcross = tileset.imageWidth / tileset.tilewidth;
-					tileset.texture = new texture.Region();
-					tileset.texture.loadFromFile(tileset.imagePath);
+						resolve(tileset);
+					});
+				} else {
+					tileset.name = tilesetNode.getAttribute("name");
+					tileset.tilewidth = parseInt(tilesetNode.getAttribute("tilewidth"));
+					tileset.tileheight = parseInt(tilesetNode.getAttribute("tileheight"));
+					var image = tilesetNode.getElementsByTagName("image")[0];
+					tileset.imagePath = path.join(dirname, image.getAttribute("source"));
+					// TODO get the dimensions from the actual image
+					tileset.imageWidth = parseInt(image.getAttribute("width"));
+					tileset.imageHeight = parseInt(image.getAttribute("height"));
+					resolve(tileset);
 				}
-			}).then(function() {
-				map.layers = Array.prototype.map.call(root.getElementsByTagName("layer"), function(layerNode) {
-					var layer = {};
-					layer.name = layerNode.getAttribute("name");
-					layer.data = [];
-					var data = layerNode.getElementsByTagName("data")[0];
-					var encoding = data.getAttribute("encoding");
-					if (encoding === "csv") {
-						var array = data.textContent.split(",");
-						for (var i = 0; i < array.length; i++) {
-							layer.data[i] = parseInt(array[i]);
-						}
-					} else if (encoding === "base64") {
-
-					} else throw new Error("Unsupported encoding for TML layer data.");
-					/*
-					if (data.getAttribute("encoding") !== "base64" || !!data.getAttribute("compression")) throw new Error("Bad encoding or compression.");
-					var buffer = new Buffer(text, 'base64');
-					for (var i = 0, length = map.width * map.height; i < length; i++) {
-						// TODO account for flips
-						layer.data[i] = buffer.readUInt32LE(i);
+			}).then(tileset => {
+				tileset.tilesAcross = tileset.imageWidth / tileset.tilewidth;
+				return loader.loadTextureRegion(tileset.imagePath)
+					.then(textureRegion => {
+						tileset.texture = textureRegion;
+					});
+			}));
+		}
+		return Promise.all(tilesetPromises).then(function() {
+			// getElementsByTagName returns a HTMLLiveCollection
+			map.layers = Array.prototype.map.call(root.getElementsByTagName("layer"), layerNode => {
+				var layer = {};
+				layer.name = layerNode.getAttribute("name");
+				layer.data = [];
+				var data = layerNode.getElementsByTagName("data")[0];
+				var encoding = data.getAttribute("encoding");
+				if (encoding === "csv") {
+					var array = data.textContent.split(",");
+					for (var i = 0; i < array.length; i++) {
+						layer.data[i] = parseInt(array[i]);
 					}
-					*/
-					return layer;
-				});
-				resolve(map);
+				} else if (encoding === "base64") {
+
+				} else throw new Error("Unsupported encoding for TML layer data.");
+				/*
+				   if (data.getAttribute("encoding") !== "base64" || !!data.getAttribute("compression")) throw new Error("Bad encoding or compression.");
+				   var buffer = new Buffer(text, 'base64');
+				   for (var i = 0, length = map.width * map.height; i < length; i++) {
+				// TODO account for flips
+				layer.data[i] = buffer.readUInt32LE(i);
+				}
+				*/
+				return layer;
 			});
+			return map;
 		});
 	});
 };

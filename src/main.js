@@ -2,13 +2,14 @@ var glMatrix = require("gl-matrix");
 var renderer = require("renderer.js");
 var SpriteBatch = require("SpriteBatch.js");
 var LoadingManager = require("LoadingManager.js");
+var FileLoader = require("FileLoader");
+var LoaderFacade = require("LoaderFacade");
 var input = require("input.js");
-var loader = require("loader.js");
-var root = require("root.js");
 var stateManager = require("stateManager.js");
+var promiseProxy = require("promiseProxy");
+var Widget = require("Widget.js");
 var LoadingScreen = require("LoadingScreen.js");
 var BattleState = require("BattleState.js");
-var Widget = require("Widget.js");
 var Game = require("Game.js");
 // require("babel-core/register");
 // require("babel-polyfill");
@@ -32,6 +33,8 @@ batch.setProjectionMatrix(projectionMatrix);
 batch.setMVMatrix(mvMatrix);
 
 var manager = new LoadingManager();
+var fileLoader = new FileLoader("pokemongame", 1);
+var loader = new LoaderFacade(fileLoader);
 
 input.setListener((type, key) => {
 	stateManager.getState().onKey(type, key);
@@ -40,7 +43,15 @@ input.setListener((type, key) => {
 var loadingScreen = new LoadingScreen();
 stateManager.setState(loadingScreen);
 
-var game = new Game();
+var proxyLoader = promiseProxy(loader);
+proxyLoader.load("assets/overworld.tsx");
+var game = new Game(proxyLoader);
+proxyLoader.all.then(() => {
+	console.log("Loaded all assets for Game. Switching states...");
+	stateManager.setState(game);
+}, () => {
+	console.log("Some asset was rejected.");
+});
 
 var slowpoke = {
 	name: "Slowpoke",
@@ -66,7 +77,7 @@ var snoopDogg = {
 
 var playerTrainer = new Trainer("Axel", [slowpoke]);
 var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
-var battleState;
+// var battleState = new BattleState(game, playerTrainer, enemyTrainer);
 
 var lastTime = (performance || Date).now();
 var requestID;
@@ -98,14 +109,3 @@ var update = function(timestamp) {
 };
 
 window.requestAnimationFrame(update);
-
-loader.onstart = function() {
-	// window.cancelAnimationFrame(requestID);
-};
-
-loader.onload = function() {
-	if (battleState) stateManager.setState(battleState);
-	else battleState = new BattleState(game, playerTrainer, enemyTrainer);
-};
-
-loader.check();

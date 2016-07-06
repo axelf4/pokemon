@@ -44,6 +44,41 @@ var loadTexture = function(src, callback) {
 	return texture;
 };
 
+var loadTexturePromise = function(src) {
+	return new Promise((resolve, reject) => {
+		var texture = gl.createTexture();
+		var image = new Image();
+		image.crossOrigin = "anonymous";
+		var self = this;
+		image.onload = function() {
+			if (!isPowerOfTwo(image.width) || !isPowerOfTwo(image.height)) {
+				// Scale up the texture to the next highest power of two dimensions.
+				var canvas = document.createElement("canvas");
+				canvas.width = nextHighestPowerOfTwo(image.width);
+				canvas.height = nextHighestPowerOfTwo(image.height);
+				var ctx = canvas.getContext("2d");
+				ctx.drawImage(image, 0, 0, image.width, image.height);
+				image = canvas;
+			}
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			// gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+			// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			// gl.generateMipmap(gl.TEXTURE_2D);
+			resolve({
+				texture: texture,
+				width: image.width,
+				height: image.height
+			});
+		};
+		image.onerror = reject;
+		image.src = src;
+	});
+};
+
 var TextureRegion = function(texture, x, y, width, height) {
 	this.texture = texture;
 	this.x = x || 0;
@@ -71,5 +106,6 @@ TextureRegion.prototype.getU1 = function() {
 
 module.exports = {
 	loadTexture: loadTexture,
+	loadTexturePromise: loadTexturePromise,
 	Region: TextureRegion,
 };

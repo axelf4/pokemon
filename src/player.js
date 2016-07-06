@@ -51,20 +51,20 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 	return direction.NO_DIRECTION;
 };
 
-exports.createPlayer = function(em) {
+exports.createPlayer = function(loader, em) {
 	var player = em.createEntity();
 	em.addComponent(player, new Position());
 	em.addComponent(player, new OldPosition());
 	em.addComponent(player, new DirectionComponent(direction.DOWN));
 	em.addComponent(player, new MovementComponent(new PlayerMovementController()));
 
-	var textureRegion = new texture.Region();
-	textureRegion.loadFromFile("assets/lucas.png");
-	var animation = new Animation(250, Animation.getSheetFromTexture(4, 2, 2, 32, 32, 4, 2));
-	var spriteComponent = new SpriteComponent(textureRegion, animation);
-	spriteComponent.offsetX = -8;
-	spriteComponent.offsetY = -16;
-	em.addComponent(player, spriteComponent);
+	loader.loadTextureRegion("assets/lucas.png").then(textureRegion => {
+		var animation = new Animation(250, Animation.getSheetFromTexture(4, 2, 2, 32, 32, 4, 2));
+		var spriteComponent = new SpriteComponent(textureRegion, animation);
+		spriteComponent.offsetX = -8;
+		spriteComponent.offsetY = -16;
+		em.addComponent(player, spriteComponent);
+	});
 
 	return player;
 };
