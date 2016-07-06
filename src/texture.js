@@ -1,5 +1,4 @@
 var gl = require("renderer.js").gl;
-var loader = require("loader.js");
 
 function isPowerOfTwo(x) {
 	return (x & (x - 1)) == 0;
@@ -14,7 +13,6 @@ function nextHighestPowerOfTwo(x) {
 }
 
 var loadTexture = function(src, callback) {
-	loader.start();
 	var texture = gl.createTexture();
 	var image = new Image();
 	image.crossOrigin = "anonymous";
@@ -38,7 +36,6 @@ var loadTexture = function(src, callback) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		// gl.generateMipmap(gl.TEXTURE_2D);
 		if (callback) callback(texture, image.width, image.height);
-		loader.end();
 	};
 	image.src = src;
 	return texture;

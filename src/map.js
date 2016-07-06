@@ -1,5 +1,4 @@
 var texture = require("texture.js");
-var loader = require("loader.js");
 var renderer = require("renderer.js");
 var glMatrix = require("gl-matrix");
 var path = require("path");

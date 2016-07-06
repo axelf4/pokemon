@@ -2,7 +2,6 @@ var State = require("State.js");
 var Panel = require("Panel.js");
 var Dialog = require("Dialog.js");
 var align = require("align.js");
-var loader = require("loader.js");
 var texture = require("texture.js");
 var Image = require("Image.js");
 var Select = require("Select.js");

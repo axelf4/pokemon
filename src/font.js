@@ -1,6 +1,5 @@
 var parse = require("parse-bmfont-ascii");
 var texture = require("texture.js");
-var loader = require("loader.js");
 
 var log2PageSize = 9;
 var pageSize = 1 << log2PageSize;
@@ -8,7 +7,7 @@ var pages = 0x10000 / pageSize;
 
 // TODO add support for keming
 
-var Font = function() {
+var Font = function(loader) {
 	this.glyphs = new Array(pages);
 	this.pageTextures = [];
 
@@ -16,17 +15,19 @@ var Font = function() {
 
 	for (var i = 0; i < pages; i++) this.glyphs[i] = [];
 
-	loader.loadXMLHttpRequest("assets/font.fnt", "text", function() {
-		var font = self.font = parse(this.response);
+	loader.loadText("assets/font.fnt").then(text => {
+		var font = self.font = parse(text);
 		self.lineHeight = font.common.lineHeight;
-		font.pages.forEach(function(page, index) {
-			var textureRegion = new texture.Region();
-			self.pageTextures[index] = textureRegion;
-			textureRegion.loadFromFile("assets/" + page);
+		font.chars.forEach(glyph => {
+			this.setGlyph(glyph.id, glyph);
 		});
-		font.chars.forEach(function(glyph) {
-			self.setGlyph(glyph.id, glyph);
+		var texturePromises = [];
+		font.pages.forEach((page, index) => {
+			texturePromises.push(loader.loadTextureRegion("assets/" + page).then(textureRegion => {
+				this.pageTextures[index] = textureRegion;
+			}));
 		});
+		return Promise.all(texturePromises);
 	});
 };
 

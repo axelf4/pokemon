@@ -11,6 +11,19 @@ LoaderFacade.prototype.load = function(url) {
 	return this.fileLoader.load(url);
 };
 
+LoaderFacade.prototype.loadText = function(url) {
+	return this.load(url).then(blob => {
+		return new Promise((resolve, reject) => {
+			var reader = new FileReader();
+			reader.addEventListener("load", function() {
+				resolve(reader.result);
+			}, false);
+			reader.onerror = reject;
+			reader.readAsText(blob);
+		});
+	});
+};
+
 const xmlDocumentFromString = window.DOMParser ? function(string) {
 	return new window.DOMParser().parseFromString(string, "text/xml");
 } : typeof window.ActiveXObject != "undefined" && new window.ActiveXObject("Microsoft.XMLDOM") ? function(string) {

@@ -1,9 +1,6 @@
 var Widget = require("Widget.js");
 var WidgetGroup = require("WidgetGroup.js");
 var measureSpec = require("measureSpec.js");
-var NinePatch = require("NinePatch.js");
-var loader = require("loader.js");
-var texture = require("texture.js");
 
 var Container = function() {
 	WidgetGroup.call(this);

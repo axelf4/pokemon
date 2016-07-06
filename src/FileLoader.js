@@ -49,6 +49,7 @@ FileLoader.prototype.load = function(url) {
 				oReq.onreadystatechange = () => {
 					if (oReq.readyState === 4 /* complete */ && oReq.status === 200) {
 						if (oReq.status === (url.indexOf('file:') === 0) ? 0 : 200) {
+							console.log("Downloaded asset " + decodedURI + ".");
 							resolve(oReq.response);
 						} else {
 							reject();
@@ -71,7 +72,6 @@ FileLoader.prototype.load = function(url) {
 					resolve(value);
 				} else {
 					loadBlobXMLHttpRequest(url).then(function(blob) {
-						console.log("Downloaded asset " + decodedURI + ".");
 						var writeRequest = db.transaction(storeName, "readwrite").objectStore(storeName).put(blob, url);
 						resolve(blob);
 					});

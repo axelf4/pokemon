@@ -2,7 +2,6 @@ var Map = require("map.js");
 var Position = require("Position.js");
 var InteractionComponent = require("InteractionComponent.js");
 var PushTrigger = require("PushTrigger.js");
-var loader = require("loader.js");
 var game = require("Game.js");
 
 module.exports = function() {

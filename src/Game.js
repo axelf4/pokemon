@@ -2,7 +2,6 @@ var fowl = require("fowl");
 var lerp = require("lerp");
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
-var audio = require("Audio.js");
 var Map = require("map.js");
 var MapRenderer = require("CachedMapRenderer.js");
 var Widget = require("Widget.js");

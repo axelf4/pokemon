@@ -1,13 +1,15 @@
 var glMatrix = require("gl-matrix");
 var renderer = require("renderer.js");
 var SpriteBatch = require("SpriteBatch.js");
-var LoadingManager = require("LoadingManager.js");
 var FileLoader = require("FileLoader");
 var LoaderFacade = require("LoaderFacade");
 var input = require("input.js");
 var stateManager = require("stateManager.js");
 var promiseProxy = require("promiseProxy");
 var Widget = require("Widget.js");
+var resources = require("resources");
+var Font = require("font.js");
+var NinePatch = require("NinePatch");
 var LoadingScreen = require("LoadingScreen.js");
 var BattleState = require("BattleState.js");
 var Game = require("Game.js");
@@ -32,7 +34,6 @@ var batch = new SpriteBatch();
 batch.setProjectionMatrix(projectionMatrix);
 batch.setMVMatrix(mvMatrix);
 
-var manager = new LoadingManager();
 var fileLoader = new FileLoader("pokemongame", 1);
 var loader = new LoaderFacade(fileLoader);
 
@@ -44,8 +45,14 @@ var loadingScreen = new LoadingScreen();
 stateManager.setState(loadingScreen);
 
 var proxyLoader = promiseProxy(loader);
-proxyLoader.load("assets/overworld.tsx");
+
+resources.font = new Font(proxyLoader);
+loader.loadTextureRegion("textures/frame.9.png").then(textureRegion => {
+	resources.frame = NinePatch.fromTexture(textureRegion.texture, 24, 24);
+});
+
 var game = new Game(proxyLoader);
+
 proxyLoader.all.then(() => {
 	console.log("Loaded all assets for Game. Switching states...");
 	stateManager.setState(game);
