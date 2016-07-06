@@ -34,7 +34,7 @@ var batch = new SpriteBatch();
 batch.setProjectionMatrix(projectionMatrix);
 batch.setMVMatrix(mvMatrix);
 
-var fileLoader = new FileLoader("pokemongame", 1);
+var fileLoader = new FileLoader("pokemongame");
 var loader = new LoaderFacade(fileLoader);
 
 input.setListener((type, key) => {

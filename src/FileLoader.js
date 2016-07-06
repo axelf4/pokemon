@@ -3,10 +3,10 @@ window.URL = window.URL || webkitURL;
 
 const storeName = "data";
 
-var FileLoader = function(dbName, dbVersion) {
+var FileLoader = function(dbName) {
 	var self = this;
 	this.db = null;
-	var request = indexedDB.open(dbName, dbVersion);
+	var request = indexedDB.open(dbName, 1);
 	request.onerror = function(event) {
 		console.error("Error opening database: ", event);
 	};
@@ -16,7 +16,6 @@ var FileLoader = function(dbName, dbVersion) {
 	request.onsuccess = function(event) {
 		self.db = this.result;
 		console.log("IndexedDB opened successfully.");
-		if (self.callback) self.callback();
 	};
 	request.onupgradeneeded = function(event) {
 		var db = event.target.result;
