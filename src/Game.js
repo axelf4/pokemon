@@ -154,7 +154,7 @@ Game.prototype.say = Game.prototype.showDialog = function(text) {
 	});
 };
 
-Game.prototype.getMap = function() { return map; };
+Game.prototype.getMap = function() { return this.map; };
 
 Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.map = map;
@@ -242,6 +242,22 @@ Game.prototype.pushTriggers = [];
 
 Game.prototype.clearLevel = function() {
 	this.pushTriggers = [];
+};
+
+/**
+ * Warps the player to target coordinates and, optionally, specified map.
+ */
+Game.prototype.warp = function(x, y, mapScript) {
+	var em = this.em;
+	var pos = em.getComponent(this.player, Position);
+	var oldpos = em.getComponent(this.player, OldPosition);
+	oldpos.x = pos.x = x;
+	oldpos.y = pos.y = y;
+	if (mapScript !== undefined) {
+		if (mapScript === null) throw new Error("mapScript cannot be null.");
+		game.clearLevel();
+		game.loadScript(mapScript);
+	}
 };
 
 Game.prototype.save = JSON.parse(window.localStorage.getItem("gameSave"));

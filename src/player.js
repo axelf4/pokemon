@@ -36,15 +36,15 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 	if (dx != 0 || dy != 0) {
 		// Check for push triggers
 		var triggered = false;
+		var tileX = pos.x + dx, tileY = pos.y + dy;
 		for (var i = 0, length = game.pushTriggers.length; i < length; ++i) {
 			var pushTrigger = game.pushTriggers[i];
-			if (pushTrigger.x === pos.x + dx && pushTrigger.y === pos.y + dy) {
+			if (pushTrigger.runForTile(tileX, tileY)) {
 				triggered = true;
-				pushTrigger.script();
 			}
 		}
 		// Check for collision if there were no trigger
-		if (!triggered && !game.isSolid(pos.x + dx, pos.y + dy)) {
+		if (!triggered && !game.isSolid(tileX, tileY)) {
 			return dir.value;
 		}
 	}

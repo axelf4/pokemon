@@ -10,6 +10,7 @@ var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
+var direction = require("direction");
 
 module.exports = function(game, loader) {
 	loader.loadMap("assets/forest.tmx")
@@ -17,7 +18,8 @@ module.exports = function(game, loader) {
 			game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 		});
 
-	game.pushTriggers.push(new PushTrigger(3, 13, PushTrigger.createWarp("ballettown.js", 22, 0)));
+	// game.pushTriggers.push(new PushTrigger(3, 13, PushTrigger.createWarp("ballettown.js", 22, 0)));
+	game.pushTriggers.push(PushTrigger.createEdgeWarp(game, direction.DOWN, 22, 0));
 
 	var em = game.em;
 

@@ -45,12 +45,14 @@ FileLoader.prototype.load = function(url) {
 				}
 				oReq.open("GET", url + ((/\?/).test(url) ? "&" : "?") + (new Date()).getTime());
 				oReq.mozRequestType = oReq.responseType = "blob";
+				var expected = (document.URL.indexOf('file:') === 0) ? 0 : 200; // The expected status
 				oReq.onreadystatechange = () => {
-					if (oReq.readyState === 4 /* complete */ && oReq.status === 200) {
-						if (oReq.status === (url.indexOf('file:') === 0) ? 0 : 200) {
+					if (oReq.readyState === 4 /* complete */) {
+						if (oReq.status === expected) {
 							console.log("Downloaded asset " + decodedURI + ".");
-							resolve(oReq.response);
+							resolve(oReq.mozResponse || oReq.response);
 						} else {
+							console.error("XMLHttpRequest failed.");
 							reject();
 						}
 					}
