@@ -48,11 +48,11 @@ FileLoader.prototype.load = function(url) {
 				var expected = (document.URL.indexOf('file:') === 0) ? 0 : 200; // The expected status
 				oReq.onreadystatechange = () => {
 					if (oReq.readyState === 4 /* complete */) {
-						if (oReq.status === expected) {
+						if (oReq.status === 200 || oReq.status === expected) {
 							console.log("Downloaded asset " + decodedURI + ".");
 							resolve(oReq.mozResponse || oReq.response);
 						} else {
-							console.error("XMLHttpRequest failed.");
+							console.error("XMLHttpRequest failed with status " + oReq.status + ".");
 							reject();
 						}
 					}

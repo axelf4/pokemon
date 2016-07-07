@@ -7,6 +7,7 @@ var Position = require("Position.js");
 var SpriteComponent = require("SpriteComponent.js");
 var DirectionComponent = require("DirectionComponent.js");
 var OldPosition = require("OldPosition.js");
+var LineOfSightComponent = require("LineOfSightComponent");
 var MovementComponent = require("MovementComponent.js");
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
@@ -39,7 +40,7 @@ module.exports = function(game, loader) {
 	var x = 12, y = 5;
 	em.addComponent(jorryt, new Position(x, y));
 	em.addComponent(jorryt, new OldPosition(x, y));
-	em.addComponent(jorryt, new DirectionComponent());
+	em.addComponent(jorryt, new DirectionComponent(direction.DOWN));
 	loader.loadTextureRegion("assets/dancer.png").then(textureRegion => {
 		var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
 		var spriteComponent = new SpriteComponent(textureRegion, animation);
@@ -47,19 +48,37 @@ module.exports = function(game, loader) {
 		spriteComponent.offsetY = -16;
 		em.addComponent(jorryt, spriteComponent);
 	});
-	var controller = new RandomMovementController();
-	em.addComponent(jorryt, new MovementComponent(controller));
+	// var controller = new RandomMovementController();
+	// em.addComponent(jorryt, new MovementComponent(controller));
+	em.addComponent(jorryt, new LineOfSightComponent(function(game, em, entity1, entity2) {
+		if (this.interacting) return LineOfSightComponent.LOS_NO_ACTION;
+		return LineOfSightComponent.LOS_TRIGGER_AND_SNAP;
+	}, function(game, em, entity1, entity2) {
+		console.log("Heloo");
+		var self = this;
+		thread(function*() {
+			self.interacting = true;
+			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
+			// var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+			playerMovement.pushController(new StillMovementController());
+			// entityMovement.pushController(new StillMovementController());
+			yield game.showDialog("helo there litle boy. I see you.");
+			playerMovement.popController();
+			// entityMovement.popController();
+			self.interacting = false;
+		});
+	}));
 	em.addComponent(jorryt, new InteractionComponent(function() {
 		thread(function*() {
 			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-			var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+			// var entityMovement = game.em.getComponent(jorryt, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
-			entityMovement.pushController(new StillMovementController());
+			// entityMovement.pushController(new StillMovementController());
 			yield game.showDialog("I could be a girl, you could be a boy. Transsexuality is so fun!");
 			yield game.showDialog("What's up with that jar of nutella? Still fighting the good fight.");
 			// TODO add jar of nutella to player inventory
 			playerMovement.popController();
-			entityMovement.popController();
+			// entityMovement.popController();
 		});
 	}));
 };

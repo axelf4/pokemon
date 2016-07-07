@@ -3,7 +3,9 @@ var Position = require("Position.js");
 var OldPosition = require("OldPosition.js");
 var direction = require("direction");
 
-// A script that thriggers when the player tries to walk onto a tile.
+/*
+ * A script that triggers when the player tries to walk into a tile.
+ */
 var PushTrigger = function(script) {
 	this.script = script;
 };

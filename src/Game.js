@@ -25,6 +25,7 @@ var PlayerComponent = require("PlayerComponent.js");
 var InteractionComponent = require("InteractionComponent.js");
 var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
+var LineOfSightComponent = require("LineOfSightComponent");
 
 var font = resources.font;
 fowl.registerComponents(
@@ -34,7 +35,8 @@ fowl.registerComponents(
 		PlayerComponent,
 		InteractionComponent,
 		OldPosition,
-		MovementComponent);
+		MovementComponent,
+		LineOfSightComponent);
 
 var GameScreen = function(game) {
 	Stack.call(this);
@@ -58,9 +60,7 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 	for (var entity = 0, length = em.count; entity < length; entity++) {
 		if (em.matches(entity, game.spriteSystemMask)) {
 			var position = em.getComponent(entity, Position);
-			var oldpos = em.getComponent(entity, OldPosition);
 			var spriteComponent = em.getComponent(entity, SpriteComponent);
-			var movement = em.getComponent(entity, MovementComponent);
 
 			var texture = spriteComponent.texture;
 			var region = spriteComponent.animation.getFrame(time);
@@ -68,8 +68,16 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 			var v1 = (region.y + 0.5) / texture.height;
 			var u2 = (region.x + region.width - 0.5) / texture.width;
 			var v2 = (region.y + region.height - 0.5) / texture.height;
-			var x = lerp(oldpos.x, position.x, movement.timer / movement.delay) * 16 + spriteComponent.offsetX;
-			var y = lerp(oldpos.y, position.y, movement.timer / movement.delay) * 16 + spriteComponent.offsetY;
+			var x, y;
+			if (em.hasComponent(entity, MovementComponent)) {
+				var oldpos = em.getComponent(entity, OldPosition);
+				var movement = em.getComponent(entity, MovementComponent);
+				x = lerp(oldpos.x, position.x, movement.timer / movement.delay) * 16 + spriteComponent.offsetX;
+				y = lerp(oldpos.y, position.y, movement.timer / movement.delay) * 16 + spriteComponent.offsetY;
+			} else {
+				x = position.x * 16 + spriteComponent.offsetX;
+				y = position.y * 16 + spriteComponent.offsetY;
+			}
 			var width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 		}
@@ -120,7 +128,7 @@ var Game = function(loader) {
 	this.metaLayer = -1; // Index of meta layer or -1
 
 	this.em = new fowl.EntityManager();
-	this.spriteSystemMask = this.em.getMask([Position, OldPosition, SpriteComponent, MovementComponent]);
+	this.spriteSystemMask = this.em.getMask([Position, SpriteComponent]);
 	this.collisionSystemMask = this.em.getMask([Position]);
 	this.movementSystem = new MovementSystem(this);
 
