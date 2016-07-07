@@ -50,24 +50,23 @@ module.exports = function(game, loader) {
 	});
 	// var controller = new RandomMovementController();
 	// em.addComponent(jorryt, new MovementComponent(controller));
-	em.addComponent(jorryt, new LineOfSightComponent(function(game, em, entity1, entity2) {
-		if (this.interacting) return LineOfSightComponent.LOS_NO_ACTION;
-		return LineOfSightComponent.LOS_TRIGGER_AND_SNAP;
-	}, function(game, em, entity1, entity2) {
-		console.log("Heloo");
-		var self = this;
-		thread(function*() {
-			self.interacting = true;
-			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-			// var entityMovement = game.em.getComponent(jorryt, MovementComponent);
-			playerMovement.pushController(new StillMovementController());
-			// entityMovement.pushController(new StillMovementController());
-			yield game.showDialog("helo there litle boy. I see you.");
-			playerMovement.popController();
-			// entityMovement.popController();
-			self.interacting = false;
-		});
-	}));
+	em.addComponent(jorryt, new LineOfSightComponent(
+				LineOfSightComponent.createSingleTriggerCheck(LineOfSightComponent.LOS_TRIGGER_AND_SNAP),
+				function(game, em, entity1, entity2) {
+					console.log("Heloo");
+					var self = this;
+					thread(function*() {
+						self.interacting = true;
+						var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
+						// var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+						playerMovement.pushController(new StillMovementController());
+						// entityMovement.pushController(new StillMovementController());
+						yield game.showDialog("helo there litle boy. I see you.");
+						playerMovement.popController();
+						// entityMovement.popController();
+						self.interacting = false;
+					});
+				}));
 	em.addComponent(jorryt, new InteractionComponent(function() {
 		thread(function*() {
 			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);

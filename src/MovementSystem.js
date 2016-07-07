@@ -14,8 +14,9 @@ var MovementSystem = function(game) {
 
 /**
  * @param entity1 The entity that checks if it stepped into other entities' LoS.
+ * @param enterDirection The direction from which the entity entered LoS from
  */
-MovementSystem.prototype.checkLineOfSight = function(game, em, entity1) {
+MovementSystem.prototype.checkLineOfSight = function(game, em, entity1, enterDirection) {
 	var pos1 = em.getComponent(entity1, Position);
 	var oldpos1 = em.getComponent(entity1, OldPosition);
 	var movement1 = em.getComponent(entity1, MovementComponent);
@@ -27,13 +28,14 @@ MovementSystem.prototype.checkLineOfSight = function(game, em, entity1) {
 			var pos2 = em.getComponent(entity, Position);
 			var dir = em.getComponent(entity, DirectionComponent).value; // The direction of the line of sight
 			var losComponent = em.getComponent(entity, LineOfSightComponent); // LoS
+			var dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 
 			for (var step = 1, max = losComponent.length; max === -1 || step <= max; ++step) {
-				var x = pos2.x + step * direction.getDeltaX(dir);
-				var y = pos2.y + step * direction.getDeltaY(dir);
+				var x = pos2.x + step * dx;
+				var y = pos2.y + step * dy;
 
 				if (pos1.x === x && pos1.y === y) {
-					var op = losComponent.triggerCheck(game, em, entity, entity1);
+					var op = losComponent.triggerCheck(game, em, entity, entity1, enterDirection);
 					switch (op) {
 						case LineOfSightComponent.LOS_NO_ACTION:
 							break;
@@ -49,7 +51,7 @@ MovementSystem.prototype.checkLineOfSight = function(game, em, entity1) {
 							}
 							// Intentional fall-through
 						case LineOfSightComponent.LOS_TRIGGER:
-							losComponent.script(game, em, entity, entity1);
+							losComponent.script(game, em, entity, entity1, enterDirection);
 							break;
 						default:
 							throw new Error("Invalid return value of triggerCheck.");
@@ -77,17 +79,19 @@ MovementSystem.prototype.update = function(dt, time) {
 			var movement = em.getComponent(entity, MovementComponent);
 
 			var still = position.x === oldpos.x && position.y === oldpos.y; // Whether we need new direction
+			var enterDirection = direction.NO_DIRECTION;
 			if (!still) {
 				movement.timer += dt;
 				if (movement.timer >= movement.delay) {
 					oldpos.x = position.x;
 					oldpos.y = position.y;
 					still = true;
+					enterDirection = direction.getReverse(directionComponent.value);
 				}
 			}
 			if (still) {
 				// Check if we stepped into an entity's line of sight
-				this.checkLineOfSight(game, em, entity);
+				this.checkLineOfSight(game, em, entity, enterDirection);
 
 				movement.timer = Math.max(0, movement.timer - movement.delay);
 				var newDirection = movement.getController().getTarget(this.game, dt, position, entity);
