@@ -19,6 +19,7 @@ MovementComponent.prototype.pushController = function(controller) {
 };
 
 MovementComponent.prototype.popController = function() {
+	if (this.controllerStack.length <= 1) throw new Error("Cannot pop the last controller.");
 	this.controllerStack.pop();
 };
 

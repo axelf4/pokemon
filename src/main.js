@@ -93,6 +93,7 @@ var width, height;
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
 	var dt = timestamp - lastTime;
+	if (dt > 1000) dt = 0;
 	lastTime = timestamp;
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);

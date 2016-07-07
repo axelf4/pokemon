@@ -27,6 +27,7 @@ var LineOfSightComponent = function(triggerCheck, script, length) {
 	this.triggerCheck = triggerCheck;
 	this.script = script;
 	this.length = length || 16;
+	this.currentBlocker = null; // The entity that is standing in our sights or null
 };
 
 LineOfSightComponent.createSingleTriggerCheck = function(triggerCheck) {

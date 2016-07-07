@@ -48,36 +48,42 @@ module.exports = function(game, loader) {
 		spriteComponent.offsetY = -16;
 		em.addComponent(jorryt, spriteComponent);
 	});
-	// var controller = new RandomMovementController();
-	// em.addComponent(jorryt, new MovementComponent(controller));
+	var controller = new RandomMovementController();
+	em.addComponent(jorryt, new MovementComponent(controller));
 	em.addComponent(jorryt, new LineOfSightComponent(
-				LineOfSightComponent.createSingleTriggerCheck(LineOfSightComponent.LOS_TRIGGER_AND_SNAP),
+				function(game, em, caster, blocker) {
+					if (blocker === game.player) return LineOfSightComponent.LOS_TRIGGER_AND_SNAP;
+					return LineOfSightComponent.LOS_NO_ACTION;
+				},
 				function(game, em, entity1, entity2) {
-					console.log("Heloo");
-					var self = this;
+					console.log("Hello!");
 					thread(function*() {
-						self.interacting = true;
 						var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-						// var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+						var entityMovement = game.em.getComponent(jorryt, MovementComponent);
 						playerMovement.pushController(new StillMovementController());
-						// entityMovement.pushController(new StillMovementController());
-						yield game.showDialog("helo there litle boy. I see you.");
+						entityMovement.pushController(new StillMovementController());
+
+						yield game.walkForward(jorryt);
+
+						yield game.showDialog("Why, hello there little boy. Want a lollipop?");
+						yield game.wait(1000);
+						yield game.showDialog("You've been struck by the lollipop man.");
 						playerMovement.popController();
-						// entityMovement.popController();
-						self.interacting = false;
+						entityMovement.popController();
 					});
 				}));
 	em.addComponent(jorryt, new InteractionComponent(function() {
 		thread(function*() {
 			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-			// var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+			var entityMovement = game.em.getComponent(jorryt, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
-			// entityMovement.pushController(new StillMovementController());
-			yield game.showDialog("I could be a girl, you could be a boy. Transsexuality is so fun!");
-			yield game.showDialog("What's up with that jar of nutella? Still fighting the good fight.");
+			entityMovement.pushController(new StillMovementController());
+			yield game.showDialog("So you approach me voluntarily? You've got some guts!");
+			// yield game.showDialog("I could be a girl, you could be a boy. Transsexuality is so fun!");
+			// yield game.showDialog("What's up with that jar of nutella? Still fighting the good fight.");
 			// TODO add jar of nutella to player inventory
 			playerMovement.popController();
-			// entityMovement.popController();
+			entityMovement.popController();
 		});
 	}));
 };

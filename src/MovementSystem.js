@@ -9,7 +9,7 @@ var MovementSystem = function(game) {
 	this.game = game;
 	var em = game.em;
 	this.mask = em.getMask([Position, OldPosition, DirectionComponent, MovementComponent]);
-	this.lOSMask = em.getMask([Position, OldPosition, DirectionComponent, LineOfSightComponent]);
+	this.LoSMask = em.getMask([Position, OldPosition, DirectionComponent, LineOfSightComponent]);
 };
 
 /**
@@ -18,54 +18,73 @@ var MovementSystem = function(game) {
  */
 MovementSystem.prototype.checkLineOfSight = function(game, em, entity1, enterDirection) {
 	var pos1 = em.getComponent(entity1, Position);
-	var oldpos1 = em.getComponent(entity1, OldPosition);
-	var movement1 = em.getComponent(entity1, MovementComponent);
+	var finds = [];
 
-	for (var entity = 0, length = em.count; entity < length; ++entity) {
-		if (entity === entity1) continue; // Can't see itself!
+	// Check if we caught another entity in our LoS
+	if (em.hasComponent(entity1, LineOfSightComponent)) {
+		var LoS = em.getComponent(entity1, LineOfSightComponent);
 
-		if (em.matches(entity, this.lOSMask)) {
-			var pos2 = em.getComponent(entity, Position);
-			var dir = em.getComponent(entity, DirectionComponent).value; // The direction of the line of sight
-			var losComponent = em.getComponent(entity, LineOfSightComponent); // LoS
-			var dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
+		var blocker = game.findEntityInLineOfSight(entity1);
+		if (blocker !== -1) {
+			if (LoS.currentBlocker !== blocker) {
+				finds.push({
+					caster: entity1,
+					blocker: blocker
+				});
+			}
+		} else {
+			LoS.currentBlocker = null;
+		}
+	}
 
-			for (var step = 1, max = losComponent.length; max === -1 || step <= max; ++step) {
-				var x = pos2.x + step * dx;
-				var y = pos2.y + step * dy;
+	// Check if we stepped into other entity's LoS
+	for (var entity2 = 0, length = em.count; entity2 < length; ++entity2) {
+		if (entity2 === entity1) continue; // Can't see itself
 
-				if (pos1.x === x && pos1.y === y) {
-					var op = losComponent.triggerCheck(game, em, entity, entity1, enterDirection);
-					switch (op) {
-						case LineOfSightComponent.LOS_NO_ACTION:
-							break;
-						case LineOfSightComponent.LOS_TRIGGER_AND_SNAP:
-							movement1.timer = 0;
-							if (em.hasComponent(entity, MovementComponent)) em.getComponent(entity, MovementComponent).timer = 0;
-
-							// Snap the entity to the next tile
-							if (em.hasComponent(entity, OldPosition)) {
-								var oldpos2 = em.getComponent(entity, OldPosition);
-								oldpos2.x = pos2.x;
-								oldpos2.y = pos2.y;
-							}
-							// Intentional fall-through
-						case LineOfSightComponent.LOS_TRIGGER:
-							losComponent.script(game, em, entity, entity1, enterDirection);
-							break;
-						default:
-							throw new Error("Invalid return value of triggerCheck.");
-					}
+		if (em.matches(entity2, this.LoSMask)) {
+			var blocker = game.findEntityInLineOfSight(entity2);
+			if (blocker === entity1) {
+				var pos2 = em.getComponent(entity2, Position);
+				var dirBetween = direction.getDirectionToPos(pos2, pos1);
+				if (dirBetween !== enterDirection && dirBetween !== direction.getReverse(enterDirection)) {
+					finds.push({
+						caster: entity2,
+						blocker: blocker
+					});
 				}
-
-				// If the sight is obstructed: quit
-				if (game.isSolid(x, y)) {
-					break;
-				}
-
 			}
 		}
 	}
+
+	if (finds.length === 2 && finds[0] === finds[1]) finds.pop();
+
+	finds.forEach(find => {
+		var LoS = em.getComponent(find.caster, LineOfSightComponent);
+		LoS.currentBlocker = find.blocker;
+		var op = LoS.triggerCheck(game, em, find.caster, find.blocker);
+		switch (op) {
+			case LineOfSightComponent.LOS_NO_ACTION:
+				break;
+			case LineOfSightComponent.LOS_TRIGGER_AND_SNAP:
+				if (em.hasComponent(find.caster, MovementComponent)) em.getComponent(find.caster, MovementComponent).timer = 0;
+				if (em.hasComponent(find.blocker, MovementComponent)) em.getComponent(find.blocker, MovementComponent).timer = 0;
+
+				// Snap the entity to the next tile
+				var entityToSnap = entity1 === find.caster ? find.blocker : find.caster; // entity1 has already been snapped
+				if (em.hasComponent(entityToSnap, OldPosition)) {
+					var pos = em.getComponent(entityToSnap, Position);
+					var oldpos = em.getComponent(entityToSnap, OldPosition);
+					oldpos.x = pos.x;
+					oldpos.y = pos.y;
+				}
+				// Intentional fall-through
+			case LineOfSightComponent.LOS_TRIGGER:
+				LoS.script(game, em, find.caster, find.blocker, enterDirection);
+				break;
+			default:
+				throw new Error("Invalid return value of triggerCheck.");
+		}
+	});
 };
 
 MovementSystem.prototype.update = function(dt, time) {
@@ -86,12 +105,13 @@ MovementSystem.prototype.update = function(dt, time) {
 					oldpos.x = position.x;
 					oldpos.y = position.y;
 					still = true;
+
 					enterDirection = direction.getReverse(directionComponent.value);
+					// Check if we stepped into an entity's line of sight
+					this.checkLineOfSight(game, em, entity, enterDirection);
 				}
 			}
 			if (still) {
-				// Check if we stepped into an entity's line of sight
-				this.checkLineOfSight(game, em, entity, enterDirection);
 
 				movement.timer = Math.max(0, movement.timer - movement.delay);
 				var newDirection = movement.getController().getTarget(this.game, dt, position, entity);

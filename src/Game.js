@@ -17,6 +17,7 @@ var State = require("State.js");
 var WidgetGroup = require("WidgetGroup.js");
 var input = require("input.js");
 var direction = require("direction");
+var WalkForwardMovementController = require("WalkForwardMovementController");
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -278,6 +279,53 @@ Game.prototype.wait = function(ms) {
 	return new Promise(function(resolve, reject) {
 		window.setTimeout(resolve, ms);
 	});
+};
+
+Game.prototype.walkForward = function(entity) {
+	return new Promise((resolve, reject) => {
+		var em = this.em;
+		var movement = em.getComponent(entity, MovementComponent);
+		var controller = new WalkForwardMovementController(() => {
+			movement.popController();
+			resolve();
+		});
+		movement.pushController(controller);
+	});
+};
+
+/**
+ * Returns the found entity or -1.
+ */
+Game.prototype.findEntityInLineOfSight = function(caster) {
+	var em = this.em;
+	var pos1 = em.getComponent(caster, Position);
+	var dir = em.getComponent(caster, DirectionComponent).value; // The direction of the line of sight
+	var LoS = em.getComponent(caster, LineOfSightComponent); // LoS
+
+	for (var entity = 0, length = em.count; entity < length; ++entity) {
+		if (entity === caster) continue; // Can't see itself!
+
+		if (em.matches(entity, this.collisionMask)) {
+			var pos2 = em.getComponent(entity, Position);
+			var dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
+
+			// TODO change -1 to Infinity
+			for (var step = 1, max = LoS.length; max === -1 || step <= max; ++step) {
+				var x = pos1.x + step * dx, y = pos1.y + step * dy;
+
+				if (pos2.x === x && pos2.y === y) {
+					return entity;
+				}
+
+				// If the sight is obstructed: quit
+				if (this.isSolid(x, y)) {
+					break;
+				}
+
+			}
+		}
+	}
+	return -1;
 };
 
 /*audio.loadAudio("assets/masara-town.mp3", function(buffer) {
