@@ -11,3 +11,13 @@ exports.getDeltaX = function(direction) {
 exports.getDeltaY = function(direction) {
 	return direction === UP ? -1 : (direction === DOWN ? 1 : 0);
 };
+
+exports.getReverse = function(direction) {
+	switch (direction) {
+		case LEFT: return RIGHT;
+		case UP: return DOWN;
+		case RIGHT: return LEFT;
+		case DOWN: return UP;
+		default: throw new Error("The specified direction is invalid.");
+	}
+};
