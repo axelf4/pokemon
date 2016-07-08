@@ -5,8 +5,9 @@
   "author": "Axel Forsman",
   "scripts": {},
   "dependencies": {
-    "base64-js": "^1.1.2",
     "BitSetModule": "^1.0.0",
+    "base64-js": "^1.1.2",
+    "equals": "^1.0.5",
     "fowl": "axelf4/fowl",
     "gl-matrix": "^2.3.2",
     "lerp": "^1.0.3",

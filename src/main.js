@@ -6,6 +6,7 @@ var LoaderFacade = require("LoaderFacade");
 var input = require("input.js");
 var stateManager = require("stateManager.js");
 var promiseProxy = require("promiseProxy");
+var cachingProxy = require("cachingProxy");
 var Widget = require("Widget.js");
 var resources = require("resources");
 var Font = require("font.js");
@@ -35,7 +36,8 @@ batch.setProjectionMatrix(projectionMatrix);
 batch.setMVMatrix(mvMatrix);
 
 var fileLoader = new FileLoader("pokemongame");
-var loader = new LoaderFacade(fileLoader);
+var loaderFacade = new LoaderFacade(fileLoader);
+var loader = cachingProxy(loaderFacade);
 
 input.setListener((type, key) => {
 	stateManager.getState().onKey(type, key);

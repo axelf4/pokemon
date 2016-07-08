@@ -36,34 +36,33 @@ module.exports = function(game, loader) {
 		});
 	}));
 
-	var jorryt = em.createEntity();
+	var lollipopMan = em.createEntity();
 	var x = 12, y = 5;
-	em.addComponent(jorryt, new Position(x, y));
-	em.addComponent(jorryt, new OldPosition(x, y));
-	em.addComponent(jorryt, new DirectionComponent(direction.DOWN));
+	em.addComponent(lollipopMan, new Position(x, y));
+	em.addComponent(lollipopMan, new OldPosition(x, y));
+	em.addComponent(lollipopMan, new DirectionComponent(direction.DOWN));
 	loader.loadTextureRegion("assets/dancer.png").then(textureRegion => {
 		var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
 		var spriteComponent = new SpriteComponent(textureRegion, animation);
 		spriteComponent.offsetX = -8;
 		spriteComponent.offsetY = -16;
-		em.addComponent(jorryt, spriteComponent);
+		em.addComponent(lollipopMan, spriteComponent);
 	});
 	var controller = new RandomMovementController();
-	em.addComponent(jorryt, new MovementComponent(controller));
-	em.addComponent(jorryt, new LineOfSightComponent(
+	em.addComponent(lollipopMan, new MovementComponent(controller));
+	em.addComponent(lollipopMan, new LineOfSightComponent(
 				function(game, em, caster, blocker) {
 					if (blocker === game.player) return LineOfSightComponent.LOS_TRIGGER_AND_SNAP;
 					return LineOfSightComponent.LOS_NO_ACTION;
 				},
 				function(game, em, entity1, entity2) {
-					console.log("Hello!");
 					thread(function*() {
 						var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-						var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+						var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
 						playerMovement.pushController(new StillMovementController());
 						entityMovement.pushController(new StillMovementController());
 
-						yield game.walkForward(jorryt);
+						yield game.walkForward(lollipopMan);
 
 						yield game.showDialog("Why, hello there little boy. Want a lollipop?");
 						yield game.wait(1000);
@@ -72,15 +71,13 @@ module.exports = function(game, loader) {
 						entityMovement.popController();
 					});
 				}));
-	em.addComponent(jorryt, new InteractionComponent(function() {
+	em.addComponent(lollipopMan, new InteractionComponent(function() {
 		thread(function*() {
 			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-			var entityMovement = game.em.getComponent(jorryt, MovementComponent);
+			var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
 			playerMovement.pushController(new StillMovementController());
 			entityMovement.pushController(new StillMovementController());
 			yield game.showDialog("So you approach me voluntarily? You've got some guts!");
-			// yield game.showDialog("I could be a girl, you could be a boy. Transsexuality is so fun!");
-			// yield game.showDialog("What's up with that jar of nutella? Still fighting the good fight.");
 			// TODO add jar of nutella to player inventory
 			playerMovement.popController();
 			entityMovement.popController();

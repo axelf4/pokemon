@@ -79,7 +79,7 @@ LoaderFacade.prototype.loadTexture = function(url) {
 };
 
 LoaderFacade.prototype.loadTextureRegion = function(url) {
-	return this.loadTexture(url).then((textureInfo) => {
+	return this.loadTexture(url).then(textureInfo => {
 		return new texture.Region(textureInfo.texture, 0, 0, textureInfo.width, textureInfo.height);
 	});
 };
