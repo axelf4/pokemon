@@ -1,12 +1,13 @@
-module.exports = function(fn) {
-	var gen = fn();
-	if (typeof gen.next !== "function") return;
+module.exports = function(f, ...args) {
+	var gen = f(...args);
+	if (typeof gen.next !== "function") return; // throw new TypeError("The specified generator function is invalid.");
+
 	(function next(value) {
 		var ret = gen.next(value);
 		if (ret.done) return;
 
 		var promise = ret.value;
-		if (!promise || typeof promise.then !== "function") throw new Error("Returned value is not a promise.");
+		if (!promise || typeof promise.then !== "function") throw new TypeError("Expression is not of type \"Promise\".");
 		promise.then(next);
 	})();
 };

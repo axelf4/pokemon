@@ -18,6 +18,7 @@ var WidgetGroup = require("WidgetGroup.js");
 var input = require("input.js");
 var direction = require("direction");
 var WalkForwardMovementController = require("WalkForwardMovementController");
+var PathMovementController = require("PathMovementController");
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -326,6 +327,24 @@ Game.prototype.findEntityInLineOfSight = function(caster) {
 		}
 	}
 	return -1;
+};
+
+Game.prototype.facePlayer = function(entity) {
+	var em = this.em;
+	var entityPos = em.getComponent(entity, Position);
+	var playerPos = em.getComponent(this.player, Position);
+	em.getComponent(entity, DirectionComponent).value = direction.getDirectionToPos(entityPos, playerPos);
+};
+
+Game.prototype.walkPath = function(entity, path) {
+	return new Promise((resolve, reject) => {
+		var em = this.em;
+		var movement = em.getComponent(entity, MovementComponent);
+		movement.pushController(new PathMovementController(path, () => {
+			movement.popController();
+			resolve();
+		}));
+	});
 };
 
 /*audio.loadAudio("assets/masara-town.mp3", function(buffer) {

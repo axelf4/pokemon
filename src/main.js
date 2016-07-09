@@ -88,6 +88,12 @@ var playerTrainer = new Trainer("Axel", [slowpoke]);
 var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
 // var battleState = new BattleState(game, playerTrainer, enemyTrainer);
 
+var thread = require("thread");
+
+thread(function*(test) {
+	console.log(test);
+}, "hello");
+
 var lastTime = (performance || Date).now();
 var requestID;
 var width, height;
@@ -95,7 +101,7 @@ var width, height;
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
 	var dt = timestamp - lastTime;
-	if (dt > 1000) dt = 0;
+	if (dt > 1000) dt = 0; // If the user comes back to the tab after a large amount of time
 	lastTime = timestamp;
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);

@@ -14,8 +14,7 @@ var StillMovementController = require("StillMovementController.js");
 var direction = require("direction");
 
 module.exports = function(game, loader) {
-	loader.loadMap("assets/forest.tmx")
-		.then(function(map) {
+	loader.loadMap("assets/forest.tmx").then(map => {
 			game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 		});
 
@@ -26,15 +25,13 @@ module.exports = function(game, loader) {
 
 	var item = em.createEntity();
 	em.addComponent(item, new Position(13, 5));
-	em.addComponent(item, new InteractionComponent(function() {
-		thread(function*() {
+	em.addComponent(item, new InteractionComponent(thread.bind(undefined, function*(game) {
 			game.lock();
 			yield game.showDialog("It's a pokéball. What did you expect?");
-			// yield game.wait(1000);
+			yield game.walkPath(game.player, [direction.DOWN, direction.DOWN]);
 			yield game.showDialog("Hello");
 			game.release();
-		});
-	}));
+	})));
 
 	var lollipopMan = em.createEntity();
 	var x = 12, y = 5;
@@ -51,36 +48,26 @@ module.exports = function(game, loader) {
 	var controller = new RandomMovementController();
 	em.addComponent(lollipopMan, new MovementComponent(controller));
 	em.addComponent(lollipopMan, new LineOfSightComponent(
-				function(game, em, caster, blocker) {
-					if (blocker === game.player) return LineOfSightComponent.LOS_TRIGGER_AND_SNAP;
-					return LineOfSightComponent.LOS_NO_ACTION;
-				},
-				function(game, em, entity1, entity2) {
-					thread(function*() {
-						var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-						var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
-						playerMovement.pushController(new StillMovementController());
-						entityMovement.pushController(new StillMovementController());
-
-						yield game.walkForward(lollipopMan);
-
-						yield game.showDialog("Why, hello there little boy. Want a lollipop?");
-						yield game.wait(1000);
-						yield game.showDialog("You've been struck by the lollipop man.");
-						playerMovement.popController();
-						entityMovement.popController();
-					});
-				}));
-	em.addComponent(lollipopMan, new InteractionComponent(function() {
-		thread(function*() {
-			var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-			var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
-			playerMovement.pushController(new StillMovementController());
-			entityMovement.pushController(new StillMovementController());
-			yield game.showDialog("So you approach me voluntarily? You've got some guts!");
-			// TODO add jar of nutella to player inventory
-			playerMovement.popController();
-			entityMovement.popController();
-		});
-	}));
+				(game, em, caster, blocker) => blocker === game.player ? LineOfSightComponent.LOS_TRIGGER_AND_SNAP : LineOfSightComponent.LOS_NO_ACTION,
+				thread.bind(undefined, (function*(game, em, entity1, entity2) {
+					var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
+					var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
+					playerMovement.pushController(new StillMovementController());
+					entityMovement.pushController(new StillMovementController());
+					yield game.walkForward(lollipopMan);
+					yield game.showDialog("Why, hello there little boy. Want a lollipop?");
+					yield game.wait(1000);
+					yield game.showDialog("You've been struck by the lollipop man.");
+					playerMovement.popController();
+					entityMovement.popController();
+				}))));
+	em.addComponent(lollipopMan, new InteractionComponent(thread.bind(undefined, function*(game) {
+		var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
+		var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
+		playerMovement.pushController(new StillMovementController());
+		entityMovement.pushController(new StillMovementController());
+		yield game.showDialog("So you approach me voluntarily? You've got some guts!");
+		playerMovement.popController();
+		entityMovement.popController();
+	})));
 };
