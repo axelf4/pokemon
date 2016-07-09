@@ -9,7 +9,7 @@ var MovementSystem = function(game) {
 	this.game = game;
 	var em = game.em;
 	this.mask = em.getMask([Position, OldPosition, DirectionComponent, MovementComponent]);
-	this.LoSMask = em.getMask([Position, OldPosition, DirectionComponent, LineOfSightComponent]);
+	this.LoSMask = em.getMask([Position, DirectionComponent, LineOfSightComponent]);
 };
 
 /**

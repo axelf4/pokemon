@@ -54,6 +54,7 @@ loader.loadTextureRegion("textures/frame.9.png").then(textureRegion => {
 });
 
 var game = new Game(proxyLoader);
+game.loadScript("ballettown.js");
 
 proxyLoader.all.then(() => {
 	console.log("Loaded all assets for Game. Switching states...");

@@ -8,6 +8,7 @@ var InteractionComponent = require("InteractionComponent.js");
 var MovementComponent = require("MovementComponent.js");
 var Animation = require("Animation.js");
 var texture = require("texture.js");
+var AnimationComponent = require("AnimationComponent");
 
 var keys = input.keys;
 
@@ -51,20 +52,14 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 	return direction.NO_DIRECTION;
 };
 
-exports.createPlayer = function(loader, em) {
+exports.createPlayer = function(game, loader, em) {
 	var player = em.createEntity();
 	em.addComponent(player, new Position());
 	em.addComponent(player, new OldPosition());
 	em.addComponent(player, new DirectionComponent(direction.DOWN));
 	em.addComponent(player, new MovementComponent(new PlayerMovementController()));
 
-	loader.loadTextureRegion("assets/lucas.png").then(textureRegion => {
-		var animation = new Animation(250, Animation.getSheetFromTexture(4, 2, 2, 32, 32, 4, 2));
-		var spriteComponent = new SpriteComponent(textureRegion, animation);
-		spriteComponent.offsetX = -8;
-		spriteComponent.offsetY = -16;
-		em.addComponent(player, spriteComponent);
-	});
+	game.loadCharacterSprite(player, "assets/playerSprite.png");
 
 	return player;
 };

@@ -19,6 +19,7 @@ var input = require("input.js");
 var direction = require("direction");
 var WalkForwardMovementController = require("WalkForwardMovementController");
 var PathMovementController = require("PathMovementController");
+var Animation = require("Animation");
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -28,6 +29,7 @@ var InteractionComponent = require("InteractionComponent.js");
 var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
 var LineOfSightComponent = require("LineOfSightComponent");
+var AnimationComponent = require("AnimationComponent");
 
 var font = resources.font;
 fowl.registerComponents(
@@ -38,7 +40,8 @@ fowl.registerComponents(
 		InteractionComponent,
 		OldPosition,
 		MovementComponent,
-		LineOfSightComponent);
+		LineOfSightComponent,
+		AnimationComponent);
 
 var GameScreen = function(game) {
 	Stack.call(this);
@@ -63,17 +66,29 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 		if (em.matches(entity, game.spriteSystemMask)) {
 			var position = em.getComponent(entity, Position);
 			var spriteComponent = em.getComponent(entity, SpriteComponent);
+			var movement = em.hasComponent(entity, MovementComponent) ? em.getComponent(entity, MovementComponent) : null;
 
 			var texture = spriteComponent.texture;
-			var region = spriteComponent.animation.getFrame(time);
+			var region;
+			if (em.hasComponent(entity, AnimationComponent)) {
+				var dir = em.getComponent(entity, DirectionComponent).value;
+				var animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
+				if (!movement || movement.timer === 0) region = animation.getFrameByIndex(0);
+				else region = animation.getFrame(time);
+			} else {
+				if (spriteComponent.animation) {
+					region = spriteComponent.animation.getFrame(time);
+				} else region = spriteComponent.region;
+			}
+
 			var u1 = (region.x + 0.5) / texture.width;
 			var v1 = (region.y + 0.5) / texture.height;
 			var u2 = (region.x + region.width - 0.5) / texture.width;
 			var v2 = (region.y + region.height - 0.5) / texture.height;
+
 			var x, y;
-			if (em.hasComponent(entity, MovementComponent)) {
+			if (movement !== null) {
 				var oldpos = em.getComponent(entity, OldPosition);
-				var movement = em.getComponent(entity, MovementComponent);
 				x = lerp(oldpos.x, position.x, movement.timer / movement.delay) * 16 + spriteComponent.offsetX;
 				y = lerp(oldpos.y, position.y, movement.timer / movement.delay) * 16 + spriteComponent.offsetY;
 			} else {
@@ -136,9 +151,7 @@ var Game = function(loader) {
 
 	this.updateHooks = [];
 
-	this.player = player.createPlayer(loader, this.em);
-
-	this.loadScript("forest.js");
+	this.player = player.createPlayer(this, loader, this.em);
 };
 Game.prototype = Object.create(State.prototype);
 Game.prototype.constructor = Game;
@@ -204,14 +217,16 @@ Game.prototype.getPlayer = function() {
 	return this.player;
 }
 
-Game.prototype.lock = function() {
-	var playerMovement = this.em.getComponent(this.player, MovementComponent);
-	playerMovement.pushController(new StillMovementController());
+Game.prototype.lock = function(entity) {
+	if (!entity) entity = this.player;
+	var movement = this.em.getComponent(entity, MovementComponent);
+	movement.pushController(new StillMovementController());
 };
 
-Game.prototype.release = function() {
-	var playerMovement = this.em.getComponent(this.player, MovementComponent);
-	playerMovement.popController();
+Game.prototype.release = function(entity) {
+	if (!entity) entity = this.player;
+	var movement = this.em.getComponent(entity, MovementComponent);
+	movement.popController();
 };
 
 /**
@@ -257,16 +272,21 @@ Game.prototype.clearLevel = function() {
 /**
  * Warps the player to target coordinates and, optionally, specified map.
  */
-Game.prototype.warp = function(x, y, mapScript) {
+Game.prototype.warp = function(x, y, mapScript, relative) {
 	var em = this.em;
 	var pos = em.getComponent(this.player, Position);
 	var oldpos = em.getComponent(this.player, OldPosition);
-	oldpos.x = pos.x = x;
-	oldpos.y = pos.y = y;
+	if (relative) {
+		oldpos.x = pos.x = pos.x - x;
+		oldpos.y = pos.y = pos.y - y;
+	} else {
+		oldpos.x = pos.x = x;
+		oldpos.y = pos.y = y;
+	}
 	if (mapScript !== undefined) {
 		if (mapScript === null) throw new Error("mapScript cannot be null.");
-		game.clearLevel();
-		game.loadScript(mapScript);
+		this.clearLevel();
+		this.loadScript(mapScript);
 	}
 };
 
@@ -360,6 +380,34 @@ Game.prototype.snapEntity = function(entity) {
 		oldpos.x = pos.x;
 		oldpos.y = pos.y;
 	}
+};
+
+Game.prototype.loadCharacterSprite = function(entity, url) {
+	return this.loader.loadTextureRegion(url).then(textureRegion => {
+		var em = this.em;
+		var spriteComponent = new SpriteComponent(textureRegion);
+		spriteComponent.offsetX = -8;
+		spriteComponent.offsetY = -16;
+		em.addComponent(entity, spriteComponent);
+		var animations = {
+			down: new Animation(250, Animation.getSheetFromTexture(4, 0, 0, 32, 32, 4, 0)),
+			up: new Animation(250, Animation.getSheetFromTexture(4, 0, 32, 32, 32, 4, 0)),
+			left: new Animation(250, Animation.getSheetFromTexture(4, 0, 64, 32, 32, 4, 0)),
+			right: new Animation(250, Animation.getSheetFromTexture(4, 0, 96, 32, 32, 4, 0)),
+		};
+		em.addComponent(entity, new AnimationComponent(animations));
+	});
+};
+
+Game.prototype.faceDirection = function(entity, dir) {
+	this.em.getComponent(entity, DirectionComponent).value = dir;
+};
+
+Game.prototype.faceEachOther = function(entity1, entity2) {
+	var em = this.em;
+	var pos1 = em.getComponent(entity1, Position), pos2 = em.getComponent(entity2, Position);
+	em.getComponent(entity1, DirectionComponent).value = direction.getDirectionToPos(pos1, pos2);
+	em.getComponent(entity2, DirectionComponent).value = direction.getDirectionToPos(pos2, pos1);
 };
 
 /*audio.loadAudio("assets/masara-town.mp3", function(buffer) {

@@ -2,6 +2,7 @@ var renderer = require("renderer.js");
 var glMatrix = require("gl-matrix");
 var path = require("path");
 var base64 = require("base64-js");
+var pow2 = require("pow2");
 
 var gl = renderer.gl;
 var vec2 = glMatrix.vec2;
@@ -11,33 +12,37 @@ var MapRenderer = function(map) {
 	if (map.tilewidth !== map.tileheight) throw new Error("Tile dimensions do not match.");
 	this.tileSize = map.tilewidth;
 
+	var width = map.width, height = map.height;
+	if (!pow2.isPowerOfTwo(width)) width = pow2.nextHighestPowerOfTwo(width);
+	if (!pow2.isPowerOfTwo(height)) height = pow2.nextHighestPowerOfTwo(height);
+
 	// Upload the layers
 	var components = 3;
 	var layers = this.layers = new Array();
 	for (var i = 0; i < map.layers.length; i++) {
 		var layer = map.layers[i];
 		// if (!layer.visible) continue; // Commented because visible should only affect the Tiled editor
-		var width = map.width;
-		var height = map.height;
 
 		for (var tsId = map.tilesets.length; tsId--;) {
 			var tileset = map.tilesets[tsId];
 			var tilesetUsed = false, otherTilesetsUsed = false;
 			var data = new Uint8Array(width * height * components), idx = 0;
-			for (var col = 0, length = height; col < length; col++) {
-				for (var row = 0, length = width; row < length; row++) {
-					var gid = layer.data[row + col * width];
-					if (gid >= tileset.firstgid) {
-						tilesetUsed = true;
-						data[idx++] = tileset.getTileX(gid) - 1;
-						data[idx++] = tileset.getTileY(gid);
-						data[idx++] = 1;
-					} else {
-						otherTilesetsUsed = true;
-						data[idx++] = 0;
-						data[idx++] = 0;
-						data[idx++] = 0;
+			for (var col = 0, colCount = height; col < colCount; col++) {
+				for (var row = 0, rowCount = width; row < rowCount; row++) {
+					if (col < map.height && row < map.width) {
+						var gid = layer.data[row + col * map.width];
+						if (gid >= tileset.firstgid) {
+							tilesetUsed = true;
+							data[idx++] = tileset.getTileX(gid) - 1;
+							data[idx++] = tileset.getTileY(gid);
+							data[idx++] = 1;
+							continue;
+						}
 					}
+					otherTilesetsUsed = true;
+					data[idx++] = 0;
+					data[idx++] = 0;
+					data[idx++] = 0;
 				}
 			}
 			if (!tilesetUsed) continue;
@@ -51,8 +56,6 @@ var MapRenderer = function(map) {
 			this.layers.push({
 				layer: layer,
 				layerId: i,
-				width: width,
-				height: height,
 				tileset: tileset,
 				sprites: tileset.texture,
 				tiles: tiles,
@@ -123,13 +126,13 @@ var MapRenderer = function(map) {
 	gl.uniform1f(gl.getUniformLocation(this.program, "inverseTileSize"), 1 / this.tileSize);
 	gl.uniform1i(gl.getUniformLocation(this.program, "sprites"), 0);
 	gl.uniform1i(gl.getUniformLocation(this.program, "tiles"), 1);
+	gl.uniform2f(gl.getUniformLocation(this.program, "inverseTileTextureSize"), 1 / width, 1 / height);
 
 	this.scaledViewportSize = vec2.create();
 	vec2.set(this.scaledViewportSize, 640, 480);
 
 	this.viewportSizeLoc = gl.getUniformLocation(this.program, "viewportSize");
 	this.viewOffsetLoc = gl.getUniformLocation(this.program, "viewOffset");
-	this.inverseTileTextureSizeLoc = gl.getUniformLocation(this.program, "inverseTileTextureSize");
 	this.inverseSpriteTextureSizeLoc = gl.getUniformLocation(this.program, "inverseSpriteTextureSize");
 };
 
@@ -163,7 +166,6 @@ MapRenderer.prototype.draw = function(layers) {
 	var scrollScaleX = 1, scrollScaleY = 1;
 	gl.uniform2f(this.viewOffsetLoc, Math.floor(x * scrollScaleX), Math.floor(y * scrollScaleY));
 	gl.uniform2fv(this.viewportSizeLoc, this.scaledViewportSize);
-	gl.uniform2f(this.inverseTileTextureSizeLoc, 1 / this.map.width, 1 / this.map.height);
 
 	layers = layers || this.layers;
 
