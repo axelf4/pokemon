@@ -47,20 +47,20 @@ module.exports = function(game, loader) {
 	});
 	var controller = new RandomMovementController();
 	em.addComponent(lollipopMan, new MovementComponent(controller));
-	em.addComponent(lollipopMan, new LineOfSightComponent(
-				(game, em, caster, blocker) => blocker === game.player ? LineOfSightComponent.LOS_TRIGGER_AND_SNAP : LineOfSightComponent.LOS_NO_ACTION,
-				thread.bind(undefined, (function*(game, em, entity1, entity2) {
-					var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
-					var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
-					playerMovement.pushController(new StillMovementController());
-					entityMovement.pushController(new StillMovementController());
-					yield game.walkForward(lollipopMan);
-					yield game.showDialog("Why, hello there little boy. Want a lollipop?");
-					yield game.wait(1000);
-					yield game.showDialog("You've been struck by the lollipop man.");
-					playerMovement.popController();
-					entityMovement.popController();
-				}))));
+	em.addComponent(lollipopMan, new LineOfSightComponent(thread.bind(undefined, (function*(game, em, caster, blocker) {
+		if (blocker !== game.player) return;
+		[caster, blocker].forEach(game.snapEntity.bind(game));
+		var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
+		var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
+		playerMovement.pushController(new StillMovementController());
+		entityMovement.pushController(new StillMovementController());
+		yield game.walkForward(lollipopMan);
+		yield game.showDialog("Why, hello there little boy. Want a lollipop?");
+		yield game.wait(1000);
+		yield game.showDialog("You've been struck by the lollipop man.");
+		playerMovement.popController();
+		entityMovement.popController();
+	}))));
 	em.addComponent(lollipopMan, new InteractionComponent(thread.bind(undefined, function*(game) {
 		var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
 		var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);

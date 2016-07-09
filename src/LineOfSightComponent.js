@@ -7,13 +7,8 @@ var LOS_TRIGGER_AND_SNAP = 2;
  * script & triggerCheck signature: function(game, em, caster, blocker)
  */
 
-var LineOfSightComponent = function(triggerCheck, script, length) {
-	if (!triggerCheck) throw new Error("triggerCheck must not be null.");
+var LineOfSightComponent = function(script, length) {
 	if (!script) throw new Error("script must not be null.");
-
-	if (typeof triggerCheck === "number") this.triggerCheck = () => triggerCheck;
-	else if (typeof triggerCheck === "function") this.triggerCheck = triggerCheck;
-	else throw new TypeError("triggerCheck must be of type \"number\" or \"function\".");
 
 	this.script = script;
 	this.length = length || 16;

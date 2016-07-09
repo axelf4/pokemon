@@ -310,8 +310,7 @@ Game.prototype.findEntityInLineOfSight = function(caster) {
 			var pos2 = em.getComponent(entity, Position);
 			var dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 
-			// TODO change -1 to Infinity
-			for (var step = 1, max = LoS.length; max === -1 || step <= max; ++step) {
+			for (var step = 1, max = LoS.length; step <= max; ++step) {
 				var x = pos1.x + step * dx, y = pos1.y + step * dy;
 
 				if (pos2.x === x && pos2.y === y) {
@@ -345,6 +344,22 @@ Game.prototype.walkPath = function(entity, path) {
 			resolve();
 		}));
 	});
+};
+
+/**
+ * Snaps the entity to the next tile.
+ *
+ * The entity must have a Position component.
+ */
+Game.prototype.snapEntity = function(entity) {
+	var em = this.em;
+	if (em.hasComponent(entity, MovementComponent)) em.getComponent(entity, MovementComponent).timer = 0;
+	if (em.hasComponent(entity, OldPosition)) {
+		var pos = em.getComponent(entity, Position);
+		var oldpos = em.getComponent(entity, OldPosition);
+		oldpos.x = pos.x;
+		oldpos.y = pos.y;
+	}
 };
 
 /*audio.loadAudio("assets/masara-town.mp3", function(buffer) {

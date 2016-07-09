@@ -12,36 +12,9 @@ var MovementSystem = function(game) {
 	this.LoSMask = em.getMask([Position, OldPosition, DirectionComponent, LineOfSightComponent]);
 };
 
-MovementSystem.prototype.handleLineOfSightObtrusion = function(game, em, entity1, caster, blocker) {
-	var LoS = em.getComponent(caster, LineOfSightComponent);
-	LoS.currentBlocker = blocker;
-	var op = LoS.triggerCheck(game, em, caster, blocker);
-	switch (op) {
-		case LineOfSightComponent.LOS_NO_ACTION:
-			break;
-		case LineOfSightComponent.LOS_TRIGGER_AND_SNAP:
-			if (em.hasComponent(caster, MovementComponent)) em.getComponent(caster, MovementComponent).timer = 0;
-			if (em.hasComponent(blocker, MovementComponent)) em.getComponent(blocker, MovementComponent).timer = 0;
-
-			// Snap the entity to the next tile
-			var entityToSnap = entity1 === caster ? blocker : caster; // entity1 has already been snapped
-			if (em.hasComponent(entityToSnap, OldPosition)) {
-				var pos = em.getComponent(entityToSnap, Position);
-				var oldpos = em.getComponent(entityToSnap, OldPosition);
-				oldpos.x = pos.x;
-				oldpos.y = pos.y;
-			}
-			// Intentional fall-through
-		case LineOfSightComponent.LOS_TRIGGER:
-			LoS.script(game, em, caster, blocker);
-			break;
-		default:
-			throw new Error("Invalid return value of triggerCheck.");
-	}
-};
-
 /**
  * @param entity1 The entity that checks if it stepped into other entities' LoS.
+ * @param enterDirection The direction from which the entity entered LoS from
  */
 MovementSystem.prototype.checkLineOfSight = function(game, em, entity1) {
 	var pos1 = em.getComponent(entity1, Position);
@@ -50,17 +23,18 @@ MovementSystem.prototype.checkLineOfSight = function(game, em, entity1) {
 	// Check if we caught another entity in our LoS
 	if (em.hasComponent(entity1, LineOfSightComponent)) {
 		var LoS = em.getComponent(entity1, LineOfSightComponent);
-
 		var blocker = game.findEntityInLineOfSight(entity1);
 		if (blocker !== -1) {
 			if (LoS.currentBlocker !== blocker) {
-				this.handleLineOfSightObtrusion(game, em, entity1, entity1, blocker);
+				LoS.currentBlocker = blocker;
+				LoS.script(game, em, entity1, blocker);
 			}
 		} else {
 			LoS.currentBlocker = null;
 		}
 	}
 
+	// TODO handle case where we stepped into a short LoS
 	// Check if we stepped into other entity's LoS
 	for (var entity2 = 0, length = em.count; entity2 < length; ++entity2) {
 		if (entity2 === entity1) continue; // Can't see itself
@@ -71,7 +45,9 @@ MovementSystem.prototype.checkLineOfSight = function(game, em, entity1) {
 				var pos2 = em.getComponent(entity2, Position);
 				var dirBetween = direction.getDirectionToPos(pos2, pos1);
 				if (dirBetween !== dir1 && dirBetween !== direction.getReverse(dir1)) {
-					this.handleLineOfSightObtrusion(game, em, entity1, entity2, blocker);
+					var LoS = em.getComponent(entity2, LineOfSightComponent);
+					LoS.currentBlocker = blocker;
+					LoS.script(game, em, entity2, blocker);
 				}
 			}
 		}
