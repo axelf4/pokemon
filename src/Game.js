@@ -3,7 +3,8 @@ var lerp = require("lerp");
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
 var Map = require("map.js");
-var MapRenderer = require("CachedMapRenderer.js");
+// var MapRenderer = require("OrthogonalMapRenderer.js");
+var CachedMapRenderer = require("CachedMapRenderer.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var StillMovementController = require("StillMovementController.js");
@@ -20,6 +21,8 @@ var direction = require("direction");
 var WalkForwardMovementController = require("WalkForwardMovementController");
 var PathMovementController = require("PathMovementController");
 var Animation = require("Animation");
+var glMatrix = require("gl-matrix");
+var Select = require("Select");
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -30,6 +33,10 @@ var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
 var LineOfSightComponent = require("LineOfSightComponent");
 var AnimationComponent = require("AnimationComponent");
+var DimensionComponent = require("DimensionComponent");
+
+var mat4 = glMatrix.mat4;
+var vec3 = glMatrix.vec3;
 
 var font = resources.font;
 fowl.registerComponents(
@@ -41,7 +48,14 @@ fowl.registerComponents(
 		OldPosition,
 		MovementComponent,
 		LineOfSightComponent,
-		AnimationComponent);
+		AnimationComponent,
+		DimensionComponent);
+
+var mvMatrix = mat4.create();
+var positionVector = vec3.create();
+var up = vec3.fromValues(0, 1, 0);
+var tmp = vec3.create();
+var directionVector = vec3.fromValues(0, 0, -1);
 
 var GameScreen = function(game) {
 	Stack.call(this);
@@ -58,10 +72,26 @@ GameScreen.prototype = Object.create(Stack.prototype);
 GameScreen.prototype.constructor = GameScreen;
 
 GameScreen.prototype.draw = function(batch, dt, time) {
-	var game = this.game, em = game.em;
+	var game = this.game, em = game.em, player = game.player;
 
-	game.mapRenderer.draw(game.backgroundRenderList);
+	var width = this.width, height = this.height;
+	var pos = em.getComponent(player, Position);
+	var oldpos = em.getComponent(player, OldPosition);
+	var movement = em.getComponent(player, MovementComponent);
+	var transformX = lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 - width / 2;
+	var transformY = lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 - height / 2;
+	vec3.set(positionVector, transformX, transformY, 0);
 
+	vec3.copy(tmp, positionVector);
+	vec3.add(tmp, tmp, directionVector);
+	mat4.lookAt(mvMatrix, positionVector, tmp, up);
+	// mat4.fromTranslation(mvMatrix, positionVector);
+	var oldTransformMatrix = batch.getTransformMatrix();
+	batch.setTransformMatrix(mvMatrix);
+
+	game.mapRenderer.drawLayers(game.backgroundLayers, transformX, transformY, this.width, this.height);
+
+	batch.begin();
 	for (var entity = 0, length = em.count; entity < length; entity++) {
 		if (em.matches(entity, game.spriteSystemMask)) {
 			var position = em.getComponent(entity, Position);
@@ -99,11 +129,15 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 		}
 	}
-	batch.flush();
+	batch.end();
 
-	game.mapRenderer.draw(game.foregroundRenderList);
+	game.mapRenderer.drawLayers(game.foregroundLayers, transformX, transformY, this.width, this.height);
 
+	batch.setTransformMatrix(oldTransformMatrix);
+
+	batch.begin();
 	Stack.prototype.draw.call(this, batch, dt, time);
+	batch.end();
 };
 
 GameScreen.prototype.onKey = function(type, key) {
@@ -131,9 +165,10 @@ GameScreen.prototype.onKey = function(type, key) {
 	}
 };
 
-var Game = function(loader) {
+var Game = function(loader, batch) {
 	State.call(this);
 	this.loader = loader;
+	this.batch = batch;
 
 	this.widget = new GameScreen(this);
 	this.widget.requestFocus();
@@ -150,6 +185,7 @@ var Game = function(loader) {
 	this.movementSystem = new MovementSystem(this);
 
 	this.updateHooks = [];
+	this.pushTriggers = [];
 
 	this.player = player.createPlayer(this, loader, this.em);
 };
@@ -177,21 +213,39 @@ Game.prototype.say = Game.prototype.showDialog = function(text) {
 	});
 };
 
+Game.prototype.multichoice = function(label, optionNames) {
+	var uiLayer = this.widget.uiLayer;
+	return new Promise(function(resolve, reject) {
+		var select = new Select(optionNames, 1, selected => {
+			uiLayer.removeAllWidgets();
+			resolve(selected);
+		});
+		select.style.align = align.START;
+		uiLayer.addWidget(select);
+		select.requestFocus();
+		var dialog = new Dialog(label);
+		dialog.style.align = align.STRETCH;
+		dialog.style.height = 100;
+		uiLayer.addWidget(dialog);
+	});
+};
+
 Game.prototype.getMap = function() { return this.map; };
 
 Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.map = map;
-	this.mapRenderer = new MapRenderer(map);
+	// this.mapRenderer = new MapRenderer(map, this.batch);
+	this.mapRenderer = new CachedMapRenderer(map);
 	var callback = function(item) {
 		if (typeof item === "string" || item instanceof String) {
 			return Map.getLayerIdByName(map, item);
+		} else if (typeof item === "number") {
+			return item;
 		}
-		throw new Error("Unknown type of layer id");
+		throw new TypeError("Unknown type of layer id.");
 	};
-	backgroundLayers = backgroundLayers.map(callback);
-	foregroundLayers = foregroundLayers.map(callback);
-	this.backgroundRenderList = this.mapRenderer.getRenderList(backgroundLayers);
-	this.foregroundRenderList = this.mapRenderer.getRenderList(foregroundLayers);
+	this.backgroundLayers = backgroundLayers.map(callback);
+	this.foregroundLayers = foregroundLayers.map(callback);
 	this.metaLayer = -1;
 	for (var i = 0, length = map.layers.length; i < length; ++i) {
 		if (map.layers[i].name === "meta") {
@@ -238,9 +292,18 @@ Game.prototype.getEntityAtCell = function(x, y) {
 	for (var entity = 0, length = em.count; entity < length; entity++) {
 		if (em.matches(entity, this.collisionSystemMask)) {
 			var position = em.getComponent(entity, Position);
-			if (position.x === x && position.y === y) {
-				result = entity;
-				break;
+			if (em.hasComponent(entity, DimensionComponent)) {
+				var dimension = em.getComponent(entity, DimensionComponent);
+				if (position.x <= x && position.x + dimension.width > x
+						&& position.y <= y && position.y + dimension.height > y) {
+					result = entity;
+					break;
+				}
+			} else {
+				if (position.x === x && position.y === y) {
+					result = entity;
+					break;
+				}
 			}
 			/*if (em.hasComponent(entity, OldPosition)) {
 				var oldpos = em.getComponent(entity, OldPosition);
@@ -255,6 +318,8 @@ Game.prototype.getEntityAtCell = function(x, y) {
 };
 
 Game.prototype.isSolid = function(x, y) {
+	// Can't walk outside map boundaries
+	if (x < 0 || x >= this.map.width || y < 0 || y >= this.map.height) return true;
 	// Check for entity at cell
 	if (this.getEntityAtCell(x, y) !== null) return true;
 	// Check for collidable tile at cell
@@ -263,10 +328,20 @@ Game.prototype.isSolid = function(x, y) {
 	throw new Error("Current map has no meta layer.");
 };
 
-Game.prototype.pushTriggers = [];
+Game.prototype.getPushTriggers = function() {
+	return this.pushTriggers;
+};
+
+Game.prototype.addPushTrigger = function(pushTrigger) {
+	this.pushTriggers.push(pushTrigger);
+};
 
 Game.prototype.clearLevel = function() {
 	this.pushTriggers = [];
+	var em = this.em, player = this.player;
+	for (var entity = 0, length = em.count; entity < length; ++entity) {
+		if (entity !== player) em.removeEntity(entity);
+	}
 };
 
 /**

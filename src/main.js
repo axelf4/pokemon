@@ -7,7 +7,6 @@ var input = require("input.js");
 var stateManager = require("stateManager.js");
 var promiseProxy = require("promiseProxy");
 var cachingProxy = require("cachingProxy");
-var Widget = require("Widget.js");
 var resources = require("resources");
 var Font = require("font.js");
 var NinePatch = require("NinePatch");
@@ -16,6 +15,11 @@ var BattleState = require("BattleState.js");
 var Game = require("Game.js");
 // require("babel-core/register");
 // require("babel-polyfill");
+
+var Position = require("Position");
+var OldPosition = require("OldPosition");
+var MovementComponent = require("MovementComponent");
+var lerp = require("lerp");
 
 var Trainer = require("Trainer.js");
 var pokemon = require("pokemon.js");
@@ -29,11 +33,10 @@ console.log("----- Starting the game -----");
 
 var projectionMatrix = mat4.create();
 mat4.ortho(projectionMatrix, 0, 640, 480, 0, -1, 1);
-var mvMatrix = mat4.create();
 
 var batch = new SpriteBatch();
 batch.setProjectionMatrix(projectionMatrix);
-batch.setMVMatrix(mvMatrix);
+// batch.setTransformMatrix(mvMatrix);
 
 var fileLoader = new FileLoader("pokemongame");
 var loaderFacade = new LoaderFacade(fileLoader);
@@ -53,8 +56,9 @@ loader.loadTextureRegion("textures/frame.9.png").then(textureRegion => {
 	resources.frame = NinePatch.fromTexture(textureRegion.texture, 24, 24);
 });
 
-var game = new Game(proxyLoader);
-game.loadScript("ballettown.js");
+var game = new Game(proxyLoader, batch);
+game.loadScript("home.js");
+game.warp(9, 3);
 
 proxyLoader.all.then(() => {
 	console.log("Loaded all assets for Game. Switching states...");
@@ -89,15 +93,8 @@ var playerTrainer = new Trainer("Axel", [slowpoke]);
 var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
 // var battleState = new BattleState(game, playerTrainer, enemyTrainer);
 
-var thread = require("thread");
-
-thread(function*(test) {
-	console.log(test);
-}, "hello");
-
 var lastTime = (performance || Date).now();
 var requestID;
-var width, height;
 
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
@@ -105,19 +102,23 @@ var update = function(timestamp) {
 	if (dt > 1000) dt = 0; // If the user comes back to the tab after a large amount of time
 	lastTime = timestamp;
 
+	var state = stateManager.getState();
+	state.update(dt, timestamp);
+
+	var resized = renderer.sizeCanvas();
+	var width = renderer.getWidth(), height = renderer.getHeight();
+	if (resized) {
+		// mat4.ortho(projectionMatrix, -width / 2, width / 2, -height / 2, height / 2, -1, 1);
+		mat4.ortho(projectionMatrix, 0, width, height, 0, -1, 1);
+		batch.setProjectionMatrix(projectionMatrix);
+
+		state.resize(width, height);
+	}
+
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	var state = stateManager.getState();
-	state.update(dt, timestamp);
-	if (width !== 640 || height !== 480 || (state.widget && state.widget.flags & Widget.FLAG_LAYOUT_REQUIRED)) {
-		width = 640;
-		height = 480;
-		state.resize(width, height);
-	}
 	state.draw(batch, dt, timestamp);
-
-	batch.flush();
 
 	/*var error = gl.getError();
 	if (error !== gl.NO_ERROR && error !== gl.CONTEXT_LOST_WEBGL) {

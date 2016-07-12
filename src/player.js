@@ -38,9 +38,9 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 		// Check for push triggers
 		var triggered = false;
 		var tileX = pos.x + dx, tileY = pos.y + dy;
-		for (var i = 0, length = game.pushTriggers.length; i < length; ++i) {
-			var pushTrigger = game.pushTriggers[i];
-			if (pushTrigger.runForTile(tileX, tileY)) {
+		var pushTriggers = game.getPushTriggers();
+		for (var i = 0, length = pushTriggers.length; i < length; ++i) {
+			if (pushTriggers[i].runForTile(tileX, tileY)) {
 				triggered = true;
 			}
 		}

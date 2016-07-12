@@ -28,10 +28,7 @@ TilePushTrigger.prototype = Object.create(PushTrigger.prototype);
 TilePushTrigger.prototype.constructor = TilePushTrigger;
 
 TilePushTrigger.prototype.runForTile = function(x, y) {
-	if (this.x === x && this.y === y) {
-		this.script();
-		return true;
-	} else return false;
+	return this.x === x && this.y === y ? this.script() : false;
 };
 
 var EdgePushTrigger = PushTrigger.EdgePushTrigger = function(script, game, edge) {
@@ -58,12 +55,14 @@ EdgePushTrigger.prototype.runForTile = function(x, y) {
 PushTrigger.createWarp = function(game, x, y, targetX, targetY, mapScript) {
 	return new TilePushTrigger(function() {
 		game.warp(targetX, targetY, mapScript);
+		return true;
 	}, x, y);
 };
 
 PushTrigger.createEdgeWarp = function(game, edge, targetX, targetY, mapScript, relative) {
 	return new EdgePushTrigger(function() {
 		game.warp(targetX, targetY, mapScript, relative);
+		return true;
 	}, game, edge);
 };
 

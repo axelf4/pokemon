@@ -35,7 +35,7 @@ var Select = function(optionNames, columnCount, listener) {
 		var column = new Panel();
 		column.direction = Panel.DIRECTION_COLUMN;
 		column.style.align = align.STRETCH;
-		// column.marginRight = 10; // Pokemon Emerald-like
+		column.marginRight = 10; // Pokemon Emerald-like
 		if (rectangleShape) column.justify = Panel.ALIGN_SPACE_AROUND;
 		mainPanel.addWidget(column);
 		columns[i] = column;

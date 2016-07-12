@@ -18,9 +18,11 @@ var MapRenderer = function(map) {
 
 	// Upload the layers
 	var components = 3;
-	var layers = this.layers = new Array();
-	for (var i = 0; i < map.layers.length; i++) {
+	var layerCount = map.layers.length;
+	var layersFromLayerId = this.layersFromLayerId = new Array(layerCount);
+	for (var i = 0; i < layerCount; ++i) {
 		var layer = map.layers[i];
+		layersFromLayerId[i] = [];
 		// if (!layer.visible) continue; // Commented because visible should only affect the Tiled editor
 
 		for (var tsId = map.tilesets.length; tsId--;) {
@@ -53,9 +55,8 @@ var MapRenderer = function(map) {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, data);
 
-			this.layers.push({
+			layersFromLayerId[i].push({
 				layer: layer,
-				layerId: i,
 				tileset: tileset,
 				sprites: tileset.texture,
 				tiles: tiles,
@@ -64,6 +65,17 @@ var MapRenderer = function(map) {
 			if (!otherTilesetsUsed) break;
 		}
 	}
+
+	var quadVerts = [
+		//x  y  u  v
+		1,  1, 1, 0,
+		-1,  1, 0, 0,
+		1, -1, 1, 1,
+		-1, -1, 0, 1,
+	];
+	this.quadVertBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVertBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(quadVerts), gl.STATIC_DRAW);
 
 	var vertexShader = [
 		"precision mediump float;",
@@ -106,17 +118,6 @@ var MapRenderer = function(map) {
 		"}"
 	].join("\n");
 
-	var quadVerts = [
-		//x  y  u  v
-		1,  1, 1, 0,
-		-1,  1, 0, 0,
-		1, -1, 1, 1,
-		-1, -1, 0, 1,
-	];
-	this.quadVertBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVertBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(quadVerts), gl.STATIC_DRAW);
-
 	var program = this.program = renderer.createProgram({
 		vertexShader: vertexShader,
 		fragmentShader: fragmentShader
@@ -129,29 +130,15 @@ var MapRenderer = function(map) {
 	gl.uniform2f(gl.getUniformLocation(this.program, "inverseTileTextureSize"), 1 / width, 1 / height);
 
 	this.scaledViewportSize = vec2.create();
-	vec2.set(this.scaledViewportSize, 640, 480);
 
 	this.viewportSizeLoc = gl.getUniformLocation(this.program, "viewportSize");
 	this.viewOffsetLoc = gl.getUniformLocation(this.program, "viewOffset");
 	this.inverseSpriteTextureSizeLoc = gl.getUniformLocation(this.program, "inverseSpriteTextureSize");
 };
 
-MapRenderer.prototype.getRenderList = function(layers) {
-	var list = [];
-	for (var i = 0, length = layers.length; i < length; i++) {
-		outer:
-		for ( var j = 0; j < this.layers.length; j++) {
-			if (this.layers[j].layerId === layers[i]) {
-			   	list.push(this.layers[j]);
-				break outer;
-			}
-		}
-	}
-	return list;
-};
+// TODO add a draw layer method
 
-MapRenderer.prototype.draw = function(layers) {
-	var x = 0, y = 0;
+MapRenderer.prototype.drawLayers = function(layerIds, x, y, width, height) {
 	gl.useProgram(this.program);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVertBuffer);
@@ -165,32 +152,34 @@ MapRenderer.prototype.draw = function(layers) {
 
 	var scrollScaleX = 1, scrollScaleY = 1;
 	gl.uniform2f(this.viewOffsetLoc, Math.floor(x * scrollScaleX), Math.floor(y * scrollScaleY));
+	vec2.set(this.scaledViewportSize, width, height);
 	gl.uniform2fv(this.viewportSizeLoc, this.scaledViewportSize);
-
-	layers = layers || this.layers;
 
 	var lastTexture = null;
 
 	// Draw each layer of the map
-	for (var i = 0, length = layers.length; i < length; i++) {
-		var layer = layers[i];
-		var sprites = layer.sprites;
+	for (var i = 0, length = layerIds.length; i < length; i++) {
+		var layerId = layerIds[i];
+		var layers = this.layersFromLayerId[layerId];
+		for (var j = 0, length2 = layers.length; j < length2; j++) {
+			var layer = layers[j];
+			var sprites = layer.sprites;
 
-		// If the last layer used the same sprite: don't update it
-		if (lastTexture !== sprites.texture) {
-			gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / sprites.width, 1 / sprites.height);
+			// If the last layer used the same sprite: don't update it
+			if (lastTexture !== sprites.texture) {
+				gl.uniform2f(this.inverseSpriteTextureSizeLoc, 1 / sprites.width, 1 / sprites.height);
 
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, sprites.texture);
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_2D, sprites.texture);
+				gl.activeTexture(gl.TEXTURE1);
+				lastTexture = sprites.texture;
+			}
 
-			gl.activeTexture(gl.TEXTURE1);
+			// The layer texture is always unique
+			gl.bindTexture(gl.TEXTURE_2D, layer.tiles);
+
+			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 		}
-		lastTexture = sprites.texture;
-
-		// The layer texture is always unique
-		gl.bindTexture(gl.TEXTURE_2D, layer.tiles);
-
-		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	}
 };
 

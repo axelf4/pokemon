@@ -7,19 +7,18 @@ var Position = require("Position");
 var DirectionComponent = require("DirectionComponent");
 var InteractionComponent = require("InteractionComponent");
 var LineOfSightComponent = require("LineOfSightComponent");
+var DimensionComponent = require("DimensionComponent");
 
 module.exports = function(game, loader) {
 	loader.loadMap("assets/ballet-town.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 	});
 
-	game.pushTriggers.push(PushTrigger.createEdgeWarp(game, direction.UP, 0, 0, "forest.js", true));
+	game.addPushTrigger(PushTrigger.createEdgeWarp(game, direction.UP, 0, 0, "forest.js", true));
+	game.addPushTrigger(PushTrigger.createWarp(game, 6, 7, 2, 8, "home.js"));
+	game.addPushTrigger(PushTrigger.createWarp(game, 16, 14, 5, 11, "professorHouse.js"));
 
 	var em = game.em;
-	var player = game.player;
-	var playerPos = em.getComponent(player, Position);
-	playerPos.x = 6;
-	playerPos.y = 8;
 
 	var sign = em.createEntity();
 	em.addComponent(sign, new Position(10, 10));
@@ -29,18 +28,23 @@ module.exports = function(game, loader) {
 			game.release();
 	})));
 
-	var bulletinBoardInteraction = new InteractionComponent(thread.bind(undefined, function*(game) {
+	var lockedDoor = em.createEntity();
+	em.addComponent(lockedDoor, new Position(15, 7));
+	em.addComponent(lockedDoor, new InteractionComponent(thread.bind(undefined, function*(game) {
+			game.lock();
+			yield game.showDialog("The door is locked AF.");
+			game.release();
+	})));
+
+	var bulletinBoard = em.createEntity();
+	em.addComponent(bulletinBoard, new Position(15, 19));
+	em.addComponent(bulletinBoard, new InteractionComponent(thread.bind(undefined, function*(game) {
 			game.lock();
 			yield game.showDialog("Several photos of Abraham Lincoln, Nelson Mandella and Barack Obama are pinned to the board.");
 			yield game.showDialog("Red crosses have been drawn over Lincoln's and Mandella's faces.");
 			game.release();
-	}));
-	var bulletinBoard1 = em.createEntity();
-	var bulletinBoard2 = em.createEntity();
-	em.addComponent(bulletinBoard1, new Position(15, 19));
-	em.addComponent(bulletinBoard2, new Position(16, 19));
-	em.addComponent(bulletinBoard1, bulletinBoardInteraction);
-	em.addComponent(bulletinBoard2, bulletinBoardInteraction);
+	})));
+	em.addComponent(bulletinBoard, new DimensionComponent(2, 1));
 
 	var littleGirl = em.createEntity();
 	em.addComponent(littleGirl, new Position(11, 2));

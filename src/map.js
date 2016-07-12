@@ -84,7 +84,7 @@ var loadMap = function(loader, url) {
 				var encoding = data.getAttribute("encoding");
 				if (encoding === "csv") {
 					var array = data.textContent.split(",");
-					for (var i = 0; i < array.length; i++) {
+					for (var i = 0; i < array.length; ++i) {
 						layer.data[i] = parseInt(array[i]);
 					}
 				} else if (encoding === "base64") {
@@ -98,6 +98,18 @@ var loadMap = function(loader, url) {
 				layer.data[i] = buffer.readUInt32LE(i);
 				}
 				*/
+				layer.tilesetForGid = [];
+				for (var j = 0, length = layer.data.length; j < length; ++j) {
+					var gid = layer.data[j];
+					var tilesetId = tilesets.length;
+					while (tilesetId--) {
+						var tileset = tilesets[tilesetId];
+						if (tileset.firstgid <= gid) {
+							layer.tilesetForGid[gid] = tileset;
+							break;
+						}
+					}
+				}
 				return layer;
 			});
 			return map;

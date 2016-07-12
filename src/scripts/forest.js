@@ -18,7 +18,6 @@ module.exports = function(game, loader) {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 	});
 
-	// game.pushTriggers.push(new PushTrigger(3, 13, PushTrigger.createWarp("ballettown.js", 22, 0)));
 	game.pushTriggers.push(PushTrigger.createEdgeWarp(game, direction.DOWN, 22, 0));
 
 	var em = game.em;

@@ -77,12 +77,13 @@ WidgetGroup.prototype.onKey = function(type, keyCode) {
 
 WidgetGroup.prototype.draw = WidgetGroup.prototype.drawChildren = function(batch, dt, time) {
 	var setTransform = this.x !== 0 || this.y !== 0;
+	var oldMatrix;
 	if (setTransform) {
 		var transform = this.transform;
-		var oldMatrix = batch.getMVMatrix();
+		oldMatrix = batch.getTransformMatrix();
 		mat4.fromTranslation(transform, vec3.fromValues(this.x, this.y, 0));
 		mat4.multiply(transform, oldMatrix, transform);
-		batch.setMVMatrix(transform);
+		batch.setTransformMatrix(transform);
 	}
 
 	for (var i = 0, length = this.children.length; i < length; ++i) {
@@ -91,7 +92,7 @@ WidgetGroup.prototype.draw = WidgetGroup.prototype.drawChildren = function(batch
 	}
 
 	if (setTransform) {
-		batch.setMVMatrix(oldMatrix);
+		batch.setTransformMatrix(oldMatrix);
 	}
 };
 

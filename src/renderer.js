@@ -1,8 +1,11 @@
 var canvas = document.getElementById("canvas");
 if (!canvas) {
 	var canvas = document.createElement("canvas");
-	canvas.width = 640;
-	canvas.height = 480;
+	// canvas.width = 640;
+	// canvas.height = 480;
+	canvas.style.width = "100vw";
+	canvas.style.height = "100vh";
+	canvas.style.display = "block";
 	document.body.appendChild(canvas);
 }
 var gl;
@@ -12,6 +15,27 @@ try {
 catch (e) {}
 // If we don't have a GL context, give up now
 if (!gl) alert("Unable to initialize WebGL. Your browser may not support it.");
+
+// reshape
+var sizeCanvas = function() {
+	if (canvas.clientWidth !== canvas.width || canvas.clientHeight !== canvas.height) {
+		var devicePixelRatio = window.devicePixelRatio || 1;
+		var width = canvas.clientWidth * devicePixelRatio, height = canvas.clientHeight * devicePixelRatio;
+		canvas.width = width;
+		canvas.height = height;
+		gl.viewport(0, 0, width, height);
+		return true;
+	}
+	return false;
+};
+
+var getWidth = function() {
+	return canvas.width;
+};
+
+var getHeight = function() {
+	return canvas.height;
+};
 
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -68,4 +92,7 @@ module.exports = {
 	gl: gl,
 	createShader: createShader,
 	createProgram: createProgram,
+	sizeCanvas: sizeCanvas,
+	getWidth: getWidth,
+	getHeight: getHeight,
 };

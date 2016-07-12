@@ -1,4 +1,7 @@
+var glMatrix = require("gl-matrix");
 var renderer = require("renderer.js");
+
+var mat4 = glMatrix.mat4;
 var gl = renderer.gl;
 
 var SpriteBatch = function(capacity) {
@@ -6,6 +9,10 @@ var SpriteBatch = function(capacity) {
 	var spriteSize = 16;
 	this.size = spriteSize * capacity;
 	this.idx = 0;
+	this.drawing = false;
+	this.projectionMatrix = mat4.create();
+	this.transformMatrix = mat4.create();
+	this.matrix = mat4.create();
 
 	this.vertices = new Float32Array(this.size);
 	this.vertexBuffer = gl.createBuffer();
@@ -36,7 +43,7 @@ var SpriteBatch = function(capacity) {
 		"varying highp vec2 vTextureCoord;" +
 
 		"void main(void) {" +
-		"	gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
+		"	gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
 		"	vTextureCoord = aTextureCoord;" +
 		"}";
 	var fragmentShaderSource =
@@ -55,26 +62,37 @@ var SpriteBatch = function(capacity) {
 	this.vertexPositionAttribute = gl.getAttribLocation(this.program, "aVertexPosition");
 	this.textureCoordAttribute = gl.getAttribLocation(this.program, "aTextureCoord");
 	this.projectionMatrixUniform = gl.getUniformLocation(this.program, "uPMatrix");
-	this.mvMatrixUniform = gl.getUniformLocation(this.program, "uMVMatrix");
 	gl.uniform1i(gl.getUniformLocation(this.program, "uSampler"), 0);
 };
 
-SpriteBatch.prototype.flush = function() {
-	if (this.idx === 0) return;
+SpriteBatch.prototype.begin = function() {
+	this.drawing = true;
 
 	gl.depthMask(false);
 
 	gl.useProgram(this.program);
+	this.setupMatrices();
 
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices);
 	gl.enableVertexAttribArray(this.vertexPositionAttribute);
 	gl.vertexAttribPointer(this.vertexPositionAttribute, 2, gl.FLOAT, false, 16, 0);
 	gl.enableVertexAttribArray(this.textureCoordAttribute);
 	gl.vertexAttribPointer(this.textureCoordAttribute, 2, gl.FLOAT, false, 16, 8);
 
 	gl.activeTexture(gl.TEXTURE0);
+};
+
+SpriteBatch.prototype.end = function() {
+	this.flush();
+	this.drawing = false;
+};
+
+SpriteBatch.prototype.flush = function() {
+	if (this.idx === 0) return;
+
+	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices);
+
 	gl.bindTexture(gl.TEXTURE_2D, this.lastTexture);
 
 	gl.drawElements(gl.TRIANGLES, this.idx / 16 * 6, gl.UNSIGNED_SHORT, 0);
@@ -116,19 +134,27 @@ SpriteBatch.prototype.draw = function(texture, x1, y1, x2, y2, u1, v1, u2, v2) {
 	this.idx += 16;
 };
 
+SpriteBatch.prototype.setupMatrices = function() {
+	mat4.multiply(this.matrix, this.projectionMatrix, this.transformMatrix);
+	gl.uniformMatrix4fv(this.projectionMatrixUniform, false, this.matrix);
+};
+
 SpriteBatch.prototype.setProjectionMatrix = function(matrix) {
-	if (this.idx > 0) this.flush();
-	gl.uniformMatrix4fv(this.projectionMatrixUniform, false, matrix);
+	if (this.drawing) this.flush();
+	// mat4.copy(this.projectionMatrix, matrix);
+	this.projectionMatrix = matrix;
+	if (this.drawing) this.setupMatrices();
 };
 
-SpriteBatch.prototype.getMVMatrix = function() {
-	return this.mvMatrix;
+SpriteBatch.prototype.getTransformMatrix = function() {
+	return this.transformMatrix;
 };
 
-SpriteBatch.prototype.setMVMatrix = function(matrix) {
-	if (this.idx > 0) this.flush();
-	this.mvMatrix = matrix;
-	gl.uniformMatrix4fv(this.mvMatrixUniform, false, matrix);
+SpriteBatch.prototype.setTransformMatrix = function(matrix) {
+	if (this.drawing) this.flush();
+	// mat4.copy(this.transformMatrix, matrix);
+	this.transformMatrix = matrix;
+	if (this.drawing) this.setupMatrices();
 };
 
 module.exports = SpriteBatch;
