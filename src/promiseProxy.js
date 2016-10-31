@@ -3,7 +3,7 @@
  *
  * The promises are stored as an Array in the "promises" property of the proxy.
  */
-module.exports = function(target) {
+export default function promiseProxy(target) {
 	var promises = []; // The pending promises
 	return new Proxy(target, {
 		get: function(target, property, receiver) {
@@ -12,8 +12,7 @@ module.exports = function(target) {
 					(function testPromises() {
 						if (promises.length === 0) resolve();
 						else {
-							var tmp = promises.splice(0); // Clear the array
-							Promise.all(tmp).then(testPromises, reject);
+							Promise.all(promises.splice(0)).then(testPromises, reject);
 						}
 					})();
 				});
@@ -34,4 +33,4 @@ module.exports = function(target) {
 			}
 		}
 	});
-};
+}

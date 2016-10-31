@@ -12,16 +12,15 @@ LoaderFacade.prototype.load = function(url) {
 };
 
 LoaderFacade.prototype.loadText = function(url) {
-	return this.load(url).then(blob => {
-		return new Promise((resolve, reject) => {
+	return this.load(url).then(blob => new Promise((resolve, reject) => {
 			var reader = new FileReader();
 			reader.addEventListener("load", function() {
 				resolve(reader.result);
 			}, false);
 			reader.onerror = reject;
 			reader.readAsText(blob);
-		});
-	});
+		})
+	);
 };
 
 const xmlDocumentFromString = window.DOMParser ? function(string) {

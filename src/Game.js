@@ -3,8 +3,8 @@ var lerp = require("lerp");
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
 var Map = require("map.js");
-// var MapRenderer = require("OrthogonalMapRenderer.js");
-var CachedMapRenderer = require("CachedMapRenderer.js");
+var MapRenderer = require("OrthogonalMapRenderer.js");
+// var CachedMapRenderer = require("CachedMapRenderer.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var StillMovementController = require("StillMovementController.js");
@@ -14,7 +14,7 @@ var Panel = require("Panel.js");
 var Dialog = require("Dialog.js");
 var align = require("align.js");
 var MovementSystem = require("MovementSystem.js");
-var State = require("State.js");
+import State from "State";
 var WidgetGroup = require("WidgetGroup.js");
 var input = require("input.js");
 var direction = require("direction");
@@ -23,11 +23,11 @@ var PathMovementController = require("PathMovementController");
 var Animation = require("Animation");
 var glMatrix = require("gl-matrix");
 var Select = require("Select");
+var renderer = require("renderer");
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
 var SpriteComponent = require("SpriteComponent.js");
-var PlayerComponent = require("PlayerComponent.js");
 var InteractionComponent = require("InteractionComponent.js");
 var OldPosition = require("OldPosition.js");
 var MovementComponent = require("MovementComponent.js");
@@ -37,23 +37,13 @@ var DimensionComponent = require("DimensionComponent");
 
 var mat4 = glMatrix.mat4;
 var vec3 = glMatrix.vec3;
+var gl = renderer.gl;
 
 var font = resources.font;
-fowl.registerComponents(
-		Position,
-		DirectionComponent,
-		SpriteComponent,
-		PlayerComponent,
-		InteractionComponent,
-		OldPosition,
-		MovementComponent,
-		LineOfSightComponent,
-		AnimationComponent,
-		DimensionComponent);
 
 var mvMatrix = mat4.create();
 var positionVector = vec3.create();
-var up = vec3.fromValues(0, 1, 0);
+const up = vec3.fromValues(0, 1, 0);
 var tmp = vec3.create();
 var directionVector = vec3.fromValues(0, 0, -1);
 
@@ -74,25 +64,27 @@ GameScreen.prototype.constructor = GameScreen;
 GameScreen.prototype.draw = function(batch, dt, time) {
 	var game = this.game, em = game.em, player = game.player;
 
-	var width = this.width, height = this.height;
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
 	var pos = em.getComponent(player, Position);
 	var oldpos = em.getComponent(player, OldPosition);
 	var movement = em.getComponent(player, MovementComponent);
-	var transformX = lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 - width / 2;
-	var transformY = lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 - height / 2;
-	vec3.set(positionVector, transformX, transformY, 0);
+	var transformX = lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 - this.width / 2;
+	var transformY = lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 - this.height / 2;
 
-	vec3.copy(tmp, positionVector);
-	vec3.add(tmp, tmp, directionVector);
-	mat4.lookAt(mvMatrix, positionVector, tmp, up);
-	// mat4.fromTranslation(mvMatrix, positionVector);
+	// game.mapRenderer.drawLayers(game.backgroundLayers, transformX, transformY, this.width, this.height);
+
+	vec3.set(positionVector, -transformX, -transformY, 0);
+	mat4.fromTranslation(mvMatrix, positionVector);
 	var oldTransformMatrix = batch.getTransformMatrix();
 	batch.setTransformMatrix(mvMatrix);
 
-	game.mapRenderer.drawLayers(game.backgroundLayers, transformX, transformY, this.width, this.height);
-
 	batch.begin();
-	for (var entity = 0, length = em.count; entity < length; entity++) {
+
+	game.mapRenderer.drawLayers(game.backgroundLayers);
+
+	for (var entity = 0, length = em.count; entity < length; ++entity) {
 		if (em.matches(entity, game.spriteSystemMask)) {
 			var position = em.getComponent(entity, Position);
 			var spriteComponent = em.getComponent(entity, SpriteComponent);
@@ -111,10 +103,10 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 				} else region = spriteComponent.region;
 			}
 
-			var u1 = (region.x + 0.5) / texture.width;
-			var v1 = (region.y + 0.5) / texture.height;
-			var u2 = (region.x + region.width - 0.5) / texture.width;
-			var v2 = (region.y + region.height - 0.5) / texture.height;
+			var u1 = region.x / texture.width;
+			var v1 = region.y / texture.height;
+			var u2 = (region.x + region.width) / texture.width;
+			var v2 = (region.y + region.height) / texture.height;
 
 			var x, y;
 			if (movement !== null) {
@@ -129,13 +121,14 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 		}
 	}
-	batch.end();
+	// batch.end();
 
-	game.mapRenderer.drawLayers(game.foregroundLayers, transformX, transformY, this.width, this.height);
+	// game.mapRenderer.drawLayers(game.foregroundLayers, transformX, transformY, this.width, this.height);
+	game.mapRenderer.drawLayers(game.foregroundLayers);
 
 	batch.setTransformMatrix(oldTransformMatrix);
 
-	batch.begin();
+	// batch.begin();
 	Stack.prototype.draw.call(this, batch, dt, time);
 	batch.end();
 };
@@ -175,8 +168,6 @@ var Game = function(loader, batch) {
 
 	this.map = null;
 	this.mapRenderer = null;
-	this.foregroundRenderList = null;
-	this.backgroundRenderList = null;
 	this.metaLayer = -1; // Index of meta layer or -1
 
 	this.em = new fowl.EntityManager();
@@ -234,8 +225,8 @@ Game.prototype.getMap = function() { return this.map; };
 
 Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.map = map;
-	// this.mapRenderer = new MapRenderer(map, this.batch);
-	this.mapRenderer = new CachedMapRenderer(map);
+	this.mapRenderer = new MapRenderer(map, this.batch);
+	// this.mapRenderer = new CachedMapRenderer(map);
 	var callback = function(item) {
 		if (typeof item === "string" || item instanceof String) {
 			return Map.getLayerIdByName(map, item);

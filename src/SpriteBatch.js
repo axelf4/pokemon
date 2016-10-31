@@ -17,7 +17,7 @@ var SpriteBatch = function(capacity) {
 	this.vertices = new Float32Array(this.size);
 	this.vertexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.DYNAMIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STREAM_DRAW);
 
 	var len = capacity * 6;
 	var indices = new Uint16Array(len);
@@ -43,8 +43,8 @@ var SpriteBatch = function(capacity) {
 		"varying highp vec2 vTextureCoord;" +
 
 		"void main(void) {" +
-		"	gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
 		"	vTextureCoord = aTextureCoord;" +
+		"	gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
 		"}";
 	var fragmentShaderSource =
 		"precision mediump float;" +
@@ -59,6 +59,7 @@ var SpriteBatch = function(capacity) {
 		fragmentShader: fragmentShaderSource
 	});
 	gl.useProgram(this.program);
+	this.customProgram = null;
 	this.vertexPositionAttribute = gl.getAttribLocation(this.program, "aVertexPosition");
 	this.textureCoordAttribute = gl.getAttribLocation(this.program, "aTextureCoord");
 	this.projectionMatrixUniform = gl.getUniformLocation(this.program, "uPMatrix");
@@ -70,7 +71,17 @@ SpriteBatch.prototype.begin = function() {
 
 	gl.depthMask(false);
 
-	gl.useProgram(this.program);
+	var vertexPositionAttribute, textureCoordAttribute;
+
+	if (this.customProgram !== null) {
+		vertexPositionAttribute = gl.getAttribLocation(this.program, "aVertexPosition");
+		textureCoordAttribute = gl.getAttribLocation(this.program, "aTextureCoord");
+		gl.useProgram(this.customProgram);
+	} else {
+		vertexPositionAttribute = this.vertexPositionAttribute;
+		textureCoordAttribute = this.textureCoordAttribute;
+		gl.useProgram(this.program);
+	}
 	this.setupMatrices();
 
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
@@ -100,7 +111,24 @@ SpriteBatch.prototype.flush = function() {
 	this.idx = 0;
 };
 
+SpriteBatch.prototype.setProgram = function(program) {
+	if (this.drawing) {
+		throw new Error("Changing programs while drawing is currently not supported.");
+		this.flush();
+	}
+	this.customProgram = program;
+	if (this.drawing) {
+		if (this.customProgram !== null) {
+			gl.useProgram(this.customProgram);
+		} else {
+			gl.useProgram(this.program);
+		}
+		this.setupMatrices();
+	}
+};
+
 SpriteBatch.prototype.switchTexture = function(texture) {
+	// TODO only flush when drawing
 	if (this.lastTexture !== texture) this.flush();
 	this.lastTexture = texture;
 };
@@ -136,7 +164,12 @@ SpriteBatch.prototype.draw = function(texture, x1, y1, x2, y2, u1, v1, u2, v2) {
 
 SpriteBatch.prototype.setupMatrices = function() {
 	mat4.multiply(this.matrix, this.projectionMatrix, this.transformMatrix);
-	gl.uniformMatrix4fv(this.projectionMatrixUniform, false, this.matrix);
+	if (this.customProgram !== null) {
+		var uniformLocation = gl.getUniformLocation(this.customProgram, "uPMatrix");
+		gl.uniformMatrix4fv(uniformLocation, false, this.matrix);
+	} else {
+		gl.uniformMatrix4fv(this.projectionMatrixUniform, false, this.matrix);
+	}
 };
 
 SpriteBatch.prototype.setProjectionMatrix = function(matrix) {

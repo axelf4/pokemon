@@ -1,27 +1,33 @@
 var glMatrix = require("gl-matrix");
 var renderer = require("renderer.js");
 var SpriteBatch = require("SpriteBatch.js");
-var FileLoader = require("FileLoader");
+import FileLoader from "FileLoader";
 var LoaderFacade = require("LoaderFacade");
 var input = require("input.js");
-var stateManager = require("stateManager.js");
-var promiseProxy = require("promiseProxy");
-var cachingProxy = require("cachingProxy");
+import * as stateManager from "stateManager";
+import promiseProxy from "promiseProxy";
+import cachingProxy from "cachingProxy";
 var resources = require("resources");
 var Font = require("font.js");
 var NinePatch = require("NinePatch");
-var LoadingScreen = require("LoadingScreen.js");
-var BattleState = require("BattleState.js");
+import LoadingScreen from "LoadingScreen";
+// var BattleState = require("BattleState.js");
 var Game = require("Game.js");
-// require("babel-core/register");
-// require("babel-polyfill");
+import TransitionState from "TransitionState";
+var fowl = require("fowl");
 
-var Position = require("Position");
-var OldPosition = require("OldPosition");
-var MovementComponent = require("MovementComponent");
-var lerp = require("lerp");
+var Position = require("Position.js");
+var DirectionComponent = require("DirectionComponent.js");
+var SpriteComponent = require("SpriteComponent.js");
+var PlayerComponent = require("PlayerComponent.js");
+var InteractionComponent = require("InteractionComponent.js");
+var OldPosition = require("OldPosition.js");
+var MovementComponent = require("MovementComponent.js");
+var LineOfSightComponent = require("LineOfSightComponent");
+var AnimationComponent = require("AnimationComponent");
+var DimensionComponent = require("DimensionComponent");
 
-var Trainer = require("Trainer.js");
+import Trainer from "Trainer";
 var pokemon = require("pokemon.js");
 var move = require("move.js");
 
@@ -31,41 +37,42 @@ var mat4 = glMatrix.mat4;
 
 console.log("----- Starting the game -----");
 
+fowl.registerComponents(
+		Position,
+		DirectionComponent,
+		SpriteComponent,
+		PlayerComponent,
+		InteractionComponent,
+		OldPosition,
+		MovementComponent,
+		LineOfSightComponent,
+		AnimationComponent,
+		DimensionComponent);
+
 var projectionMatrix = mat4.create();
-mat4.ortho(projectionMatrix, 0, 640, 480, 0, -1, 1);
 
 var batch = new SpriteBatch();
-batch.setProjectionMatrix(projectionMatrix);
-// batch.setTransformMatrix(mvMatrix);
-
-var fileLoader = new FileLoader("pokemongame");
-var loaderFacade = new LoaderFacade(fileLoader);
-var loader = cachingProxy(loaderFacade);
 
 input.setListener((type, key) => {
 	stateManager.getState().onKey(type, key);
 });
 
-var loadingScreen = new LoadingScreen();
-stateManager.setState(loadingScreen);
+var fileLoader = new FileLoader("pokemongame");
+var loaderFacade = new LoaderFacade(fileLoader);
+var loader = promiseProxy(cachingProxy(loaderFacade));
 
-var proxyLoader = promiseProxy(loader);
+// var loadingScreen = new LoadingScreen();
+let transitionState = new TransitionState();
+stateManager.setState(transitionState);
 
-resources.font = new Font(proxyLoader);
+resources.font = new Font(loader);
 loader.loadTextureRegion("textures/frame.9.png").then(textureRegion => {
 	resources.frame = NinePatch.fromTexture(textureRegion.texture, 24, 24);
 });
 
-var game = new Game(proxyLoader, batch);
+var game = new Game(loader, batch);
 game.loadScript("home.js");
 game.warp(9, 3);
-
-proxyLoader.all.then(() => {
-	console.log("Loaded all assets for Game. Switching states...");
-	stateManager.setState(game);
-}, () => {
-	console.log("Some asset was rejected.");
-});
 
 var slowpoke = {
 	name: "Slowpoke",
@@ -93,8 +100,15 @@ var playerTrainer = new Trainer("Axel", [slowpoke]);
 var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
 // var battleState = new BattleState(game, playerTrainer, enemyTrainer);
 
-var lastTime = (performance || Date).now();
-var requestID;
+loader.all.then(() => {
+	console.log("Loaded initial assets.");
+	transitionState.transitionTo(game);
+	// stateManager.setState(game);
+}, () => {
+	console.log("Some asset was rejected.");
+});
+
+var requestID, lastTime = (performance || Date).now();
 
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
@@ -106,17 +120,13 @@ var update = function(timestamp) {
 	state.update(dt, timestamp);
 
 	var resized = renderer.sizeCanvas();
-	var width = renderer.getWidth(), height = renderer.getHeight();
 	if (resized) {
-		// mat4.ortho(projectionMatrix, -width / 2, width / 2, -height / 2, height / 2, -1, 1);
+		var width = renderer.getWidth(), height = renderer.getHeight();
 		mat4.ortho(projectionMatrix, 0, width, height, 0, -1, 1);
 		batch.setProjectionMatrix(projectionMatrix);
 
 		state.resize(width, height);
 	}
-
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
-	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	state.draw(batch, dt, timestamp);
 

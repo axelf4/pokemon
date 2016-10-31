@@ -158,10 +158,10 @@ MapRenderer.prototype.drawLayers = function(layerIds, x, y, width, height) {
 	var lastTexture = null;
 
 	// Draw each layer of the map
-	for (var i = 0, length = layerIds.length; i < length; i++) {
+	for (var i = 0, length = layerIds.length; i < length; ++i) {
 		var layerId = layerIds[i];
 		var layers = this.layersFromLayerId[layerId];
-		for (var j = 0, length2 = layers.length; j < length2; j++) {
+		for (var j = 0, length2 = layers.length; j < length2; ++j) {
 			var layer = layers[j];
 			var sprites = layer.sprites;
 

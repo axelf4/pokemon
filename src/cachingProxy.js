@@ -1,10 +1,10 @@
-var equal = require("equals");
+import equals from "equals";
 
 /**
  * Exports a function that given a target returns a proxy that caches all
  * returned values of method invocations.
  */
-module.exports = function(target) {
+export default function cachingProxy(target) {
 	var cache = {};
 	return new Proxy(target, {
 		get: function(target, property, receiver) {
@@ -16,8 +16,8 @@ module.exports = function(target) {
 					if (functionCache) {
 						for (var i = 0, length = functionCache.length; i < length; ++i) {
 							var entry = functionCache[i];
-							if (equal(arguments, entry.args)) {
-								console.log("Intercepted", value, "invocation with", arguments, "for cached value.");
+							if (equals(arguments, entry.args)) {
+								console.log("Intercepted", property, "invocation with", arguments, "for cache.");
 								return entry.result;
 							}
 						}
@@ -34,4 +34,4 @@ module.exports = function(target) {
 			}
 		}
 	});
-};
+}

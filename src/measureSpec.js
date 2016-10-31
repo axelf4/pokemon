@@ -12,7 +12,7 @@ var AT_MOST = exports.AT_MOST = 2 << 30;
 // makeMeasureSpec
 var make = exports.make = function(size, mode) {
 	// return (size & ~MODE_MASK) | (mode & MODE_MASK);
-	return size + mode;
+	return size | mode;
 };
 
 var getMode = exports.getMode = function(measureSpec) {

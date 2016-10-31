@@ -22,10 +22,7 @@ OrthogonalMapRenderer.prototype.drawLayer = function(layer) {
 				var sx = (tileset.getTileX(gid) - 1) * tileset.tilewidth;
 				var sy = tileset.getTileY(gid) * tileset.tileheight;
 				var imageWidth = tileset.texture.width, imageHeight = tileset.texture.height;
-				// var u1 = sx / imageWidth, v1 = sy / imageHeight, u2 = (sx + tileset.tilewidth) / imageWidth, v2 = (sy + tileset.tileheight) / imageHeight;
-
-				var invTexWidth = 1 / imageWidth, invTexHeight = 1 / imageHeight;
-				var u1 = (sx + 0.5) * invTexWidth, v1 = (sy + 0.5) * invTexHeight, u2 = (sx - 0.5 + tileset.tilewidth) * invTexWidth, v2 = (sy - 0.5 + tileset.tileheight) * invTexHeight;
+				var u1 = (sx + 0.5) / imageWidth, v1 = (sy + 0.5) / imageHeight, u2 = (sx - 0.5 + tileset.tilewidth) / imageWidth, v2 = (sy - 0.5 + tileset.tileheight) / imageHeight;
 
 				batch.draw(tileset.texture.texture, x1, y1, x2, y2, u1, v1, u2, v2);
 			}

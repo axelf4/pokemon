@@ -40,8 +40,7 @@ module.exports = function(game, loader) {
 	em.addComponent(bulletinBoard, new Position(15, 19));
 	em.addComponent(bulletinBoard, new InteractionComponent(thread.bind(undefined, function*(game) {
 			game.lock();
-			yield game.showDialog("Several photos of Abraham Lincoln, Nelson Mandella and Barack Obama are pinned to the board.");
-			yield game.showDialog("Red crosses have been drawn over Lincoln's and Mandella's faces.");
+			yield game.showDialog("Several photos of Abraham Lincoln, Nelson Mandella and Barack Obama are pinned to the board.\nRed crosses have been drawn over Lincoln's and Mandella's faces.");
 			game.release();
 	})));
 	em.addComponent(bulletinBoard, new DimensionComponent(2, 1));

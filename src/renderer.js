@@ -1,8 +1,8 @@
 var canvas = document.getElementById("canvas");
 if (!canvas) {
-	var canvas = document.createElement("canvas");
-	// canvas.width = 640;
-	// canvas.height = 480;
+	var body = document.body;
+	body.style.marginLeft = body.style.marginTop = body.style.marginRight = body.style.marginBottom = 0;
+	canvas = document.createElement("canvas");
 	canvas.style.width = "100vw";
 	canvas.style.height = "100vh";
 	canvas.style.display = "block";
@@ -37,6 +37,7 @@ var getHeight = function() {
 	return canvas.height;
 };
 
+gl.disable(gl.DEPTH_TEST);
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
