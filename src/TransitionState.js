@@ -71,6 +71,7 @@ export default class TransitionState extends State {
 			this.transitionState = TRANSITION_FADE_OUT;
 		} else {
 			this.state = state;
+			this.state.resize(this.width, this.height);
 			this.transitionState = TRANSITION_FADE_IN;
 		}
 	}
@@ -106,6 +107,7 @@ export default class TransitionState extends State {
 			if (this.transitionState === TRANSITION_FADE_OUT) {
 				if (!this.toState) throw new Exception("toState should not be falsy.");
 				this.state = this.toState;
+				this.state.resize(this.width, this.height);
 				this.transitionState = TRANSITION_FADE_IN;
 			} else if (this.transitionState === TRANSITION_FADE_IN) {
 				this.transitionState = TRANSITION_WAIT;

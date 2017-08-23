@@ -67,6 +67,7 @@ var SpriteBatch = function(capacity) {
 };
 
 SpriteBatch.prototype.begin = function() {
+	if (this.drawing) throw new Error("end must be called before begin.");
 	this.drawing = true;
 
 	gl.depthMask(false);
@@ -95,6 +96,7 @@ SpriteBatch.prototype.begin = function() {
 };
 
 SpriteBatch.prototype.end = function() {
+	if (!this.drawing) throw new Error("begin must be called before end.");
 	this.flush();
 	this.drawing = false;
 };
@@ -134,6 +136,7 @@ SpriteBatch.prototype.switchTexture = function(texture) {
 };
 
 SpriteBatch.prototype.draw = function(texture, x1, y1, x2, y2, u1, v1, u2, v2) {
+	if (!this.drawing) throw new Error("SpriteBatch.begin must be called before draw.");
 	if (texture !== this.lastTexture) this.switchTexture(texture);
 	else if (this.idx === this.size) {
 		this.flush();

@@ -1,4 +1,4 @@
-var State = require("State.js");
+import State from "State";
 var Panel = require("Panel.js");
 var Dialog = require("Dialog.js");
 var align = require("align.js");
@@ -7,9 +7,11 @@ var Image = require("Image.js");
 var Select = require("Select.js");
 var promiseWhile = require("promiseWhile.js");
 var thread = require("thread.js");
-var stateManager = require("stateManager.js");
+import * as stateManager from "stateManager";
 var pokemon = require("pokemon.js");
 var move = require("move.js");
+var Widget = require("Widget");
+var measureSpec = require("measureSpec");
 
 // Note: these are numbered in order of priority
 var ACTION_TYPE_ATTACK = 0;
@@ -38,7 +40,7 @@ var canFlee = function(speed, enemySpeed, escapeAttempts) {
 	return Math.random() * 255 < (speed * 128 / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
 };
 
-var BattleState = function(nextState, playerTrainer, enemyTrainer) {
+var BattleState = function(loader, nextState, playerTrainer, enemyTrainer) {
 	State.call(this);
 	this.nextState = nextState;
 	var playerPokemon = playerTrainer.getPrimaryPokemon();
@@ -59,14 +61,11 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 	dig.style.align = align.STRETCH;
 	view.addWidget(dig);
 
-	var slowpoke;
-	loader.loadFile("assets/pokemon/Slowpoke.png", function(file) {
-		slowpoke = new texture.Region();
-		slowpoke.loadFromFile(file, function() {
-			var image = new Image(slowpoke);
-			image.style.align = align.CENTER;
-			view.addWidget(image);
-		});
+	var slowpokeImage = new Image(null);
+	slowpokeImage.style.align = align.CENTER;
+	view.addWidget(slowpokeImage);
+	loader.loadTextureRegion("assets/pokemon/Slowpoke.png").then(region => {
+		slowpokeImage.setRegion(region);
 	});
 
 	var info = new Panel();
@@ -76,7 +75,7 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 
 	var showDialog = function(text) {
 		return new Promise(function(resolve, reject) {
-			var dialog = new Dialog(text, function() { resolve(); });
+			var dialog = new Dialog(text, resolve);
 			dialog.style.align = align.STRETCH;
 			dialog.flex = 1;
 			info.addWidget(dialog);
@@ -218,5 +217,19 @@ var BattleState = function(nextState, playerTrainer, enemyTrainer) {
 };
 BattleState.prototype = Object.create(State.prototype);
 BattleState.prototype.constructor = BattleState;
+
+
+BattleState.prototype.draw = function(batch, dt, time) {
+	if (this.widget && this.widget.flags & Widget.FLAG_LAYOUT_REQUIRED) {
+		var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
+		var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
+
+		this.widget.layout(widthMeasureSpec, heightMeasureSpec);
+	}
+
+	batch.begin();
+	this.widget.draw(batch, dt, time);
+	batch.end();
+}
 
 module.exports = BattleState;

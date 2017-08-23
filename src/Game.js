@@ -70,8 +70,8 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 	var pos = em.getComponent(player, Position);
 	var oldpos = em.getComponent(player, OldPosition);
 	var movement = em.getComponent(player, MovementComponent);
-	var transformX = lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 - this.width / 2;
-	var transformY = lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 - this.height / 2;
+	var transformX = Math.ceil(lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 - this.width / 2);
+	var transformY = Math.ceil(lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 - this.height / 2);
 
 	// game.mapRenderer.drawLayers(game.backgroundLayers, transformX, transformY, this.width, this.height);
 
@@ -103,10 +103,8 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 				} else region = spriteComponent.region;
 			}
 
-			var u1 = region.x / texture.width;
-			var v1 = region.y / texture.height;
-			var u2 = (region.x + region.width) / texture.width;
-			var v2 = (region.y + region.height) / texture.height;
+			const u1 = region.x / texture.width, v1 = region.y / texture.height,
+				u2 = (region.x + region.width) / texture.width, v2 = (region.y + region.height) / texture.height;
 
 			var x, y;
 			if (movement !== null) {
@@ -117,6 +115,8 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 				x = position.x * 16 + spriteComponent.offsetX;
 				y = position.y * 16 + spriteComponent.offsetY;
 			}
+			x = Math.ceil(x);
+			y = Math.ceil(y);
 			var width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 		}

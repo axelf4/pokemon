@@ -13,8 +13,6 @@ export default class State {
 
 	draw(batch, dt, time) {
 		if (this.widget && this.widget.flags & Widget.FLAG_LAYOUT_REQUIRED) {
-			this.width = renderer.getWidth();
-			this.height = renderer.getHeight();
 			var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
 			var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
 

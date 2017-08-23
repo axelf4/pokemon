@@ -13,6 +13,11 @@ var Image = function(region) {
 Image.prototype = Object.create(Widget.prototype);
 Image.prototype.constructor = Image;
 
+Image.prototype.setRegion = function(region) {
+	this.region = region;
+	this.requestLayout();
+};
+
 var resolveAdjustedSize = function(desiredSize, spec) {
 	var result;
 	var specMode = measureSpec.getMode(spec);

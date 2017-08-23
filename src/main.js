@@ -11,7 +11,7 @@ var resources = require("resources");
 var Font = require("font.js");
 var NinePatch = require("NinePatch");
 import LoadingScreen from "LoadingScreen";
-// var BattleState = require("BattleState.js");
+var BattleState = require("BattleState.js");
 var Game = require("Game.js");
 import TransitionState from "TransitionState";
 var fowl = require("fowl");
@@ -68,44 +68,44 @@ stateManager.setState(transitionState);
 resources.font = new Font(loader);
 loader.loadTextureRegion("textures/frame.9.png").then(textureRegion => {
 	resources.frame = NinePatch.fromTexture(textureRegion.texture, 24, 24);
-});
+}).then(() => {
+	var game = new Game(loader, batch);
+	game.loadScript("home.js");
+	game.warp(9, 3);
 
-var game = new Game(loader, batch);
-game.loadScript("home.js");
-game.warp(9, 3);
+	var slowpoke = {
+		name: "Slowpoke",
+		moves: [move.TACKLE, move.FLAMETHROWER, move.HYDROPUMP, move.PURSUIT],
+		hp: 90,
+		maxHp: 90,
+		attack: 65,
+		defense: 65,
+		speed: 15,
+		level: 1,
+	};
+	// Based off Oddish
+	var snoopDogg = {
+		name: "Snoop Dogg",
+		moves: [move.TACKLE],
+		hp: 45,
+		maxHp: 45,
+		attack: 50,
+		defense: 55,
+		speed: 30,
+		level: 1,
+	};
 
-var slowpoke = {
-	name: "Slowpoke",
-	moves: [move.TACKLE, move.FLAMETHROWER, move.HYDROPUMP, move.PURSUIT],
-	hp: 90,
-	maxHp: 90,
-	attack: 65,
-	defense: 65,
-	speed: 15,
-	level: 1,
-};
-// Based off Oddish
-var snoopDogg = {
-	name: "Snoop Dogg",
-	moves: [move.TACKLE],
-	hp: 45,
-	maxHp: 45,
-	attack: 50,
-	defense: 55,
-	speed: 30,
-	level: 1,
-};
+	var playerTrainer = new Trainer("Axel", [slowpoke]);
+	var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
+	var battleState = new BattleState(loader, game, playerTrainer, enemyTrainer);
 
-var playerTrainer = new Trainer("Axel", [slowpoke]);
-var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
-// var battleState = new BattleState(game, playerTrainer, enemyTrainer);
+	loader.all.then(() => {
+		console.log("Loaded initial assets.");
+		transitionState.transitionTo(game);
+	}, () => {
+		console.log("Some asset was rejected.");
+	});
 
-loader.all.then(() => {
-	console.log("Loaded initial assets.");
-	transitionState.transitionTo(game);
-	// stateManager.setState(game);
-}, () => {
-	console.log("Some asset was rejected.");
 });
 
 var requestID, lastTime = (performance || Date).now();

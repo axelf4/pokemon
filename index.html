@@ -1,31 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
 	<head>
-		<meta charset="utf-8">
-		<meta name="Viewport" content="width=device-width; user-scaleable=no; initial-scale=1.0" />
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 		<title>Game</title>
-<script id="shader-vs" type="x-shader/x-vertex">
-  attribute vec2 aVertexPosition;
-	attribute vec2 aTextureCoord;
-
-  uniform mat4 uMVMatrix;
-  uniform mat4 uPMatrix;
-
-varying highp vec2 vTextureCoord;
-
-  void main(void) {
-	gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 0.0, 1.0);
-vTextureCoord = aTextureCoord;
-  }
-</script>
-<script id="shader-fs" type="x-shader/x-fragment">
-varying highp vec2 vTextureCoord;
-uniform sampler2D uSampler;
-  void main(void) {
-    //gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-	gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
-  }
-</script>
+<style>
+body {
+	// overflow: hidden;
+	margin: 0;
+}
+</style>
 	</head>
 	<body>
 		<script type="text/javascript" src="bundle.js"></script>

@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="16" height="16" tilewidth="16" tileheight="16" nextobjectid="1">
  <tileset firstgid="1" source="overworld.tsx"/>
- <tileset firstgid="21001" name="meta" tilewidth="16" tileheight="16" tilecount="4" columns="4">
-  <image source="meta.png" width="64" height="16"/>
- </tileset>
+ <tileset firstgid="21001" source="meta.tsx"/>
  <layer name="Tile Layer 1" width="16" height="16">
   <data encoding="csv">
 2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,
@@ -64,7 +62,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <layer name="meta" width="16" height="16" visible="0" opacity="0.3">
+ <layer name="meta" width="16" height="16" opacity="0.3">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
