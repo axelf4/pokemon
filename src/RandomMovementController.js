@@ -1,4 +1,4 @@
-var direction = require("direction.js");
+import * as direction from "direction";
 
 var RandomMovementController = function(interval) {
 	this.interval = interval || 2000;

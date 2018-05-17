@@ -1,6 +1,5 @@
 var game = require("Game.js");
 var Position = require("Position.js");
-var OldPosition = require("OldPosition.js");
 var direction = require("direction");
 
 /*

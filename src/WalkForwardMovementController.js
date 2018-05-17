@@ -1,4 +1,4 @@
-var direction = require("direction.js");
+import * as direction from "direction";
 var DirectionComponent = require("DirectionComponent");
 
 /**

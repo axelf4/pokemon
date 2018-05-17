@@ -6,9 +6,8 @@ var PushTrigger = require("PushTrigger.js");
 var Position = require("Position.js");
 var SpriteComponent = require("SpriteComponent.js");
 var DirectionComponent = require("DirectionComponent.js");
-var OldPosition = require("OldPosition.js");
 var LineOfSightComponent = require("LineOfSightComponent");
-var MovementComponent = require("MovementComponent.js");
+import { MovementComponent } from "movement";
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
 var direction = require("direction");
@@ -33,9 +32,7 @@ module.exports = function(game, loader) {
 	})));
 
 	var lollipopMan = em.createEntity();
-	var x = 12, y = 5;
-	em.addComponent(lollipopMan, new Position(x, y));
-	em.addComponent(lollipopMan, new OldPosition(x, y));
+	em.addComponent(lollipopMan, new Position(12, 5));
 	em.addComponent(lollipopMan, new DirectionComponent(direction.DOWN));
 	loader.loadTextureRegion("assets/dancer.png").then(textureRegion => {
 		var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));

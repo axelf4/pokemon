@@ -21,8 +21,7 @@ var DirectionComponent = require("DirectionComponent.js");
 var SpriteComponent = require("SpriteComponent.js");
 var PlayerComponent = require("PlayerComponent.js");
 var InteractionComponent = require("InteractionComponent.js");
-var OldPosition = require("OldPosition.js");
-var MovementComponent = require("MovementComponent.js");
+import { MovementComponent } from "movement";
 var LineOfSightComponent = require("LineOfSightComponent");
 var AnimationComponent = require("AnimationComponent");
 var DimensionComponent = require("DimensionComponent");
@@ -43,7 +42,6 @@ fowl.registerComponents(
 		SpriteComponent,
 		PlayerComponent,
 		InteractionComponent,
-		OldPosition,
 		MovementComponent,
 		LineOfSightComponent,
 		AnimationComponent,

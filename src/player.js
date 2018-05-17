@@ -1,11 +1,10 @@
 var input = require("input.js");
-var direction = require("direction.js");
+import * as direction from "direction";
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
 var SpriteComponent = require("SpriteComponent.js");
-var OldPosition = require("OldPosition.js");
 var InteractionComponent = require("InteractionComponent.js");
-var MovementComponent = require("MovementComponent.js");
+import { MovementComponent } from "movement";
 var Animation = require("Animation.js");
 var texture = require("texture.js");
 var AnimationComponent = require("AnimationComponent");
@@ -55,7 +54,6 @@ PlayerMovementController.prototype.getTarget = function(game, dt, position, enti
 exports.createPlayer = function(game, loader, em) {
 	var player = em.createEntity();
 	em.addComponent(player, new Position());
-	em.addComponent(player, new OldPosition());
 	em.addComponent(player, new DirectionComponent(direction.DOWN));
 	em.addComponent(player, new MovementComponent(new PlayerMovementController()));
 

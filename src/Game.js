@@ -13,7 +13,7 @@ var Stack = require("Stack.js");
 var Panel = require("Panel.js");
 var Dialog = require("Dialog.js");
 var align = require("align.js");
-var MovementSystem = require("MovementSystem.js");
+import { MovementSystem, MovementComponent } from "movement";
 import State from "State";
 var WidgetGroup = require("WidgetGroup.js");
 var input = require("input.js");
@@ -29,8 +29,6 @@ var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
 var SpriteComponent = require("SpriteComponent.js");
 var InteractionComponent = require("InteractionComponent.js");
-var OldPosition = require("OldPosition.js");
-var MovementComponent = require("MovementComponent.js");
 var LineOfSightComponent = require("LineOfSightComponent");
 var AnimationComponent = require("AnimationComponent");
 var DimensionComponent = require("DimensionComponent");
@@ -61,6 +59,21 @@ var GameScreen = function(game) {
 GameScreen.prototype = Object.create(Stack.prototype);
 GameScreen.prototype.constructor = GameScreen;
 
+const getEntityInterpPos = function(time, em, entity, pos) {
+	const dir = em.getComponent(entity, DirectionComponent);
+	const mov = em.getComponent(entity, MovementComponent);
+
+	let x = 0, y = 0;
+
+	if (mov.isMoving()) {
+		const oldPos = direction.getPosInDirection(pos, direction.getReverse(dir.value));
+		const t = mov.getInterpolationValue(time);
+		return { x: lerp(oldPos.x, pos.x, t), y: lerp(oldPos.y, pos.y, t) };
+	} else {
+		return { x: pos.x, y: pos.y };
+	}
+};
+
 GameScreen.prototype.draw = function(batch, dt, time) {
 	var game = this.game, em = game.em, player = game.player;
 
@@ -68,10 +81,9 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	var pos = em.getComponent(player, Position);
-	var oldpos = em.getComponent(player, OldPosition);
-	var movement = em.getComponent(player, MovementComponent);
-	var transformX = Math.ceil(lerp(oldpos.x, pos.x, movement.timer / movement.delay) * 16 - this.width / 2);
-	var transformY = Math.ceil(lerp(oldpos.y, pos.y, movement.timer / movement.delay) * 16 - this.height / 2);
+	const playerInterpPos = getEntityInterpPos(time, em, player, pos);
+	const transformX = Math.ceil(playerInterpPos.x * 16 - this.width / 2),
+		transformY = Math.ceil(playerInterpPos.y * 16 - this.height / 2);
 
 	// game.mapRenderer.drawLayers(game.backgroundLayers, transformX, transformY, this.width, this.height);
 
@@ -95,7 +107,7 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 			if (em.hasComponent(entity, AnimationComponent)) {
 				var dir = em.getComponent(entity, DirectionComponent).value;
 				var animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
-				if (!movement || movement.timer === 0) region = animation.getFrameByIndex(0);
+				if (!movement || !movement.isMoving()) region = animation.getFrameByIndex(0);
 				else region = animation.getFrame(time);
 			} else {
 				if (spriteComponent.animation) {
@@ -108,15 +120,15 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 
 			var x, y;
 			if (movement !== null) {
-				var oldpos = em.getComponent(entity, OldPosition);
-				x = lerp(oldpos.x, position.x, movement.timer / movement.delay) * 16 + spriteComponent.offsetX;
-				y = lerp(oldpos.y, position.y, movement.timer / movement.delay) * 16 + spriteComponent.offsetY;
+				const interpPos = getEntityInterpPos(time, em, entity, position);
+				x = interpPos.x * 16;
+				y = interpPos.y * 16;
 			} else {
-				x = position.x * 16 + spriteComponent.offsetX;
-				y = position.y * 16 + spriteComponent.offsetY;
+				x = position.x * 16;
+				y = position.y * 16;
 			}
-			x = Math.ceil(x);
-			y = Math.ceil(y);
+			x = Math.ceil(x + spriteComponent.offsetX);
+			y = Math.ceil(y + spriteComponent.offsetY);
 			var width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 		}
@@ -141,9 +153,8 @@ GameScreen.prototype.onKey = function(type, key) {
 				var em = this.game.em;
 				// Hacky way of connecting input to player interacting with shit
 				var pos = em.getComponent(game.player, Position);
-				var oldpos = em.getComponent(game.player, OldPosition);
 				var movement = em.getComponent(game.player, MovementComponent);
-				if (pos.x === oldpos.x && pos.y === oldpos.y && movement.getController() instanceof player.PlayerMovementController) {
+				if (!movement.isMoving() && movement.getController() instanceof player.PlayerMovementController) {
 					var playerDirection = em.getComponent(game.player, DirectionComponent).value;
 					var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection), pos.y + direction.getDeltaY(playerDirection));
 					if (interactable !== null) {
@@ -296,13 +307,6 @@ Game.prototype.getEntityAtCell = function(x, y) {
 					break;
 				}
 			}
-			/*if (em.hasComponent(entity, OldPosition)) {
-				var oldpos = em.getComponent(entity, OldPosition);
-				if (oldpos.x === x && oldpos.y === y) {
-					result = entity;
-					break;
-				}
-			}*/
 		}
 	}
 	return result;
@@ -341,13 +345,12 @@ Game.prototype.clearLevel = function() {
 Game.prototype.warp = function(x, y, mapScript, relative) {
 	var em = this.em;
 	var pos = em.getComponent(this.player, Position);
-	var oldpos = em.getComponent(this.player, OldPosition);
 	if (relative) {
-		oldpos.x = pos.x = pos.x - x;
-		oldpos.y = pos.y = pos.y - y;
+		pos.x = pos.x - x;
+		pos.y = pos.y - y;
 	} else {
-		oldpos.x = pos.x = x;
-		oldpos.y = pos.y = y;
+		pos.x = x;
+		pos.y = y;
 	}
 	if (mapScript !== undefined) {
 		if (mapScript === null) throw new Error("mapScript cannot be null.");
@@ -434,18 +437,10 @@ Game.prototype.walkPath = function(entity, path) {
 
 /**
  * Snaps the entity to the next tile.
- *
- * The entity must have a Position component.
  */
 Game.prototype.snapEntity = function(entity) {
 	var em = this.em;
-	if (em.hasComponent(entity, MovementComponent)) em.getComponent(entity, MovementComponent).timer = 0;
-	if (em.hasComponent(entity, OldPosition)) {
-		var pos = em.getComponent(entity, Position);
-		var oldpos = em.getComponent(entity, OldPosition);
-		oldpos.x = pos.x;
-		oldpos.y = pos.y;
-	}
+	if (em.hasComponent(entity, MovementComponent)) em.getComponent(entity, MovementComponent).snap();
 };
 
 Game.prototype.loadCharacterSprite = function(entity, url) {
