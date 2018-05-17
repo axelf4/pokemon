@@ -1,6 +1,6 @@
 const key = "gameSave";
 
-var supportsLocalStorage = function() {
+const supportsLocalStorage = function() {
 	try {
 		return 'localStorage' in window && window['localStorage'] !== null;
 	} catch(e){
@@ -11,24 +11,26 @@ if (!supportsLocalStorage()) {
 	alert("Your browser doesn't support Web Storage.");
 }
 
-var save = {};
+export const save = {};
+export default save;
 
-exports.hasSave = function() {
+export function clearSave() {
+	Object.keys(save).forEach(k => delete save[k]);
+
+	save.hasGottenPokemon = true; // should be false
+};
+clearSave(); // Set defaults
+
+export function hasSave() {
 	return window.localStorage.getItem(key) !== null;
 };
 
-exports.getSave = function() {
-	return save;
+export function loadSave() {
+	const loaded = JSON.parse(window.localStorage.getItem(key));
+	clearSave();
+	for (let k of loaded) save[k] = loaded[k];
 };
 
-exports.loadSave = function() {
-	save = JSON.parse(window.localStorage.getItem(key));
-};
-
-exports.performSave = function() {
+export function performSave() {
 	window.localStorage.setItem(key, JSON.stringify(save));
-};
-
-exports.clearSave = function() {
-	save = {};
 };

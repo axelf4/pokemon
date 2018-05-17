@@ -2,6 +2,7 @@ var Map = require("map.js");
 var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
 var thread = require("thread");
+import save from "savegame";
 
 var Position = require("Position");
 var DirectionComponent = require("DirectionComponent");
@@ -14,11 +15,9 @@ module.exports = function(game, loader) {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
 
-	var hasStolenPokemon = false;
-
 	// game.addPushTrigger(PushTrigger.createWarp(game, 5, 12, 16, 15, "ballettown.js"));
 	game.addPushTrigger(new PushTrigger.TilePushTrigger(thread.bind(undefined, function*() {
-		if (hasStolenPokemon) {
+		if (save.hasGottenPokemon) {
 			yield game.showDialog("Why didn't you just take all my Pokémon. Stupid idiot...");
 		}
 		game.warp(16, 15, "ballettown.js");
@@ -34,7 +33,7 @@ module.exports = function(game, loader) {
 	em.addComponent(professor, new InteractionComponent(thread.bind(undefined, function*(game) {
 		game.lock();
 		game.faceEachOther(professor, game.player);
-		if (!hasStolenPokemon) {
+		if (!save.hasGottenPokemon) {
 			yield game.showDialog("Hello, I am your new neighbor, the Pokémon professor Clark.");
 			yield game.showDialog("Pokémon are beautiful creatures that live alongside humans. Some use Pokémon to play while some only see them as tools for their own benefit.");
 			yield game.showDialog("I have devoted my life to researching diffent Pokémon's mating behaviours. Most of my work is conducted here in my laboratory.");
@@ -52,7 +51,7 @@ module.exports = function(game, loader) {
 					yield game.showDialog("You received Dolan.");
 				}
 
-				hasStolenPokemon = true;
+				save.hasGottenPokemon = true;
 			}
 		} else {
 			yield game.showDialog("It's fine. I did some bad things in my youth as well. Let's just try to be friends.");

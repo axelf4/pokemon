@@ -2,6 +2,7 @@ var Map = require("map.js");
 var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
 var thread = require("thread");
+import save from "savegame";
 
 var Position = require("Position");
 var DirectionComponent = require("DirectionComponent");
@@ -51,6 +52,7 @@ module.exports = function(game, loader) {
 	game.loadCharacterSprite(littleGirl, "assets/girlSprite.png");
 	em.addComponent(littleGirl, new LineOfSightComponent(thread.bind(undefined, function*(game, em, caster, blocker) {
 		if (blocker !== game.player) return;
+		if (save.hasGottenPokemon) return;
 		game.snapEntity(blocker);
 		game.lock();
 		game.faceEachOther(caster, blocker);
