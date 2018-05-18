@@ -24,6 +24,7 @@ var Animation = require("Animation");
 var glMatrix = require("gl-matrix");
 var Select = require("Select");
 var renderer = require("renderer");
+import range from "range";
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -59,15 +60,11 @@ var GameScreen = function(game) {
 GameScreen.prototype = Object.create(Stack.prototype);
 GameScreen.prototype.constructor = GameScreen;
 
-const getEntityInterpPos = function(time, em, entity, pos) {
-	const dir = em.getComponent(entity, DirectionComponent);
-	const mov = em.getComponent(entity, MovementComponent);
-
-	let x = 0, y = 0;
-
+const getEntityInterpPos = function(time, em, entity, pos, mov) {
 	if (mov.isMoving()) {
-		const oldPos = direction.getPosInDirection(pos, direction.getReverse(dir.value));
-		const t = mov.getInterpolationValue(time);
+		const dir = em.getComponent(entity, DirectionComponent).value;
+		const oldPos = direction.getPosInDirection(pos, direction.getReverse(dir)),
+			t = mov.getInterpolationValue(time);
 		return { x: lerp(oldPos.x, pos.x, t), y: lerp(oldPos.y, pos.y, t) };
 	} else {
 		return { x: pos.x, y: pos.y };
@@ -75,13 +72,13 @@ const getEntityInterpPos = function(time, em, entity, pos) {
 };
 
 GameScreen.prototype.draw = function(batch, dt, time) {
-	var game = this.game, em = game.em, player = game.player;
+	const game = this.game, em = game.em, player = game.player;
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	var pos = em.getComponent(player, Position);
-	const playerInterpPos = getEntityInterpPos(time, em, player, pos);
+	const playerInterpPos = getEntityInterpPos(time, em, player,
+			em.getComponent(player, Position), em.getComponent(player, MovementComponent));
 	const transformX = Math.ceil(playerInterpPos.x * 16 - this.width / 2),
 		transformY = Math.ceil(playerInterpPos.y * 16 - this.height / 2);
 
@@ -96,31 +93,30 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 
 	game.mapRenderer.drawLayers(game.backgroundLayers);
 
-	for (var entity = 0, length = em.count; entity < length; ++entity) {
-		if (em.matches(entity, game.spriteSystemMask)) {
-			var position = em.getComponent(entity, Position);
-			var spriteComponent = em.getComponent(entity, SpriteComponent);
-			var movement = em.hasComponent(entity, MovementComponent) ? em.getComponent(entity, MovementComponent) : null;
+	range(em.count).filter(entity => em.matches(entity, game.spriteSystemMask))
+		.sort((a, b) => em.getComponent(a, Position).y - em.getComponent(b, Position).y)
+		.forEach(entity => {
+			const position = em.getComponent(entity, Position),
+				spriteComponent = em.getComponent(entity, SpriteComponent),
+				movement = em.hasComponent(entity, MovementComponent) ? em.getComponent(entity, MovementComponent) : null;
 
-			var texture = spriteComponent.texture;
 			var region;
 			if (em.hasComponent(entity, AnimationComponent)) {
-				var dir = em.getComponent(entity, DirectionComponent).value;
-				var animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
-				if (!movement || !movement.isMoving()) region = animation.getFrameByIndex(0);
-				else region = animation.getFrame(time);
+				const dir = em.getComponent(entity, DirectionComponent).value;
+				const animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
+				region = movement && movement.isMoving() ? animation.getFrame(time) : animation.getFrameByIndex(0);
 			} else {
-				if (spriteComponent.animation) {
-					region = spriteComponent.animation.getFrame(time);
-				} else region = spriteComponent.region;
+				region = spriteComponent.animation ? spriteComponent.animation.getFrame(time)
+					: spriteComponent.region;
 			}
 
+			const texture = spriteComponent.texture;
 			const u1 = region.x / texture.width, v1 = region.y / texture.height,
 				u2 = (region.x + region.width) / texture.width, v2 = (region.y + region.height) / texture.height;
 
-			var x, y;
-			if (movement !== null) {
-				const interpPos = getEntityInterpPos(time, em, entity, position);
+			let x, y;
+			if (movement) {
+				const interpPos = getEntityInterpPos(time, em, entity, position, movement);
 				x = interpPos.x * 16;
 				y = interpPos.y * 16;
 			} else {
@@ -129,10 +125,9 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 			}
 			x = Math.ceil(x + spriteComponent.offsetX);
 			y = Math.ceil(y + spriteComponent.offsetY);
-			var width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
+			const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
-		}
-	}
+		});
 	// batch.end();
 
 	// game.mapRenderer.drawLayers(game.foregroundLayers, transformX, transformY, this.width, this.height);
@@ -387,33 +382,28 @@ Game.prototype.walkForward = function(entity) {
  * Returns the found entity or -1.
  */
 Game.prototype.findEntityInLineOfSight = function(caster) {
-	var em = this.em;
-	var pos1 = em.getComponent(caster, Position);
-	var dir = em.getComponent(caster, DirectionComponent).value; // The direction of the line of sight
-	var LoS = em.getComponent(caster, LineOfSightComponent); // LoS
+	const em = this.em;
+	const pos1 = em.getComponent(caster, Position);
+	const dir = em.getComponent(caster, DirectionComponent).value; // The direction of the line of sight
+	const LoS = em.getComponent(caster, LineOfSightComponent); // LoS
+	const dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 
 	for (var entity = 0, length = em.count; entity < length; ++entity) {
-		if (entity === caster) continue; // Can't see itself!
+		if (entity !== caster /* Can't see itself! */
+				&& em.matches(entity, this.collisionMask)) {
+			const pos2 = em.getComponent(entity, Position);
 
-		if (em.matches(entity, this.collisionMask)) {
-			var pos2 = em.getComponent(entity, Position);
-			var dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
+			for (let step = 1, max = LoS.length; step <= max; ++step) {
+				const x = pos1.x + step * dx, y = pos1.y + step * dy;
 
-			for (var step = 1, max = LoS.length; step <= max; ++step) {
-				var x = pos1.x + step * dx, y = pos1.y + step * dy;
-
-				if (pos2.x === x && pos2.y === y) {
-					return entity;
-				}
+				if (pos2.x === x && pos2.y === y) return entity;
 
 				// If the sight is obstructed: quit
-				if (this.isSolid(x, y)) {
-					break;
-				}
-
+				if (this.isSolid(x, y)) break;
 			}
 		}
 	}
+
 	return -1;
 };
 
