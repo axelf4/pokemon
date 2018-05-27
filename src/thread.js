@@ -1,4 +1,4 @@
-module.exports = function(f, ...args) {
+export default function(f, ...args) {
 	var gen = f(...args);
 	if (typeof gen.next !== "function") return; // throw new TypeError("The specified generator function is invalid.");
 
@@ -10,4 +10,4 @@ module.exports = function(f, ...args) {
 		if (!promise || typeof promise.then !== "function") throw new TypeError("Expression is not of type \"Promise\".");
 		promise.then(next);
 	})();
-};
+}

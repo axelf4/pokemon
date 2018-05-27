@@ -14,7 +14,7 @@ module.exports = {
 		path: __dirname,
 		filename: "bundle.js",
 	},
-	devtool: "source-map",
+	devtool: "cheap-module-eval-source-map",
 	module: {
 		rules: [
 		{
@@ -22,7 +22,8 @@ module.exports = {
 			exclude: /(node_modules|bower_components)/,
 			loader: "babel-loader",
 			options: {
-				presets: ["env"]
+				presets: ["env"],
+				plugins: ["transform-object-rest-spread"],
 			}
 		},
 		{ test: /\.glsl$/, loader: "webpack-glsl-loader" },

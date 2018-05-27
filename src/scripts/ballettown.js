@@ -1,7 +1,7 @@
 var Map = require("map.js");
 var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
-var thread = require("thread");
+import thread from "thread";
 import save from "savegame";
 
 var Position = require("Position");

@@ -9,12 +9,13 @@ import promiseProxy from "promiseProxy";
 import cachingProxy from "cachingProxy";
 var resources = require("resources");
 var Font = require("font.js");
-var NinePatch = require("NinePatch");
+import NinePatch from "NinePatch";
 import LoadingScreen from "LoadingScreen";
-var BattleState = require("BattleState.js");
+import BattleState from "BattleState";
 var Game = require("Game.js");
 import TransitionState from "TransitionState";
 var fowl = require("fowl");
+const TWEEN = require("@tweenjs/tween.js");
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -27,8 +28,8 @@ var AnimationComponent = require("AnimationComponent");
 var DimensionComponent = require("DimensionComponent");
 
 import Trainer from "Trainer";
-var pokemon = require("pokemon.js");
-var move = require("move.js");
+import { move } from "move";
+import Pokemon, { getPokemonByName } from "pokemon";
 
 var gl = renderer.gl;
 var vec3 = glMatrix.vec3;
@@ -64,42 +65,28 @@ let transitionState = new TransitionState();
 stateManager.setState(transitionState);
 
 resources.font = new Font(loader);
-loader.loadTextureRegion("textures/frame.9.png").then(textureRegion => {
-	resources.frame = NinePatch.fromTexture(textureRegion.texture, 24, 24);
+loader.loadTexture("textures/frame.9.png").then(texRegion => {
+	resources.frame = NinePatch.fromTextureRegion(texRegion);
 }).then(() => {
-	var game = new Game(loader, batch);
+	return loader.loadTexture("textures/battleinfo.9.png").then(textureRegion => {
+		resources.battleInfo = NinePatch.fromTextureRegion(textureRegion);
+	});
+}).then(() => {
+	const game = new Game(loader, batch);
 	game.loadScript("home.js");
 	game.warp(9, 3);
 
-	var slowpoke = {
-		name: "Slowpoke",
-		moves: [move.TACKLE, move.FLAMETHROWER, move.HYDROPUMP, move.PURSUIT],
-		hp: 90,
-		maxHp: 90,
-		attack: 65,
-		defense: 65,
-		speed: 15,
-		level: 1,
-	};
-	// Based off Oddish
-	var snoopDogg = {
-		name: "Snoop Dogg",
-		moves: [move.TACKLE],
-		hp: 45,
-		maxHp: 45,
-		attack: 50,
-		defense: 55,
-		speed: 30,
-		level: 1,
-	};
-
-	var playerTrainer = new Trainer("Axel", [slowpoke]);
-	var enemyTrainer = new Trainer("Fucker", [snoopDogg]);
-	var battleState = new BattleState(loader, game, playerTrainer, enemyTrainer);
+	const playerTrainer = new Trainer("Axel", [
+			new Pokemon("Snoop Dogg", 6, [ move.tackle, move.growl ])
+	]);
+	const enemyTrainer = new Trainer("Charles Ingvars", [
+			new Pokemon("Slowpoke", 4, [ move.tackle ])
+	]);
+	const battleState = new BattleState(loader, game, playerTrainer, enemyTrainer);
 
 	loader.all.then(() => {
 		console.log("Loaded initial assets.");
-		transitionState.transitionTo(game);
+		transitionState.transitionTo(battleState);
 	}, () => {
 		console.log("Some asset was rejected.");
 	});
@@ -116,6 +103,7 @@ var update = function(timestamp) {
 
 	var state = stateManager.getState();
 	state.update(dt, timestamp);
+	TWEEN.update(timestamp);
 
 	var resized = renderer.sizeCanvas();
 	if (resized) {

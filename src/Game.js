@@ -143,19 +143,26 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 GameScreen.prototype.onKey = function(type, key) {
 	if (this.flags & Widget.FLAG_FOCUSED) {
 		if (type === input.KEY_ACTION_DOWN) {
-			if (key === " ") {
-				var game = this.game;
-				var em = this.game.em;
-				// Hacky way of connecting input to player interacting with shit
-				var pos = em.getComponent(game.player, Position);
-				var movement = em.getComponent(game.player, MovementComponent);
-				if (!movement.isMoving() && movement.getController() instanceof player.PlayerMovementController) {
-					var playerDirection = em.getComponent(game.player, DirectionComponent).value;
-					var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection), pos.y + direction.getDeltaY(playerDirection));
-					if (interactable !== null) {
-						var interaction = em.getComponent(interactable, InteractionComponent);
-						if (interaction) interaction.callback(game);
-					}
+			var game = this.game;
+			var em = this.game.em;
+			// Hacky way of connecting input to player interacting with shit
+			var pos = em.getComponent(game.player, Position);
+			var movement = em.getComponent(game.player, MovementComponent);
+			if (!movement.isMoving() && movement.getController() instanceof player.PlayerMovementController) {
+				var playerDirection = em.getComponent(game.player, DirectionComponent);
+				switch (key) {
+					case " ":
+						var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
+								pos.y + direction.getDeltaY(playerDirection.value));
+						if (interactable !== null) {
+							var interaction = em.getComponent(interactable, InteractionComponent);
+							if (interaction) interaction.callback(game);
+						}
+						break;
+					case "w": playerDirection.value = direction.UP; break;
+					case "a": playerDirection.value = direction.LEFT; break;
+					case "s": playerDirection.value = direction.DOWN; break;
+					case "d": playerDirection.value = direction.RIGHT; break;
 				}
 			}
 		}
@@ -434,7 +441,7 @@ Game.prototype.snapEntity = function(entity) {
 };
 
 Game.prototype.loadCharacterSprite = function(entity, url) {
-	return this.loader.loadTextureRegion(url).then(textureRegion => {
+	return this.loader.loadTexture(url).then(textureRegion => {
 		var em = this.em;
 		var spriteComponent = new SpriteComponent(textureRegion);
 		spriteComponent.offsetX = -8;

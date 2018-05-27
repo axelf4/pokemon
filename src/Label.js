@@ -58,8 +58,9 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 		} else {
 			var charCode = ch.charCodeAt();
 			var glyph = this.font.getGlyph(charCode);
+			if (!glyph) console.log("Missing glyph for", charCode, "corresponds to", ch);
 
-			advance += glyph.xadvance;
+			advance += glyph.xadvance * this.font.scale;
 			if (wrappingWidth && advance > wrappingWidth) {
 				// Find a spot to wrap
 				var cursor = index;
@@ -103,7 +104,7 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 	var width = maxWidth;
 	if (widthMode === measureSpec.EXACTLY) width = widthSize;
-	var height = this.font.lineHeight * numLines;
+	var height = this.font.getLineHeight() * numLines;
 	var contentHeight = height;
 	if (heightMode === measureSpec.EXACTLY) height = heightSize;
 	this.setDimension(width, height);
@@ -136,7 +137,7 @@ Label.prototype.draw = function(batch) {
 	for (var i = 0; i < this.glyphLines.length; ++i) {
 		var line = this.glyphLines[i];
 		this.font.drawText(batch, this.x + line.x, y, line.str);
-		y += this.font.lineHeight;
+		y += this.font.getLineHeight();
 	}
 };
 

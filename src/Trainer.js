@@ -13,7 +13,12 @@ export default class Trainer {
 	}
 
 	canEscapeFrom() {
-		return false;
+		return true;
+	}
+
+	getFirstPokemon() {
+		if (this.pokemons.length < 1) throw new Error("The trainer does not have any pokemons.");
+		return this.pokemons[0];
 	}
 
 	getPrimaryPokemon() {

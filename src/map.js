@@ -68,7 +68,7 @@ var loadMap = function(loader, url) {
 				}
 			}).then(tileset => {
 				tileset.tilesAcross = tileset.imageWidth / tileset.tilewidth;
-				return loader.loadTextureRegion(tileset.imagePath)
+				return loader.loadTexture(tileset.imagePath)
 					.then(textureRegion => {
 						tileset.texture = textureRegion;
 					});

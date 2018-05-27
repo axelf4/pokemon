@@ -41,8 +41,6 @@ var resolveAdjustedSize = function(desiredSize, spec) {
 Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	var widthMode = measureSpec.getMode(widthMeasureSpec);
 	var heightMode = measureSpec.getMode(heightMeasureSpec);
-	// var widthSize = measureSpec.getSize(widthMeasureSpec);
-	// var heightSize = measureSpec.getSize(heightMeasureSpec);
 
 	var width, height;
 
@@ -108,15 +106,14 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 Image.prototype.draw = function(batch) {
 	var region = this.region;
-	var texture = region;
-	var u1 = (region.x + 0.5) / texture.width;
-	var v1 = (region.y + 0.5) / texture.height;
-	var u2 = (region.x + region.width - 0.5) / texture.width;
-	var v2 = (region.y + region.height - 0.5) / texture.height;
+	var u1 = (region.x0 + 0.5) / region.width;
+	var v1 = (region.y0 + 0.5) / region.height;
+	var u2 = (region.x1 - 0.5) / region.width;
+	var v2 = (region.y1 - 0.5) / region.height;
 	var x = this.x + this.imageX;
 	var y = this.y + this.imageY;
-	var width = region.width, height = region.height;
-	batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
+	var width = region.x1 - region.x0, height = region.y1 - region.y0;
+	batch.draw(region.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 };
 
 module.exports = Image;

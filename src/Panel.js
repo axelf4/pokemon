@@ -121,7 +121,7 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 			} else if (crossAxis === DIRECTION_ROW && widthMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
 				childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.EXACTLY);
 			} else {
-				var mode = widthSize ? measureSpec.AT_MOST : measureSpec.UNSPEDIFIED;
+				var mode = widthSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
 				childWidthMeasureSpec = measureSpec.make(widthSize, mode);
 			}
 
@@ -130,7 +130,7 @@ Panel.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 			} else if (crossAxis === DIRECTION_COLUMN && heightMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
 				childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.EXACTLY);
 			} else {
-				var mode = heightSize ? measureSpec.AT_MOST : measureSpec.UNSPEDIFIED;
+				var mode = heightSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
 				childHeightMeasureSpec = measureSpec.make(heightSize, mode);
 			}
 

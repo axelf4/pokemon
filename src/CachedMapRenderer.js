@@ -2,7 +2,7 @@ var renderer = require("renderer.js");
 var glMatrix = require("gl-matrix");
 var path = require("path");
 var base64 = require("base64-js");
-var pow2 = require("pow2");
+import { isPowerOfTwo, nextHighestPowerOfTwo } from "pow2";
 
 var gl = renderer.gl;
 var vec2 = glMatrix.vec2;
@@ -13,8 +13,8 @@ var MapRenderer = function(map) {
 	this.tileSize = map.tilewidth;
 
 	var width = map.width, height = map.height;
-	if (!pow2.isPowerOfTwo(width)) width = pow2.nextHighestPowerOfTwo(width);
-	if (!pow2.isPowerOfTwo(height)) height = pow2.nextHighestPowerOfTwo(height);
+	if (!isPowerOfTwo(width)) width = nextHighestPowerOfTwo(width);
+	if (!isPowerOfTwo(height)) height = nextHighestPowerOfTwo(height);
 
 	// Upload the layers
 	var components = 3;

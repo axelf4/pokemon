@@ -1,4 +1,4 @@
-var texture = require("texture");
+import { loadTexture } from "texture";
 var map = require("map");
 
 window.URL = window.URL || window.webkitURL;
@@ -67,19 +67,8 @@ LoaderFacade.prototype.loadJSON = function(url) {
 
 LoaderFacade.prototype.loadTexture = function(url) {
 	return this.load(url).then(blob => {
-			return new Promise((resolve, reject) => {
-				var objectURL = URL.createObjectURL(blob);
-				texture.loadTexturePromise(objectURL).then((textureInfo) => {
-					URL.revokeObjectURL(objectURL);
-					resolve(textureInfo);
-				});
-			});
-		});
-};
-
-LoaderFacade.prototype.loadTextureRegion = function(url) {
-	return this.loadTexture(url).then(textureInfo => {
-		return new texture.Region(textureInfo.texture, 0, 0, textureInfo.width, textureInfo.height);
+		const objectURL = URL.createObjectURL(blob);
+		return loadTexture(objectURL).finally(() => { URL.revokeObjectURL(objectURL); });
 	});
 };
 

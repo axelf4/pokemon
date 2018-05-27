@@ -1,7 +1,7 @@
 import State from "State";
 import * as stateManager from "stateManager";
 var renderer = require("renderer");
-var pow2 = require("pow2");
+import { isPowerOfTwo, nextHighestPowerOfTwo } from "pow2";
 
 var gl = renderer.gl;
 
@@ -127,8 +127,8 @@ export default class TransitionState extends State {
 		if (this.state)
 			this.state.resize(width, height);
 
-		this.texWidth = pow2.isPowerOfTwo(width) ? width : pow2.nextHighestPowerOfTwo(width);
-		this.texHeight = pow2.isPowerOfTwo(height) ? height : pow2.nextHighestPowerOfTwo(height);
+		this.texWidth = isPowerOfTwo(width) ? width : nextHighestPowerOfTwo(width);
+		this.texHeight = isPowerOfTwo(height) ? height : nextHighestPowerOfTwo(height);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.texWidth, this.texHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 	}

@@ -8,6 +8,7 @@
     "start": "webpack-dev-server --mode development"
   },
   "dependencies": {
+    "@tweenjs/tween.js": "^17.2.0",
     "BitSetModule": "^1.0.0",
     "base64-js": "^1.3.0",
     "equals": "^1.1.0",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "electron": "^1.4.3",
@@ -33,6 +35,9 @@
   "babel": {
     "presets": [
       "env"
+    ],
+    "plugins": [
+      "transform-object-rest-spread"
     ]
   }
 }

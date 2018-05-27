@@ -1,7 +1,7 @@
 var Map = require("map.js");
 var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
-var thread = require("thread");
+import thread from "thread";
 import save from "savegame";
 
 var Position = require("Position");
@@ -18,7 +18,7 @@ module.exports = function(game, loader) {
 	// game.addPushTrigger(PushTrigger.createWarp(game, 5, 12, 16, 15, "ballettown.js"));
 	game.addPushTrigger(new PushTrigger.TilePushTrigger(thread.bind(undefined, function*() {
 		if (save.hasGottenPokemon) {
-			yield game.showDialog("Why didn't you just take all my Pokémon. Stupid idiot...");
+			yield game.showDialog("Why didn't you just take all my Pokemon. Stupid idiot...");
 		}
 		game.warp(16, 15, "ballettown.js");
 		return true;

@@ -1,7 +1,7 @@
 var Map = require("map.js");
 var InteractionComponent = require("InteractionComponent.js");
 var Animation = require("Animation.js");
-var thread = require("thread.js");
+import thread from "thread";
 var PushTrigger = require("PushTrigger.js");
 var Position = require("Position.js");
 var SpriteComponent = require("SpriteComponent.js");
@@ -34,7 +34,7 @@ module.exports = function(game, loader) {
 	var lollipopMan = em.createEntity();
 	em.addComponent(lollipopMan, new Position(12, 5));
 	em.addComponent(lollipopMan, new DirectionComponent(direction.DOWN));
-	loader.loadTextureRegion("assets/dancer.png").then(textureRegion => {
+	loader.loadTexture("assets/dancer.png").then(textureRegion => {
 		var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
 		var spriteComponent = new SpriteComponent(textureRegion, animation);
 		spriteComponent.offsetX = -8;
@@ -60,6 +60,7 @@ module.exports = function(game, loader) {
 	em.addComponent(lollipopMan, new InteractionComponent(thread.bind(undefined, function*(game) {
 		var playerMovement = game.em.getComponent(game.getPlayer(), MovementComponent);
 		var entityMovement = game.em.getComponent(lollipopMan, MovementComponent);
+		game.faceEachOther(game.getPlayer(), lollipopMan);
 		playerMovement.pushController(new StillMovementController());
 		entityMovement.pushController(new StillMovementController());
 		yield game.showDialog("So you approach me voluntarily? You've got some guts!");

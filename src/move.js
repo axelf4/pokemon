@@ -1,67 +1,38 @@
-// MoveType
-exports.Effect = function() {
+import * as type from "type";
+
+export const /* Status */ damageNone = 0x0, damagePhysical = 0x1, damageSpecial = 0x2;
+
+export default class Move {
+	/**
+	 * @param accuracy The accuracy in percent.
+	 * @param power The base power.
+	 */
+	constructor(name, type, pp, power, accuracy, damageClass, priority) {
+		if (priority < -7 || priority > 5) throw new Error();
+		this.name = name;
+		this.type = type;
+		this.power = power;
+		this.pp = pp;
+		this.accuracy = accuracy;
+		this.damageClass = damageClass;
+		this.priority = priority || 0;
+	}
+
+	getType() {
+		return this.type;
+	}
+
+	toString() {
+		return this.name + " (" + this.type + " - " + (this.power == 1 ? 'X' : this.power) + " power - " + this.accuracy + " accuracy)";
+	}
+}
+
+export const move = {
+	tackle: new Move("Tackle", type.normal, 35, 40, 100, damagePhysical),
+	growl: new Move("Growl", type.normal, 40, 0, 100, damageNone),
 };
 
-exports.DamageEffect = function() {
-};
-
-exports.createMove = function(name, type, power, accuracy, speed) {
-	return {
-		name: name,
-		type: type,
-		power: power,
-		accuracy: accuracy,
-		speed: speed,
-	};
-};
-
-exports.getName = function(move) {
-	return move.name;
-};
-
-/**
- * Returns the base power of the move.
- */
-exports.getPower = function(move) {
-	return move.power;
-};
-
-exports.getAccuracy = function(move) {
-	return move.accuracy;
-};
-
-exports.getPriority = function(move) {
-	return 0; // TODO
-};
-
-exports.getSpeed = function(move) {
-	return move.speed;
-};
-
-/**
- * Whether the power is multiplied by 50%.
- */
-exports.isStabApplied = function(move, pokemon) {
-	return pokemon.type1 === move.type || pokemon.type2 === move.type;
-};
-
-// Move definitions
-
-exports.TACKLE = {
-	name: "Tackle",
-	power: 50,
-	accuracy: 100,
-	priority: 0,
-};
-
-exports.FLAMETHROWER = {
-	name: "Flamethrower",
-};
-
-exports.HYDROPUMP = {
-	name: "Hydro Pump",
-};
-
-exports.PURSUIT = {
-	name: "Pursuit",
+export const getMoveByName = function(name) {
+	if (!(name in move)) throw new Error("Move doesn't exist.");
+	return move[name];
 };

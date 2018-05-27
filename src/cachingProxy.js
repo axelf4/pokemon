@@ -17,7 +17,7 @@ export default function cachingProxy(target) {
 						for (var i = 0, length = functionCache.length; i < length; ++i) {
 							var entry = functionCache[i];
 							if (equals(arguments, entry.args)) {
-								console.log("Intercepted", property, "invocation with", arguments, "for cache.");
+								console.log("Intercept cached", property, "invocation ", arguments);
 								return entry.result;
 							}
 						}
