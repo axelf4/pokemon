@@ -84,7 +84,7 @@ loader.loadTexture("textures/frame.9.png").then(texRegion => {
 	]);
 	const battleState = new BattleState(loader, game, playerTrainer, enemyTrainer);
 
-	loader.all.then(() => {
+	loader.all().then(() => {
 		console.log("Loaded initial assets.");
 		transitionState.transitionTo(battleState);
 	}, () => {

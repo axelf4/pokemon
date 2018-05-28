@@ -4,15 +4,20 @@
  * The promises are stored as an Array in the "promises" property of the proxy.
  */
 export default function promiseProxy(target) {
-	var promises = []; // The pending promises
+	const promises = []; // The pending promises
 	return new Proxy(target, {
-		get: function(target, property, receiver) {
+		get(target, property, receiver) {
 			if (property === "all") {
-				return new Promise(function(resolve, reject) {
+				return () => new Promise(function(resolve, reject) {
 					(function testPromises() {
 						if (promises.length === 0) resolve();
 						else {
-							Promise.all(promises.splice(0)).then(testPromises, reject);
+							let all = Promise.all(promises.splice(0));
+							promises.push(all);
+							all.finally(() => {
+								const i = promises.indexOf(all);
+								if (i !== -1) promises.splice(i, 1);
+							}).then(testPromises, reject);
 						}
 					})();
 				});
