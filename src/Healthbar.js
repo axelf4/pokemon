@@ -31,15 +31,12 @@ Healthbar.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 };
 
 Healthbar.prototype.setPercentage = function(percentage) {
-	console.log(percentage);
 	return new Promise((resolve, reject) => {
-		let test = { p: this.percentage };
-		new TWEEN.Tween(test) // Create a new tween
+		new TWEEN.Tween({ p: this.percentage }) // Create a new tween
 			.to({ p: percentage }, 1000) // Move to percentage in 1 second.
 			.easing(TWEEN.Easing.Quadratic.Out) // Use an easing function to make the animation smooth.
-			.onUpdate(() => {
-				console.log(test);
-				this.percentage = test.p;
+			.onUpdate(object => {
+				this.percentage = object.p;
 			})
 			.onComplete(resolve).onStop(reject)
 			.start();

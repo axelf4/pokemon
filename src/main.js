@@ -48,29 +48,22 @@ fowl.registerComponents(
 		AnimationComponent,
 		DimensionComponent);
 
-var projectionMatrix = mat4.create();
-
-var batch = new SpriteBatch();
+const projectionMatrix = mat4.create();
+const batch = new SpriteBatch();
 
 input.setListener((type, key) => {
 	stateManager.getState().onKey(type, key);
 });
 
-var fileLoader = new FileLoader("pokemongame");
-var loaderFacade = new LoaderFacade(fileLoader);
-var loader = promiseProxy(cachingProxy(loaderFacade));
+const loader = promiseProxy(cachingProxy(
+			new LoaderFacade(new FileLoader("pokemongame"))));
 
-// var loadingScreen = new LoadingScreen();
 let transitionState = new TransitionState();
 stateManager.setState(transitionState);
 
 resources.font = new Font(loader);
 loader.loadTexture("textures/frame.9.png").then(texRegion => {
 	resources.frame = NinePatch.fromTextureRegion(texRegion);
-}).then(() => {
-	return loader.loadTexture("textures/battleinfo.9.png").then(textureRegion => {
-		resources.battleInfo = NinePatch.fromTextureRegion(textureRegion);
-	});
 }).then(() => {
 	const game = new Game(loader, batch);
 	game.loadScript("home.js");
