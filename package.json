@@ -16,7 +16,8 @@
     "gl-matrix": "^2.5.1",
     "lerp": "^1.0.3",
     "next-multiple": "^1.0.0",
-    "parse-bmfont-ascii": "^1.0.6"
+    "parse-bmfont-ascii": "^1.0.6",
+    "rgba-to-float": "^1.0.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",

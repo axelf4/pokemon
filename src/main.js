@@ -1,6 +1,6 @@
 var glMatrix = require("gl-matrix");
 var renderer = require("renderer.js");
-var SpriteBatch = require("SpriteBatch.js");
+import SpriteBatch from "SpriteBatch";
 import FileLoader from "FileLoader";
 var LoaderFacade = require("LoaderFacade");
 var input = require("input.js");
@@ -109,7 +109,7 @@ var update = function(timestamp) {
 
 	state.draw(batch, dt, timestamp);
 
-	/*var error = gl.getError();
+	/*const error = gl.getError();
 	if (error !== gl.NO_ERROR && error !== gl.CONTEXT_LOST_WEBGL) {
 		console.error("OpenGL error.");
 	}*/
