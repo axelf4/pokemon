@@ -370,6 +370,8 @@ Game.prototype.warp = async function(x, y, mapScript) {
 		const transition = new TransitionState(this);
 		stateManager.setState(transition);
 		game = new Game(this.loader, this.batch);
+		game.em.getComponent(game.player, DirectionComponent).value =
+			this.em.getComponent(this.player, DirectionComponent).value;
 		await game.loadScript(mapScript);
 		transition.transitionTo(game);
 	} else {
