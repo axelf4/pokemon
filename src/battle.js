@@ -82,7 +82,8 @@ export const battleEventText = 0x0,
 	   battleEventQueryAction = 0x1,
 	   battleEventDeployPokemon = 0x2,
 	   battleEventUseMove = 0x4,
-	   battleEventSetHealth = 0x8;
+	   battleEventSetHealth = 0x8,
+	   battleEventFaint = 0x7;
 
 // These are numbered in ascending order of priority
 export const actionAttack = 0x0,
@@ -162,12 +163,14 @@ export default function* battle(player, enemy) {
 
 					// Check both parties' health since a move can kill it's user
 					if (playerPokemon.hp <= 0) {
+						yield { type: battleEventFaint, isPlayer: true };
 						yield { type: battleEventText, text: playerPokemon.name + " fainted!"};
 						yield { type: battleEventText, text: player.name + " is out of usable pokemon!"};
 						yield { type: battleEventText, text: player.name + " blacked out!"};
 						break battleLoop;
 					}
 					if (enemyPokemon.hp <= 0) {
+						yield { type: battleEventFaint, isPlayer: false };
 						yield { type: battleEventText, text: "Foe " + enemyPokemon.name + " fainted!"};
 						break battleLoop;
 					}

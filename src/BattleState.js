@@ -15,9 +15,10 @@ var Widget = require("Widget");
 var measureSpec = require("measureSpec");
 const Healthbar = require("Healthbar.js");
 var resources = require("resources.js");
+import { Color } from "SpriteBatch";
 import battle, { battleEventText, battleEventQueryAction,
 	battleEventDeployPokemon, battleEventUseMove,
-	battleEventSetHealth,
+	battleEventSetHealth, battleEventFaint,
 	actionAttack, actionRun } from "battle";
 const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
@@ -102,8 +103,8 @@ export default class BattleState extends State {
 				});
 			};
 
-			self.playerOffset = { x: 0, y: 0 };
-			self.enemyOffset = { x: 0, y: 0 };
+			self.playerOffset = { x: 0, y: 0, a: 1 };
+			self.enemyOffset = { x: 0, y: 0, a: 1 };
 
 			const battleGen = battle(player, enemy);
 
@@ -192,6 +193,18 @@ export default class BattleState extends State {
 								.start();
 						});
 						break;
+					case battleEventFaint:
+						const object = eventVal.isPlayer ? self.playerOffset : self.enemyOffset;
+						const objectCopy = { ...object };
+						yield new Promise((resolve, reject) => {
+							new TWEEN.Tween(object).to({ y: -0.3, a: 0, }, 2000)
+								.easing(TWEEN.Easing.Linear.None)
+								.onComplete(() => {
+									// Object.assign(object, objectCopy);
+									resolve();
+								}).start();
+						});
+						break;
 					case battleEventSetHealth:
 						let hpBar = eventVal.isPlayer ? playerHpBar : enemyHpBar;
 						yield hpBar.setPercentage(eventVal.percentage);
@@ -235,15 +248,16 @@ export default class BattleState extends State {
 			const bottomCenter = (width, height) => [-width / 2, -height],
 			almostBottomCenter = (width, height) => [-width / 2, -0.9 * height],
 			middleCenter = (width, height) => [-width / 2, -height / 2];
+			const color = new Color(1, 1, 1, offset.a);
 
-			const draw = (tex, x, y, width, align) => {
+			const draw = (tex, x, y, width, align, color) => {
 				const height = width * (tex.y1 - tex.y0) / (tex.x1 - tex.x0);
 				const [ox, oy] = align(width, height);
-				tex.draw(batch, x + ox, y + oy, width, height);
+				tex.draw(batch, x + ox, y + oy, width, height, color);
 			};
 
 			draw(this.groundTex, 0.5, 0.0, 0.7, middleCenter);
-			draw(this.pokemon0Tex, 0.5 + offset.x, 0.0 + offset.y, 0.4, almostBottomCenter);
+			draw(this.pokemon0Tex, 0.5 + offset.x, 0.0 + offset.y, 0.4, almostBottomCenter, color);
 		};
 		drawPokemon(false, this.enemyOffset);
 		drawPokemon(true, this.playerOffset);

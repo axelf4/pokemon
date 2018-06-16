@@ -6,11 +6,11 @@ const mat4 = glMatrix.mat4,
 	  gl = renderer.gl;
 
 export class Color {
-	constructor(r, g, b, a) {
+	constructor(r, g, b, a = 1) {
 		this.r = r;
 		this.g = g;
 		this.b = b;
-		this.a = a || 1;
+		this.a = a;
 	}
 }
 
@@ -60,6 +60,7 @@ export default class SpriteBatch {
 			void main(void) {
 				vTextureCoord = aTextureCoord;
 				vColor = aColor;
+				vColor.a = aColor.a * (255.0 / 254.0);
 				gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);
 			}`,
 		fragmentShaderSource = `
