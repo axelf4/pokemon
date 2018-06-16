@@ -1,7 +1,7 @@
 import State from "State";
 import * as stateManager from "stateManager";
 var renderer = require("renderer");
-import { isPowerOfTwo, nextHighestPowerOfTwo } from "pow2";
+import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
 
 var gl = renderer.gl;
 
@@ -25,7 +25,7 @@ const fragmentShaderSource =
 "uniform float uFade;" +
 
 "void main(void) {" +
-"	gl_FragColor = texture2D(uSampler, vTextureCoord) * vec4(uFade, uFade, uFade, 1);" +
+"	gl_FragColor = texture2D(uSampler, vTextureCoord) * vec4(vec3(uFade), 1);" +
 "}";
 
 const TRANSITION_WAIT = 1;
@@ -63,6 +63,11 @@ export default class TransitionState extends State {
 
 		this.timer = 0;
 		this.transitionState = TRANSITION_WAIT;
+		this.finishListeners = [];
+	}
+
+	addFinishTransitionListener(listener) {
+		this.finishListeners.push(listener);
 	}
 
 	transitionTo(state) {
@@ -81,8 +86,8 @@ export default class TransitionState extends State {
 		if (this.state) {
 			this.state.draw(batch, dt, time);
 		} else {
-			// gl.clearColor(0, 0, 0, 1);
-			// gl.clear(gl.COLOR_BUFFER_BIT);
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
 		}
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -104,6 +109,7 @@ export default class TransitionState extends State {
 		gl.uniform1f(this.fadeLocation, fade);
 		if (this.timer > interval) {
 			this.timer = 0;
+			this.finishListeners.forEach(listener => listener());
 			if (this.transitionState === TRANSITION_FADE_OUT) {
 				if (!this.toState) throw new Exception("toState should not be falsy.");
 				this.state = this.toState;
@@ -127,8 +133,8 @@ export default class TransitionState extends State {
 		if (this.state)
 			this.state.resize(width, height);
 
-		this.texWidth = isPowerOfTwo(width) ? width : nextHighestPowerOfTwo(width);
-		this.texHeight = isPowerOfTwo(height) ? height : nextHighestPowerOfTwo(height);
+		this.texWidth = isPowerOfTwo(width) ? width : nextPowerOfTwo(width);
+		this.texHeight = isPowerOfTwo(height) ? height : nextPowerOfTwo(height);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.texWidth, this.texHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 	}

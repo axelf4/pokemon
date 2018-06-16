@@ -3,8 +3,6 @@ var lerp = require("lerp");
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
 var Map = require("map.js");
-var MapRenderer = require("OrthogonalMapRenderer.js");
-// var CachedMapRenderer = require("CachedMapRenderer.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var StillMovementController = require("StillMovementController.js");
@@ -25,6 +23,8 @@ var glMatrix = require("gl-matrix");
 var Select = require("Select");
 var renderer = require("renderer");
 import range from "range";
+import * as stateManager from "stateManager";
+import TransitionState from "TransitionState";
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -71,6 +71,38 @@ const getEntityInterpPos = function(time, em, entity, pos, mov) {
 	}
 };
 
+const drawMapLayer = function(batch, map, layer) {
+	const data = layer.data;
+	let y = 0;
+	for (let row = 0, rows = map.height; row < rows; ++row) {
+		let x = 0;
+		for (var col = 0, cols = map.width; col < cols; ++col) {
+			var gid = data[col + row * map.width];
+			if (gid !== 0) {
+				const tileset = layer.tilesetForGid[gid];
+				const x1 = x, y1 = y, x2 = x1 + map.tilewidth, y2 = y1 + map.tileheight;
+				const sx = (tileset.getTileX(gid) - 1) * tileset.tilewidth,
+					sy = tileset.getTileY(gid) * tileset.tileheight;
+				const imageWidth = tileset.texture.width, imageHeight = tileset.texture.height;
+				const u1 = (sx + 0.5) / imageWidth, v1 = (sy + 0.5) / imageHeight,
+					u2 = (sx - 0.5 + tileset.tilewidth) / imageWidth, v2 = (sy - 0.5 + tileset.tileheight) / imageHeight;
+
+				batch.draw(tileset.texture.texture, x1, y1, x2, y2, u1, v1, u2, v2);
+			}
+
+			x += map.tilewidth;
+		}
+		y += map.tileheight;
+	}
+};
+
+const drawMapLayers = function(batch, map, layers) {
+	for (let i = 0, length = layers.length; i < length; ++i) {
+		const layer = map.layers[layers[i]];
+		drawMapLayer(batch, map, layer);
+	}
+};
+
 GameScreen.prototype.draw = function(batch, dt, time) {
 	const game = this.game, em = game.em, player = game.player;
 
@@ -82,8 +114,6 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 	const transformX = Math.ceil(playerInterpPos.x * 16 - this.width / 2),
 		transformY = Math.ceil(playerInterpPos.y * 16 - this.height / 2);
 
-	// game.mapRenderer.drawLayers(game.backgroundLayers, transformX, transformY, this.width, this.height);
-
 	vec3.set(positionVector, -transformX, -transformY, 0);
 	mat4.fromTranslation(mvMatrix, positionVector);
 	var oldTransformMatrix = batch.getTransformMatrix();
@@ -91,7 +121,7 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 
 	batch.begin();
 
-	game.mapRenderer.drawLayers(game.backgroundLayers);
+	drawMapLayers(batch, game.map, game.backgroundLayers);
 
 	range(em.count).filter(entity => em.matches(entity, game.spriteSystemMask))
 		.sort((a, b) => em.getComponent(a, Position).y - em.getComponent(b, Position).y)
@@ -130,8 +160,7 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 		});
 	// batch.end();
 
-	// game.mapRenderer.drawLayers(game.foregroundLayers, transformX, transformY, this.width, this.height);
-	game.mapRenderer.drawLayers(game.foregroundLayers);
+	drawMapLayers(batch, game.map, game.foregroundLayers);
 
 	batch.setTransformMatrix(oldTransformMatrix);
 
@@ -171,7 +200,7 @@ GameScreen.prototype.onKey = function(type, key) {
 	}
 };
 
-var Game = function(loader, batch) {
+var Game = function(loader, batch, world) {
 	State.call(this);
 	this.loader = loader;
 	this.batch = batch;
@@ -180,7 +209,6 @@ var Game = function(loader, batch) {
 	this.widget.requestFocus();
 
 	this.map = null;
-	this.mapRenderer = null;
 	this.metaLayer = -1; // Index of meta layer or -1
 
 	this.em = new fowl.EntityManager();
@@ -218,8 +246,7 @@ Game.prototype.say = Game.prototype.showDialog = function(text) {
 };
 
 Game.prototype.multichoice = function(label, optionNames) {
-	var uiLayer = this.widget.uiLayer;
-	return new Promise(function(resolve, reject) {
+	return new Promise((resolve, reject) => {
 		var select = new Select(optionNames, 1, selected => {
 			uiLayer.removeAllWidgets();
 			resolve(selected);
@@ -230,7 +257,7 @@ Game.prototype.multichoice = function(label, optionNames) {
 		var dialog = new Dialog(label);
 		dialog.style.align = align.STRETCH;
 		dialog.style.height = 100;
-		uiLayer.addWidget(dialog);
+		this.widget.uiLayer.addWidget(dialog);
 	});
 };
 
@@ -238,8 +265,6 @@ Game.prototype.getMap = function() { return this.map; };
 
 Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.map = map;
-	this.mapRenderer = new MapRenderer(map, this.batch);
-	// this.mapRenderer = new CachedMapRenderer(map);
 	var callback = function(item) {
 		if (typeof item === "string" || item instanceof String) {
 			return Map.getLayerIdByName(map, item);
@@ -250,12 +275,7 @@ Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	};
 	this.backgroundLayers = backgroundLayers.map(callback);
 	this.foregroundLayers = foregroundLayers.map(callback);
-	this.metaLayer = -1;
-	for (var i = 0, length = map.layers.length; i < length; ++i) {
-		if (map.layers[i].name === "meta") {
-			this.metaLayer = i;
-		}
-	}
+	this.metaLayer = map.layers.findIndex(l => l.name === "meta");
 };
 
 Game.prototype.loadScript = function(name) {
@@ -344,21 +364,21 @@ Game.prototype.clearLevel = function() {
 /**
  * Warps the player to target coordinates and, optionally, specified map.
  */
-Game.prototype.warp = function(x, y, mapScript, relative) {
-	var em = this.em;
-	var pos = em.getComponent(this.player, Position);
-	if (relative) {
-		pos.x = pos.x - x;
-		pos.y = pos.y - y;
+Game.prototype.warp = async function(x, y, mapScript) {
+	let game;
+	if (mapScript) {
+		const transition = new TransitionState(this);
+		stateManager.setState(transition);
+		game = new Game(this.loader, this.batch);
+		await game.loadScript(mapScript);
+		transition.transitionTo(game);
 	} else {
-		pos.x = x;
-		pos.y = y;
+		game = this;
 	}
-	if (mapScript !== undefined) {
-		if (mapScript === null) throw new Error("mapScript cannot be null.");
-		this.clearLevel();
-		this.loadScript(mapScript);
-	}
+
+	const pos = game.em.getComponent(game.player, Position);
+	pos.x = x;
+	pos.y = y;
 };
 
 Game.prototype.save = JSON.parse(window.localStorage.getItem("gameSave"));

@@ -1,5 +1,5 @@
 var gl = require("renderer.js").gl;
-import { isPowerOfTwo, nextHighestPowerOfTwo } from "pow2";
+import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
 
 export function loadTexture(src) {
 	return new Promise((resolve, reject) => {
@@ -10,8 +10,8 @@ export function loadTexture(src) {
 			if (!isPowerOfTwo(image.width) || !isPowerOfTwo(image.height)) {
 				// Scale up the texture to the next highest power of two dimensions.
 				const canvas = document.createElement("canvas");
-				canvas.width = nextHighestPowerOfTwo(image.width);
-				canvas.height = nextHighestPowerOfTwo(image.height);
+				canvas.width = nextPowerOfTwo(image.width);
+				canvas.height = nextPowerOfTwo(image.height);
 				const ctx = canvas.getContext("2d");
 				ctx.drawImage(image, 0, 0, image.width, image.height);
 				image = canvas;
@@ -48,9 +48,9 @@ export class TexRegion {
 		this.y1 = y1;
 	}
 
-	draw(batch, x, y, width, height) {
+	draw(batch, x, y, width, height, color) {
 		batch.draw(this.texture, x, y, x + width, y + height,
 				this.x0 / this.width, this.y0 / this.height,
-				this.x1 / this.width, this.y1 / this.height);
+				this.x1 / this.width, this.y1 / this.height, color);
 	}
 }

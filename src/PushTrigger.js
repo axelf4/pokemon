@@ -58,9 +58,9 @@ PushTrigger.createWarp = function(game, x, y, targetX, targetY, mapScript) {
 	}, x, y);
 };
 
-PushTrigger.createEdgeWarp = function(game, edge, targetX, targetY, mapScript, relative) {
+PushTrigger.createEdgeWarp = function(game, edge, targetX, targetY, mapScript) {
 	return new EdgePushTrigger(function() {
-		game.warp(targetX, targetY, mapScript, relative);
+		game.warp(targetX, targetY, mapScript);
 		return true;
 	}, game, edge);
 };
