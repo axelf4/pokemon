@@ -211,7 +211,7 @@ var Game = function(loader, batch, world) {
 	this.map = null;
 	this.metaLayer = -1; // Index of meta layer or -1
 
-	this.em = new fowl.EntityManager();
+	this.em = new fowl.EntityManager(0x64);
 	this.spriteSystemMask = this.em.getMask([Position, SpriteComponent]);
 	this.collisionSystemMask = this.em.getMask([Position]);
 	this.movementSystem = new MovementSystem(this);
