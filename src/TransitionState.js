@@ -22,20 +22,62 @@ const fragmentShaderSource =
 "precision mediump float;" +
 "varying highp vec2 vTextureCoord;" +
 "uniform sampler2D uSampler;" +
+"uniform sampler2D uCutoffTex;" +
+"uniform float uCutoff;" +
 "uniform float uFade;" +
+"uniform vec3 uColor;" +
+"uniform vec2 invResolution;" +
 
 "void main(void) {" +
-"	gl_FragColor = texture2D(uSampler, vTextureCoord) * vec4(vec3(uFade), 1);" +
+"	vec2 suv = gl_FragCoord.xy * invResolution;" +
+"	float cutoff = float(texture2D(uCutoffTex, suv).r > uCutoff);" +
+"	gl_FragColor = texture2D(uSampler, vTextureCoord) * cutoff;" +
+"	gl_FragColor = mix(gl_FragColor, vec4(uColor, 1.0), uFade);" +
 "}";
+
+export const fade = (state, t) => ({ cutoffTexture: renderer.whiteTexture, c: 0, f: t, r: 0, g: 0, b: 0 });
+
+export const reverse = transition => (state, t) => transition(state, 1 - t);
+
+export const outIn = (a, b) => (state, t) => (state === TRANSITION_FADE_OUT ? a : b)(state, t);
+
+export function createWipeIn(loader) {
+	return loader.loadTexture("assets/transition2.png").then(texRegion =>
+		(state, t) => ({ cutoffTexture: texRegion.texture, c: t, f: 0, r: 0, g: 0, b: 0 })
+	);
+}
+
+export function createBattleTransition(loader) {
+	return Promise.all([
+		loader.loadTexture("assets/transition.png").then(region => region.texture),
+		createWipeIn(loader)
+	]).then(result => {
+			const [cutoffTexture, wipeIn] = result;
+			return outIn((state, t) => {
+				const flashCount = 2
+				const flashDuration = 0.15;
+				const ft = flashCount * flashDuration;
+				const sin = Math.sin, abs = Math.abs;
+				if (t < ft) {
+					return { cutoffTexture: renderer.whiteTexture, c: 0,
+						f: abs(sin(Math.PI * t / flashDuration)), r: 1, g: 1, b: 1 };
+				}
+
+				return { cutoffTexture, c: (t - ft) / (1 - ft),
+					f: 0, r: 0, g: 0, b: 0 };
+			}, wipeIn);
+		});
+}
 
 const TRANSITION_WAIT = 1;
 const TRANSITION_FADE_OUT = 2;
 const TRANSITION_FADE_IN = 3;
 
 export default class TransitionState extends State {
-	constructor(state) {
+	constructor(state, transition) {
 		super();
 		this.state = state;
+		this.transition = transition;
 		this.toState = null;
 
 		this.texWidth = 1;
@@ -59,10 +101,14 @@ export default class TransitionState extends State {
 		});
 		gl.useProgram(this.program);
 		gl.uniform1i(gl.getUniformLocation(this.program, "uSampler"), 0);
+		gl.uniform1i(gl.getUniformLocation(this.program, "uCutoffTex"), 1);
+		this.cutoffLocation = gl.getUniformLocation(this.program, "uCutoff");
 		this.fadeLocation = gl.getUniformLocation(this.program, "uFade");
+		this.colorLocation = gl.getUniformLocation(this.program, "uColor");
+		this.invResolutionLocation = gl.getUniformLocation(this.program, "invResolution");
 
 		this.timer = 0;
-		this.transitionState = TRANSITION_WAIT;
+		this.transitionState = state ? TRANSITION_FADE_OUT: TRANSITION_WAIT;
 		this.finishListeners = [];
 	}
 
@@ -73,7 +119,6 @@ export default class TransitionState extends State {
 	transitionTo(state) {
 		if (this.state) {
 			this.toState = state;
-			this.transitionState = TRANSITION_FADE_OUT;
 		} else {
 			this.state = state;
 			this.state.resize(this.width, this.height);
@@ -82,6 +127,37 @@ export default class TransitionState extends State {
 	}
 
 	draw(batch, dt, time) {
+		const interval = 1000;
+		if (this.transitionState === TRANSITION_FADE_OUT
+				|| this.transitionState === TRANSITION_FADE_IN) {
+			this.timer += dt;
+		}
+		let t;
+		switch (this.transitionState) {
+			case TRANSITION_WAIT: t = 1; break;
+			case TRANSITION_FADE_OUT: t = Math.min(this.timer / interval, 1); break;
+			case TRANSITION_FADE_IN: t = 1 - Math.min(this.timer / interval, 1); break;
+		}
+		const { cutoffTexture, c, f, r, g, b } = this.transition(this.transitionState, t);
+		if (this.timer > interval) {
+			this.timer = 0;
+			this.finishListeners.forEach(listener => listener());
+			if (this.transitionState === TRANSITION_FADE_OUT) {
+				if (!this.toState) throw new Exception("toState should not be falsy.");
+				if (this.toState) {
+					this.state = this.toState;
+					this.state.resize(this.width, this.height);
+					this.transitionState = TRANSITION_FADE_IN;
+				} else {
+					this.state = null;
+					this.transitionState = TRANSITION_WAIT;
+				}
+			} else if (this.transitionState === TRANSITION_FADE_IN) {
+				this.transitionState = TRANSITION_WAIT;
+				stateManager.setState(this.state);
+			}
+		}
+
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
 		if (this.state) {
 			this.state.draw(batch, dt, time);
@@ -92,34 +168,14 @@ export default class TransitionState extends State {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 		batch.setProgram(this.program);
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, cutoffTexture);
 		batch.begin();
 
-		const interval = 1000;
-
-		if (this.transitionState === TRANSITION_FADE_OUT
-				|| this.transitionState === TRANSITION_FADE_IN) {
-			this.timer += dt;
-		}
-		let fade;
-		switch (this.transitionState) {
-			case TRANSITION_WAIT: fade = 1; break;
-			case TRANSITION_FADE_IN: fade = Math.min(this.timer / interval, 1); break;
-			case TRANSITION_FADE_OUT: fade = 1 - Math.min(this.timer / interval, 1); break;
-		}
-		gl.uniform1f(this.fadeLocation, fade);
-		if (this.timer > interval) {
-			this.timer = 0;
-			this.finishListeners.forEach(listener => listener());
-			if (this.transitionState === TRANSITION_FADE_OUT) {
-				if (!this.toState) throw new Exception("toState should not be falsy.");
-				this.state = this.toState;
-				this.state.resize(this.width, this.height);
-				this.transitionState = TRANSITION_FADE_IN;
-			} else if (this.transitionState === TRANSITION_FADE_IN) {
-				this.transitionState = TRANSITION_WAIT;
-				stateManager.setState(this.state);
-			}
-		}
+		gl.uniform1f(this.cutoffLocation, c);
+		gl.uniform1f(this.fadeLocation, f);
+		gl.uniform3f(this.colorLocation, r, g, b);
+		gl.uniform2f(this.invResolutionLocation, 1 / this.width, 1 / this.height);
 
 		var u2 = this.width / this.texWidth, v2 = this.height / this.texHeight;
 		batch.draw(this.texture, 0, 0, this.width, this.height, 0, v2, u2, 0);

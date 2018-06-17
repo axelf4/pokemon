@@ -24,7 +24,7 @@ var Select = require("Select");
 var renderer = require("renderer");
 import range from "range";
 import * as stateManager from "stateManager";
-import TransitionState from "TransitionState";
+import TransitionState, {fade, createBattleTransition} from "TransitionState";
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -220,6 +220,8 @@ var Game = function(loader, batch, world) {
 	this.pushTriggers = [];
 
 	this.player = player.createPlayer(this, loader, this.em);
+	this.battleTransition = null;
+	createBattleTransition(loader).then(transition => {this.battleTransition = transition;});
 };
 Game.prototype = Object.create(State.prototype);
 Game.prototype.constructor = Game;
@@ -367,7 +369,7 @@ Game.prototype.clearLevel = function() {
 Game.prototype.warp = async function(x, y, mapScript) {
 	let game;
 	if (mapScript) {
-		const transition = new TransitionState(this);
+		const transition = new TransitionState(this, fade);
 		stateManager.setState(transition);
 		game = new Game(this.loader, this.batch);
 		game.em.getComponent(game.player, DirectionComponent).value =

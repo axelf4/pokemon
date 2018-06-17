@@ -10,10 +10,9 @@ import cachingProxy from "cachingProxy";
 var resources = require("resources");
 var Font = require("font.js");
 import NinePatch from "NinePatch";
-import LoadingScreen from "LoadingScreen";
 import BattleState from "BattleState";
 var Game = require("Game.js");
-import TransitionState from "TransitionState";
+import TransitionState, {fade} from "TransitionState";
 var fowl = require("fowl");
 const TWEEN = require("@tweenjs/tween.js");
 
@@ -58,7 +57,7 @@ input.setListener((type, key) => {
 const loader = promiseProxy(cachingProxy(
 			new LoaderFacade(new FileLoader("pokemongame"))));
 
-let transitionState = new TransitionState();
+const transitionState = new TransitionState(null, fade);
 stateManager.setState(transitionState);
 
 resources.font = new Font(loader);
@@ -79,7 +78,7 @@ loader.loadTexture("textures/frame.9.png").then(texRegion => {
 
 	loader.all().then(() => {
 		console.log("Loaded initial assets.");
-		transitionState.transitionTo(battleState);
+		transitionState.transitionTo(game);
 	}, () => {
 		console.log("Some asset was rejected.");
 	});
