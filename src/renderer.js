@@ -86,7 +86,11 @@ var createProgram = function(params) {
 	return program;
 };
 
-var Texture = function() {};
+const whiteTextureData = new Uint8Array(1);
+whiteTextureData[0] = 0xFF;
+const whiteTexture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, whiteTexture);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 1, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, whiteTextureData);
 
 module.exports = {
 	canvas: canvas,
@@ -96,4 +100,5 @@ module.exports = {
 	sizeCanvas: sizeCanvas,
 	getWidth: getWidth,
 	getHeight: getHeight,
+	whiteTexture,
 };
