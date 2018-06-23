@@ -169,6 +169,30 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 	batch.end();
 };
 
+const showPauseMenu = function(game) {
+	const optionNames = ["Pokemon", "Bag", "Save", "Exit"];
+	game.lock();
+	game.widget.uiLayer.justify = Panel.ALIGN_FLEX_START;
+	const select = new Select(optionNames, 1, selected => {
+		game.widget.uiLayer.justify = Panel.ALIGN_FLEX_END;
+		game.widget.uiLayer.removeAllWidgets();
+		switch (selected) {
+			case 0: // Pokemon
+				break;
+			case 1: // Bag
+				break;
+			case 2: // Save
+				break;
+			default:
+				break;
+		}
+		game.release();
+	});
+	select.style.align = align.END;
+	game.widget.uiLayer.addWidget(select);
+	select.requestFocus();
+};
+
 GameScreen.prototype.onKey = function(type, key) {
 	if (this.flags & Widget.FLAG_FOCUSED) {
 		if (type === input.KEY_ACTION_DOWN) {
@@ -192,6 +216,9 @@ GameScreen.prototype.onKey = function(type, key) {
 					case "a": playerDirection.value = direction.LEFT; break;
 					case "s": playerDirection.value = direction.DOWN; break;
 					case "d": playerDirection.value = direction.RIGHT; break;
+					case "Shift":
+						showPauseMenu(game);
+						break;
 				}
 			}
 		}
@@ -250,11 +277,11 @@ Game.prototype.say = Game.prototype.showDialog = function(text) {
 Game.prototype.multichoice = function(label, optionNames) {
 	return new Promise((resolve, reject) => {
 		var select = new Select(optionNames, 1, selected => {
-			uiLayer.removeAllWidgets();
+			this.widget.uiLayer.removeAllWidgets();
 			resolve(selected);
 		});
 		select.style.align = align.START;
-		uiLayer.addWidget(select);
+		this.widget.uiLayer.addWidget(select);
 		select.requestFocus();
 		var dialog = new Dialog(label);
 		dialog.style.align = align.STRETCH;

@@ -40,7 +40,7 @@ module.exports = function(game, loader) {
 			yield game.showDialog("Funnily enough, I have three especially horny buggers here with me today for a special experi...");
 			yield game.wait(700);
 			yield game.showDialog("Huh, you want to steal one? What, you high or something?");
-			var selected = yield game.multichoice("Which Pokémon will you steal?", ["FIRE - Laserturken", "GRASS - dat boi", "WATER - Dolan"]);
+			var selected = yield game.multichoice("Which Pokemon will you steal?", ["FIRE - Laserturken", "GRASS - dat boi", "WATER - Dolan"]);
 			if (selected === -1) yield game.showDialog("You didn't steal any Pokémon...");
 			else {
 				if (selected === 0) {
