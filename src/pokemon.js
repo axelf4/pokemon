@@ -41,7 +41,7 @@ export const getTotalExpForLevel = level => 4 * level ** 3 / 5 | 0;
 export default class Pokemon {
 	constructor(species, level, moves) {
 		this.species = typeof species === "string" ? getPokemonByName(species)
-			: typeof species === "number" ? getPokemonById(species) : null;
+			: typeof species === "number" ? getPokemonById(species) : species;
 		this.name = this.species.name;
 		this.level = level;
 		this.hp = calculateStats(this).hp;

@@ -5,12 +5,11 @@ import FileLoader from "FileLoader";
 var LoaderFacade = require("LoaderFacade");
 var input = require("input.js");
 import * as stateManager from "stateManager";
-import promiseProxy from "promiseProxy";
+import promiseTrap from "promise-trap";
 import cachingProxy from "cachingProxy";
 var resources = require("resources");
 var Font = require("font.js");
 import NinePatch from "NinePatch";
-import BattleState from "BattleState";
 var Game = require("Game.js");
 import TransitionState, {fade} from "TransitionState";
 var fowl = require("fowl");
@@ -54,7 +53,7 @@ input.setListener((type, key) => {
 	stateManager.getState().onKey(type, key);
 });
 
-const loader = promiseProxy(cachingProxy(
+const loader = promiseTrap(cachingProxy(
 			new LoaderFacade(new FileLoader("pokemongame"))));
 
 const transitionState = new TransitionState(null, fade);
@@ -64,17 +63,13 @@ resources.font = new Font(loader);
 loader.loadTexture("textures/frame.9.png").then(texRegion => {
 	resources.frame = NinePatch.fromTextureRegion(texRegion);
 }).then(() => {
-	const game = new Game(loader, batch);
+	const playerTrainer = new Trainer("Axel", [
+			new Pokemon("Snoop Dogg", 6, [ move.tackle, move.growl ]),
+			new Pokemon("Slowpoke", 4, [ move.tackle, move.growl ]),
+	]);
+	const game = new Game(loader, batch, playerTrainer);
 	game.loadScript("home.js");
 	game.warp(9, 3);
-
-	const playerTrainer = new Trainer("Axel", [
-			new Pokemon("Snoop Dogg", 6, [ move.tackle, move.growl ])
-	]);
-	const enemyTrainer = new Trainer("Charles Ingvars", [
-			new Pokemon("Slowpoke", 4, [ move.tackle ])
-	]);
-	const battleState = new BattleState(loader, game, playerTrainer, enemyTrainer);
 
 	loader.all().then(() => {
 		console.log("Loaded initial assets.");

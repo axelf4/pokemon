@@ -44,8 +44,8 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 	var width, height;
 
-	var w = this.region.width, h = this.region.height;
-	var desiredAspect = this.region.width / this.region.height;
+	var w = this.region.x1 - this.region.x0, h = this.region.y1 - this.region.y0;
+	var desiredAspect = w / h;
 
 	var resizeWidth = widthMode != measureSpec.EXACTLY, resizeHeight = heightMode != measureSpec.EXACTLY;
 
@@ -83,10 +83,10 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 		heightSize = resolveAdjustedSize(h, heightMeasureSpec);
 	}
 
+	console.log(widthSize, heightSize);
 	this.setDimension(widthSize, heightSize);
 
-	// TODO only if dimensions are larger than image
-	if (this.align & align.LEFT) {
+	if (this.align & align.LEFT || widthSize <= w) {
 		this.imageX = 0;
 	} else if (align & align.RIGHT) {
 		this.imageX = widthSize - w;
@@ -94,7 +94,7 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 		this.imageX = (widthSize - w) / 2;
 	}
 
-	if (this.align & align.TOP) {
+	if (this.align & align.TOP || heightSize <= h) {
 		this.imageY = 0;
 	} else if (align & align.BOTTOM) {
 		this.imageY = heightSize - h;
@@ -112,8 +112,8 @@ Image.prototype.draw = function(batch) {
 	var v2 = (region.y1 - 0.5) / region.height;
 	var x = this.x + this.imageX;
 	var y = this.y + this.imageY;
-	var width = region.x1 - region.x0, height = region.y1 - region.y0;
-	batch.draw(region.texture, x, y, x + width, y + height, u1, v1, u2, v2);
+	// var width = region.x1 - region.x0, height = region.y1 - region.y0;
+	batch.draw(region.texture, x, y, x + this.width, y + this.height, u1, v1, u2, v2);
 };
 
 module.exports = Image;

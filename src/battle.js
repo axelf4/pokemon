@@ -96,10 +96,10 @@ export const actionAttack = 0x0,
  * @param enemy The enemy trainer.
  */
 export default function* battle(player, enemy) {
-	const playerPokemon = multiView(player.getFirstPokemon(),
-			calculateStats(player.getFirstPokemon()));
-	const enemyPokemon = multiView(enemy.getFirstPokemon(),
-			calculateStats(enemy.getFirstPokemon()));
+	const playerPokemon = multiView(player.getPrimaryPokemon(),
+			calculateStats(player.getPrimaryPokemon()));
+	const enemyPokemon = multiView(enemy.getPrimaryPokemon(),
+			calculateStats(enemy.getPrimaryPokemon()));
 
 	let escapeAttempts = 0;
 

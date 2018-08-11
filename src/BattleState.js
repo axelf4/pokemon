@@ -5,7 +5,7 @@ var Dialog = require("Dialog.js");
 var align = require("align.js");
 var texture = require("texture.js");
 var Image = require("Image.js");
-var Select = require("Select.js");
+import Select from "Select";
 import NinePatch from "NinePatch";
 import thread from "thread";
 import * as stateManager from "stateManager";
@@ -23,6 +23,7 @@ import battle, { battleEventText, battleEventQueryAction,
 const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
+import TransitionState, {fade} from "TransitionState";
 
 const vec3 = glMatrix.vec3;
 const mat4 = glMatrix.mat4;
@@ -212,8 +213,10 @@ export default class BattleState extends State {
 				}
 			}
 
-			stateManager.setState(nextState);
 			console.log("Switching to next state.");
+			const transition = new TransitionState(self, fade);
+			stateManager.setState(transition);
+			transition.transitionTo(nextState);
 		});
 	}
 

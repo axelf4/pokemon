@@ -1,28 +1,24 @@
 export default class Trainer {
-	constructor(name, pokemons) {
+	constructor(name, pokemon, isWild = false) {
 		this.name = name;
-		this.pokemons = pokemons;
+		this.pokemon = pokemon;
+		this.isWild = isWild;
 	}
 
 	getName() {
 		return this.name;
 	}
 
-	getPokemons() {
-		return this.pokemons;
-	}
-
 	canEscapeFrom() {
-		return true;
+		return this.isWild;
 	}
 
-	getFirstPokemon() {
-		if (this.pokemons.length < 1) throw new Error("The trainer does not have any pokemons.");
-		return this.pokemons[0];
-	}
-
+	/**
+	 * Returns the pokemon that is first sent out when initiating a battle.
+	 *
+	 * @return The pokemon or undefined if no such pokemon exists.
+	 */
 	getPrimaryPokemon() {
-		if (this.pokemons.length < 1) throw new Error("The trainer does not have any pokemons.");
-		return this.pokemons[0];
+		return this.pokemon.find(p => p.hp > 0);
 	}
 }

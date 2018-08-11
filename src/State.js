@@ -19,7 +19,9 @@ export default class State {
 			this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 		}
 
+		batch.begin();
 		this.widget.draw(batch, dt, time);
+		batch.end();
 	}
 
 	resize(width, height) {

@@ -20,11 +20,14 @@ var WalkForwardMovementController = require("WalkForwardMovementController");
 var PathMovementController = require("PathMovementController");
 var Animation = require("Animation");
 var glMatrix = require("gl-matrix");
-var Select = require("Select");
+import Select from "Select";
 var renderer = require("renderer");
 import range from "range";
 import * as stateManager from "stateManager";
 import TransitionState, {fade, createBattleTransition} from "TransitionState";
+import ListPokemonState from "ListPokemonState";
+var measureSpec = require("measureSpec");
+import BattleState from "BattleState";
 
 var Position = require("Position.js");
 var DirectionComponent = require("DirectionComponent.js");
@@ -59,6 +62,102 @@ var GameScreen = function(game) {
 };
 GameScreen.prototype = Object.create(Stack.prototype);
 GameScreen.prototype.constructor = GameScreen;
+
+const showPauseMenu = async function(game) {
+	game.lock();
+	const selected = await new Promise((resolve, reject) => {
+		game.widget.uiLayer.justify = Panel.ALIGN_FLEX_START;
+		const optionNames = ["Pokemon", "Bag", "Save", "Exit"];
+		const select = new Select(optionNames, 1, selected => {
+			game.widget.uiLayer.justify = Panel.ALIGN_FLEX_END;
+			game.widget.uiLayer.removeAllWidgets();
+			resolve(selected);
+		});
+		select.style.align = align.END;
+		game.widget.uiLayer.addWidget(select);
+		select.requestFocus();
+	});
+	switch (selected) {
+		case 0: // Pokemon
+			const listPokemon = new ListPokemonState(game.loader, game.playerTrainer);
+			await game.loader.all();
+			const exitPromise = new Promise((resolve, reject) => {
+				listPokemon.setCloseCallback(resolve);
+			});
+			stateManager.setState(listPokemon);
+			await exitPromise;
+			stateManager.setState(game);
+			break;
+		case 1: // Bag
+			break;
+		case 2: // Save
+			break;
+		default:
+			break;
+	}
+	game.release();
+};
+
+GameScreen.prototype.onKey = function(type, key) {
+	if (this.flags & Widget.FLAG_FOCUSED) {
+		if (type === input.KEY_ACTION_DOWN) {
+			var game = this.game;
+			var em = this.game.em;
+			// Hacky way of connecting input to player interacting with shit
+			var pos = em.getComponent(game.player, Position);
+			var movement = em.getComponent(game.player, MovementComponent);
+			if (!movement.isMoving() && movement.getController() instanceof player.PlayerMovementController) {
+				var playerDirection = em.getComponent(game.player, DirectionComponent);
+				switch (key) {
+					case " ":
+						var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
+								pos.y + direction.getDeltaY(playerDirection.value));
+						if (interactable !== null) {
+							var interaction = em.getComponent(interactable, InteractionComponent);
+							if (interaction) interaction.callback(game);
+						}
+						break;
+					case "w": playerDirection.value = direction.UP; break;
+					case "a": playerDirection.value = direction.LEFT; break;
+					case "s": playerDirection.value = direction.DOWN; break;
+					case "d": playerDirection.value = direction.RIGHT; break;
+					case "Shift":
+						showPauseMenu(game);
+						break;
+				}
+			}
+		}
+	} else {
+		Stack.prototype.onKey.call(this, type, key);
+	}
+};
+
+var Game = function(loader, batch, playerTrainer) {
+	State.call(this);
+	this.loader = loader;
+	this.batch = batch;
+	this.playerTrainer = playerTrainer;
+
+	this.widget = new GameScreen(this);
+	this.widget.requestFocus();
+
+	this.map = null;
+	this.metaLayer = -1; // Index of meta layer or -1
+
+	this.em = new fowl.EntityManager(0x64);
+	this.spriteSystemMask = this.em.getMask([Position, SpriteComponent]);
+	this.collisionSystemMask = this.em.getMask([Position]);
+	this.movementSystem = new MovementSystem(this);
+
+	this.updateHooks = [];
+	this.pushTriggers = [];
+
+	this.player = player.createPlayer(this, loader, this.em);
+	this.battleTransition = null;
+	createBattleTransition(loader).then(transition => {this.battleTransition = transition;});
+};
+Game.prototype = Object.create(State.prototype);
+Game.prototype.constructor = Game;
 
 const getEntityInterpPos = function(time, em, entity, pos, mov) {
 	if (mov.isMoving()) {
@@ -103,8 +202,15 @@ const drawMapLayers = function(batch, map, layers) {
 	}
 };
 
-GameScreen.prototype.draw = function(batch, dt, time) {
-	const game = this.game, em = game.em, player = game.player;
+Game.prototype.draw = function(batch, dt, time) {
+	const em = this.em, player = this.player;
+
+	if (this.widget && this.widget.flags & Widget.FLAG_LAYOUT_REQUIRED) {
+		var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
+		var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
+
+		this.widget.layout(widthMeasureSpec, heightMeasureSpec);
+	}
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
@@ -118,12 +224,11 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 	mat4.fromTranslation(mvMatrix, positionVector);
 	var oldTransformMatrix = batch.getTransformMatrix();
 	batch.setTransformMatrix(mvMatrix);
-
 	batch.begin();
 
-	drawMapLayers(batch, game.map, game.backgroundLayers);
+	drawMapLayers(batch, this.map, this.backgroundLayers);
 
-	range(em.count).filter(entity => em.matches(entity, game.spriteSystemMask))
+	range(em.count).filter(entity => em.matches(entity, this.spriteSystemMask))
 		.sort((a, b) => em.getComponent(a, Position).y - em.getComponent(b, Position).y)
 		.forEach(entity => {
 			const position = em.getComponent(entity, Position),
@@ -158,100 +263,13 @@ GameScreen.prototype.draw = function(batch, dt, time) {
 			const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 		});
-	// batch.end();
 
-	drawMapLayers(batch, game.map, game.foregroundLayers);
+	drawMapLayers(batch, this.map, this.foregroundLayers);
 
 	batch.setTransformMatrix(oldTransformMatrix);
-
-	// batch.begin();
-	Stack.prototype.draw.call(this, batch, dt, time);
+	this.widget.draw(batch, dt, time);
 	batch.end();
 };
-
-const showPauseMenu = function(game) {
-	const optionNames = ["Pokemon", "Bag", "Save", "Exit"];
-	game.lock();
-	game.widget.uiLayer.justify = Panel.ALIGN_FLEX_START;
-	const select = new Select(optionNames, 1, selected => {
-		game.widget.uiLayer.justify = Panel.ALIGN_FLEX_END;
-		game.widget.uiLayer.removeAllWidgets();
-		switch (selected) {
-			case 0: // Pokemon
-				break;
-			case 1: // Bag
-				break;
-			case 2: // Save
-				break;
-			default:
-				break;
-		}
-		game.release();
-	});
-	select.style.align = align.END;
-	game.widget.uiLayer.addWidget(select);
-	select.requestFocus();
-};
-
-GameScreen.prototype.onKey = function(type, key) {
-	if (this.flags & Widget.FLAG_FOCUSED) {
-		if (type === input.KEY_ACTION_DOWN) {
-			var game = this.game;
-			var em = this.game.em;
-			// Hacky way of connecting input to player interacting with shit
-			var pos = em.getComponent(game.player, Position);
-			var movement = em.getComponent(game.player, MovementComponent);
-			if (!movement.isMoving() && movement.getController() instanceof player.PlayerMovementController) {
-				var playerDirection = em.getComponent(game.player, DirectionComponent);
-				switch (key) {
-					case " ":
-						var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
-								pos.y + direction.getDeltaY(playerDirection.value));
-						if (interactable !== null) {
-							var interaction = em.getComponent(interactable, InteractionComponent);
-							if (interaction) interaction.callback(game);
-						}
-						break;
-					case "w": playerDirection.value = direction.UP; break;
-					case "a": playerDirection.value = direction.LEFT; break;
-					case "s": playerDirection.value = direction.DOWN; break;
-					case "d": playerDirection.value = direction.RIGHT; break;
-					case "Shift":
-						showPauseMenu(game);
-						break;
-				}
-			}
-		}
-	} else {
-		Stack.prototype.onKey.call(this, type, key);
-	}
-};
-
-var Game = function(loader, batch, world) {
-	State.call(this);
-	this.loader = loader;
-	this.batch = batch;
-
-	this.widget = new GameScreen(this);
-	this.widget.requestFocus();
-
-	this.map = null;
-	this.metaLayer = -1; // Index of meta layer or -1
-
-	this.em = new fowl.EntityManager(0x64);
-	this.spriteSystemMask = this.em.getMask([Position, SpriteComponent]);
-	this.collisionSystemMask = this.em.getMask([Position]);
-	this.movementSystem = new MovementSystem(this);
-
-	this.updateHooks = [];
-	this.pushTriggers = [];
-
-	this.player = player.createPlayer(this, loader, this.em);
-	this.battleTransition = null;
-	createBattleTransition(loader).then(transition => {this.battleTransition = transition;});
-};
-Game.prototype = Object.create(State.prototype);
-Game.prototype.constructor = Game;
 
 Game.prototype.update = function(dt, time) {
 	var em = this.em;
@@ -263,13 +281,11 @@ Game.prototype.update = function(dt, time) {
 };
 
 Game.prototype.say = Game.prototype.showDialog = function(text) {
-	var self = this;
-	return new Promise(function(resolve, reject) {
-		var callback = function() { resolve(); };
-		var dialog = new Dialog(text, callback);
+	return new Promise((resolve, reject) => {
+		const dialog = new Dialog(text, resolve);
 		dialog.style.height = 100;
 		dialog.style.align = align.STRETCH;
-		self.widget.uiLayer.addWidget(dialog);
+		this.widget.uiLayer.addWidget(dialog);
 		dialog.requestFocus();
 	});
 };
@@ -398,7 +414,7 @@ Game.prototype.warp = async function(x, y, mapScript) {
 	if (mapScript) {
 		const transition = new TransitionState(this, fade);
 		stateManager.setState(transition);
-		game = new Game(this.loader, this.batch);
+		game = new Game(this.loader, this.batch, this.playerTrainer);
 		game.em.getComponent(game.player, DirectionComponent).value =
 			this.em.getComponent(this.player, DirectionComponent).value;
 		await game.loadScript(mapScript);
@@ -517,6 +533,15 @@ Game.prototype.faceEachOther = function(entity1, entity2) {
 	var pos1 = em.getComponent(entity1, Position), pos2 = em.getComponent(entity2, Position);
 	em.getComponent(entity1, DirectionComponent).value = direction.getDirectionToPos(pos1, pos2);
 	em.getComponent(entity2, DirectionComponent).value = direction.getDirectionToPos(pos2, pos1);
+};
+
+Game.prototype.battle = async function(enemyTrainer) {
+	const loader = this.loader;
+	const transition = new TransitionState(this, this.battleTransition);
+	stateManager.setState(transition);
+	const battleState = new BattleState(loader, this, this.playerTrainer, enemyTrainer);
+	await loader.all();
+	transition.transitionTo(battleState);
 };
 
 /*audio.loadAudio("assets/masara-town.mp3", function(buffer) {
