@@ -5,6 +5,7 @@ var measureSpec = require("measureSpec.js");
 var Container = function() {
 	WidgetGroup.call(this);
 	this.background = null;
+	this.visible = true;
 };
 Container.prototype = Object.create(WidgetGroup.prototype);
 Container.prototype.constructor = Container;
@@ -33,6 +34,8 @@ Container.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 };
 
 Container.prototype.draw = function(batch, dt, time) {
+	if (!this.visible) return;
+
 	if (this.background) {
 		this.background.draw(batch, this.x, this.y, this.width, this.height);
 	}
@@ -43,5 +46,9 @@ Container.prototype.draw = function(batch, dt, time) {
 Container.prototype.setBackground = function(background) {
 	this.background = background;
 };
+
+Container.prototype.setVisible = function(visible) {
+	this.visible = visible;
+}
 
 module.exports = Container;

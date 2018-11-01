@@ -1,4 +1,5 @@
 import State from "State";
+import * as stateManager from "stateManager";
 const Stack = require("Stack");
 const Panel = require("Panel");
 import Select from "Select";
@@ -8,9 +9,15 @@ const Image = require("Image");
 const Label = require("Label");
 const Healthbar = require("Healthbar");
 import swapElements from "swapElements";
+import TransitionState, {fade} from "TransitionState";
+
+export const modes = Object.freeze({
+	list: Symbol("list"),
+	choose: Symbol("choose"),
+});
 
 export default class ListPokemonState extends State {
-	constructor(loader, trainer) {
+	constructor(loader, trainer, mode = modes.list) {
 		super();
 		this.widget = new Stack();
 		let switching = -1; // Index of pokemon currently switching or -1
@@ -45,7 +52,7 @@ export default class ListPokemonState extends State {
 				nameLabel.marginBottom = 5;
 				vert.addWidget(nameLabel);
 
-				const healthbar = new Healthbar(loader);
+				const healthbar = new Healthbar(loader, pokemon.getHpPercentage());
 				healthbar.style.align = align.STRETCH;
 				healthbar.style.width = 170;
 				vert.addWidget(healthbar);
@@ -58,7 +65,7 @@ export default class ListPokemonState extends State {
 			const select = new Select(contents, 1, selected => {
 				if (selected === contents.length - 1) {
 					// Exit was selected
-					self.callback();
+					self.callback(-1);
 					return;
 				}
 
@@ -72,10 +79,17 @@ export default class ListPokemonState extends State {
 					return;
 				}
 
-				const contextMenu = new Select(["Switch", "Exit"], 1, selectedOption => {
+				const contextMenu = new Select([mode === modes.list ? "Switch" : "Send out", "Exit"], 1, selectedOption => {
 					contextPanel.removeAllWidgets();
-					if (selectedOption === 0) { // Switch
-						switching = selected;
+					if (selectedOption === 0 && trainer.pokemon[selected].hp > 0) {
+						switch (mode) {
+							case modes.list:
+								switching = selected;
+								break;
+							case modes.choose:
+								self.callback(selected);
+								return;
+						}
 					}
 				});
 				contextMenu.style.align = align.END;
@@ -95,4 +109,16 @@ export default class ListPokemonState extends State {
 	setCloseCallback(callback) {
 		this.callback = callback;
 	}
+}
+
+export function switchPokemon(loader, trainer) {
+	const lastState = stateManager.getState();
+	return new Promise(resolve => {
+		const listState = new ListPokemonState(loader, trainer, modes.choose);
+		listState.setCloseCallback(resolve);
+
+		const transition = new TransitionState(lastState, fade);
+		stateManager.setState(transition);
+		loader.all().then(() => { transition.transitionTo(listState); });
+	}).finally(() => { stateManager.setState(lastState); });
 }

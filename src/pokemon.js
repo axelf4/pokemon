@@ -1,6 +1,6 @@
-/** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
-import pokemon from "pokemon.json";
 import { getTypeByName } from "type";
+/** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
+import table from "pokemon.json";
 import multiView from "multiView";
 
 export const getPokemonById = (function() {
@@ -20,12 +20,12 @@ export const getPokemonById = (function() {
 			}
 		},
 	};
-	return id => new Proxy(pokemon[id], pokemonProxyHandler);
+	return id => new Proxy(table[id], pokemonProxyHandler);
 })();
 
 export function getPokemonByName(name) {
-	for (let i = 0, length = pokemon.length; i < length; ++i) {
-		if (pokemon[i][0] === name) return getPokemonById(i);
+	for (let i = 0, length = table.length; i < length; ++i) {
+		if (table[i][0] === name) return getPokemonById(i);
 	}
 	throw new Error("Cannot find pokemon with specified name.");
 };
@@ -42,29 +42,37 @@ export default class Pokemon {
 	constructor(species, level, moves) {
 		this.species = typeof species === "string" ? getPokemonByName(species)
 			: typeof species === "number" ? getPokemonById(species) : species;
-		this.name = this.species.name;
+		this.name = this.species.name; // Allow renaming pokemon
 		this.level = level;
-		this.hp = calculateStats(this).hp;
-		this.moves = moves.map(move => {
-			let ppObj = { pp: move.pp };
-			return multiView(ppObj, move);
-		});
 		this.exp = 0;
+		this.hp = this.calculateStats().hp;
+		this.moves = moves.map(move => multiView({ pp: move.pp }, move));
+
+		if (new.target === Pokemon) Object.preventExtensions(this);
 	}
 
 	// TODO add JSON de/serialization
-}
 
-/** Does not care about IVs and EVs. */
-export const calculateStats = function(pokemon) {
-	const stats = pokemon.species;
-	const getStat = base => 2 * base * pokemon.level / 100 + 5 | 0;
-	return {
-		hp: 2 * stats.hp * pokemon.level / 100 + pokemon.level + 10 | 0,
-		attack: getStat(stats.attack),
-		defense: getStat(stats.defense),
-		specialAttack: getStat(stats.specialAttack),
-		specialDefense: getStat(stats.specialDefense),
-		speed: getStat(stats.speed),
+	/**
+	 * Calculates the individual base stats of the pokemon.
+	 * Based on level, returns hp; attack; defense; sp. attack; sp. defense and speed.
+	 * Does not care about IVs nor EVs.
+	 * @return An object with the stats.
+	 */
+	calculateStats() {
+		const stats = this.species,
+			getStat = base => 2 * base * this.level / 100 + 5 | 0;
+		return {
+			hp: 2 * stats.hp * this.level / 100 + this.level + 10 | 0,
+			attack: getStat(stats.attack),
+			defense: getStat(stats.defense),
+			specialAttack: getStat(stats.specialAttack),
+			specialDefense: getStat(stats.specialDefense),
+			speed: getStat(stats.speed),
+		};
 	};
-};
+
+	getHpPercentage() {
+		return this.hp / this.calculateStats().hp;
+	}
+}

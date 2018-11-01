@@ -1,4 +1,4 @@
-import { loadTexture } from "texture";
+import { loadTexture, TexRegion } from "texture";
 var map = require("map");
 
 window.URL = window.URL || window.webkitURL;
@@ -7,8 +7,8 @@ var LoaderFacade = function(fileLoader) {
 	this.fileLoader = fileLoader;
 };
 
-LoaderFacade.prototype.load = function(url) {
-	return this.fileLoader.load(url);
+LoaderFacade.prototype.load = function(src) {
+	return this.fileLoader.load(src);
 };
 
 LoaderFacade.prototype.loadText = function(url) {
@@ -65,11 +65,19 @@ LoaderFacade.prototype.loadJSON = function(url) {
 		});
 };
 
-LoaderFacade.prototype.loadTexture = function(url) {
-	return this.load(url).then(blob => {
-		const objectURL = URL.createObjectURL(blob);
-		return loadTexture(objectURL).finally(() => { URL.revokeObjectURL(objectURL); });
+LoaderFacade.prototype.loadTexture = function(src) {
+	return this.load(src).then(blob => {
+		const objectUrl = URL.createObjectURL(blob);
+		return loadTexture(objectUrl).finally(() => { URL.revokeObjectURL(objectUrl); });
 	});
+};
+
+LoaderFacade.prototype.loadTexturePlaceholder = function(src) {
+	const region = TexRegion.getPlaceholder();
+	this.loadTexture(src).then(loadedRegion => {
+		Object.assign(region, loadedRegion);
+	});
+	return region;
 };
 
 LoaderFacade.prototype.loadMap = function(url) {

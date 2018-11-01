@@ -17,16 +17,16 @@ const Healthbar = require("Healthbar.js");
 var resources = require("resources.js");
 import { Color } from "SpriteBatch";
 import battle, { battleEventText, battleEventQueryAction,
-	battleEventDeployPokemon, battleEventUseMove,
+	battleEventSendOut, battleEventUseMove,
 	battleEventSetHealth, battleEventFaint,
-	actionAttack, actionRun } from "battle";
+	actionAttack, actionSwitchPokemon, actionRun } from "battle";
 const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
 import TransitionState, {fade} from "TransitionState";
+import { switchPokemon as getPokemonToSwitchTo } from "ListPokemonState";
 
-const vec3 = glMatrix.vec3;
-const mat4 = glMatrix.mat4;
+const { mat4, vec3, quat } = glMatrix;
 
 export default class BattleState extends State {
 	constructor(loader, nextState, player, enemy) {
@@ -41,10 +41,8 @@ export default class BattleState extends State {
 			loader.loadTexture("assets/battleground.png").then(texRegion => {
 				self.groundTex = texRegion;
 			});
-			loader.loadTexture("assets/pokemon/Slowpoke.png").then(region => {
-				self.pokemon0Tex = region;
-			});
-			yield loader.all();
+			self.characterTex0 = loader.loadTexturePlaceholder("assets/pokemon/Slowpoke.png");
+			self.characterTex1 = loader.loadTexturePlaceholder("assets/pokemon/Slowpoke.png");
 
 			const widget = self.widget = new Panel();
 			widget.direction = Panel.DIRECTION_COLUMN;
@@ -52,9 +50,7 @@ export default class BattleState extends State {
 			const viewContainer = new Container();
 			viewContainer.style.align = align.STRETCH;
 			viewContainer.flex = 1;
-			loader.loadTexture("assets/battlebg.png").then(texRegion => {
-				viewContainer.background = texRegion;
-			});
+			viewContainer.background = loader.loadTexturePlaceholder("assets/battlebg.png");
 			widget.addWidget(viewContainer);
 
 			const view = new Panel();
@@ -62,11 +58,14 @@ export default class BattleState extends State {
 			view.justify = align.SPACE_AROUND;
 			viewContainer.addWidget(view);
 
-			const createInfoBox = () => {
+			yield loader.all(); // Wait for resources to load
+
+			const createInfoBox = (isPlayer) => {
 				const container = new Container();
 				container.background = self.battleInfoTex;
 				container.marginTop = 20;
 				view.addWidget(container);
+				container.setVisible(false);
 
 				const vPanel = new Panel();
 				vPanel.direction = Panel.DIRECTION_COLUMN;
@@ -76,7 +75,7 @@ export default class BattleState extends State {
 				vPanel.marginLeft = 4;
 				container.addWidget(vPanel);
 
-				const label = new Label(resources.font, "Snoop Dogg  Lv.4");
+				const label = new Label(resources.font);
 				label.style.align = align.STRETCH;
 				vPanel.addWidget(label);
 
@@ -84,10 +83,14 @@ export default class BattleState extends State {
 				hpBar.style.align = align.STRETCH;
 				vPanel.addWidget(hpBar);
 
-				return { hpBar };
+				const setup = pokemon => {
+					container.setVisible(true);
+					label.setText(`${pokemon.name}  Lv.${pokemon.level}`);
+					hpBar.setPercentage(pokemon.getHpPercentage(), false)
+				};
+				return { hpBar, setup };
 			};
-			const { hpBar: enemyHpBar } = createInfoBox();
-			const { hpBar: playerHpBar } = createInfoBox();
+			const playerInfoBox = createInfoBox(true), enemyInfoBox = createInfoBox(false);
 
 			var info = new Panel();
 			info.direction = Panel.DIRECTION_ROW;
@@ -104,8 +107,8 @@ export default class BattleState extends State {
 				});
 			};
 
-			self.playerOffset = { x: 0, y: 0, a: 1 };
-			self.enemyOffset = { x: 0, y: 0, a: 1 };
+			self.playerOffset = { x: 1, y: 0, a: 1 };
+			self.enemyOffset = { x: 1, y: 0, a: 1 };
 
 			const battleGen = battle(player, enemy);
 
@@ -116,6 +119,8 @@ export default class BattleState extends State {
 				if (battleEvent.done) break;
 
 				let eventVal = battleEvent.value;
+				const object0 = eventVal.isPlayer ? self.playerOffset : self.enemyOffset;
+				const object1 = eventVal.isPlayer ? self.enemyOffset : self.playerOffset;
 				switch (eventVal.type) {
 					case battleEventText:
 						yield showDialog(eventVal.text);
@@ -157,11 +162,15 @@ export default class BattleState extends State {
 									yield showDialog("There's a time and place for everything, but not now...");
 									break;
 								case 2: // Pokemon
-									yield showDialog("Cannot switch pokemons yet.");
+									let pokemonIndex = yield getPokemonToSwitchTo(loader, player);
+									if (pokemonIndex != -1)
+										playerAction = { type: actionSwitchPokemon, isPlayer: true, pokemonIndex };
 									break;
 								case 3: // Run
-									// TODO can't escape against trainers
-									playerAction = { type: actionRun, isPlayer: true };
+									if (enemy.canEscapeFrom())
+										playerAction = { type: actionRun, isPlayer: true };
+									else
+										yield showDialog("No! There's no running from a Trainer battle!");
 									break;
 								default:
 									throw new Error("Invalid selected value.");
@@ -169,45 +178,67 @@ export default class BattleState extends State {
 						}
 						nextArg = playerAction;
 						break;
-					case battleEventDeployPokemon:
+
+					case battleEventSendOut:
+						if (eventVal.switching) {
+							yield showDialog(`Thats enough ${eventVal.oldPokemon.name}! Get the fuck back here.`);
+							yield new Promise((resolve, reject) => {
+								new TWEEN.Tween(object0).to({ x: [0, 1] }, 1500)
+									.easing(TWEEN.Easing.Linear.None)
+									.onComplete(resolve).start();
+							});
+						}
+
+						yield showDialog(`${eventVal.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${eventVal.pokemon.name}!`);
+						yield new Promise((resolve, reject) => {
+							new TWEEN.Tween(object0).to({
+								x: [1, 0.25, 0],
+								y: [0, -0.15, 0],
+								a: [0, 1, 1],
+							}, 1500)
+								.interpolation(TWEEN.Interpolation.Bezier)
+								.easing(TWEEN.Easing.Bounce.Out)
+								.onComplete(resolve).start();
+						});
+						(eventVal.isPlayer ? playerInfoBox : enemyInfoBox).setup(eventVal.pokemon);
 						break;
 					case battleEventUseMove:
-						const object0 = eventVal.isPlayer ? self.playerOffset : self.enemyOffset;
-						const object1 = eventVal.isPlayer ? self.enemyOffset : self.playerOffset;
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0)
 								.to({
 									x: [ 0.05, 0.08, 0.10, -0.2, object0.x ],
 									y: [ 0.05, 0.07, 0.08, 0, object0.y ],
 								}, 1000)
-							.interpolation(TWEEN.Interpolation.CatmullRom)
+								.interpolation(TWEEN.Interpolation.CatmullRom)
 								.easing(TWEEN.Easing.Linear.None)
 								.chain(new TWEEN.Tween(object1)
-										.to({
-											x: [ 0.1, 0.11, object1.x ],
-											y: [ -0.03, -0.01, object1.y ],
-										}, 1000)
-										.interpolation(TWEEN.Interpolation.CatmullRom)
-										.easing(TWEEN.Easing.Linear.None)
-										.delay(100)
-										.onComplete(resolve))
-								.start();
+									.to({
+										x: [ 0.1, 0.11, object1.x ],
+										y: [ -0.03, -0.01, object1.y ],
+									}, 1000)
+									.interpolation(TWEEN.Interpolation.CatmullRom)
+									.easing(TWEEN.Easing.Linear.None)
+									.delay(100)
+									.onComplete(resolve)).start();
 						});
 						break;
 					case battleEventFaint:
-						const object = eventVal.isPlayer ? self.playerOffset : self.enemyOffset;
-						const objectCopy = { ...object };
 						yield new Promise((resolve, reject) => {
-							new TWEEN.Tween(object).to({ y: -0.3, a: 0, }, 2000)
+							new TWEEN.Tween(object0).to({ y: -0.3, a: 0, }, 2000)
 								.easing(TWEEN.Easing.Linear.None)
-								.onComplete(() => {
-									// Object.assign(object, objectCopy);
-									resolve();
-								}).start();
+								.onComplete(resolve).start();
 						});
+						yield showDialog(`${eventVal.isPlayer ? "" : "Foe "}${eventVal.pokemon.name} fainted!`);
+						if (eventVal.promptForNext) {
+							let pokemonIndex;
+							do {
+								pokemonIndex = yield getPokemonToSwitchTo(loader, player);
+							} while (pokemonIndex === -1);
+							nextArg = pokemonIndex;
+						}
 						break;
 					case battleEventSetHealth:
-						let hpBar = eventVal.isPlayer ? playerHpBar : enemyHpBar;
+						let hpBar = (eventVal.isPlayer ? playerInfoBox : enemyInfoBox).hpBar;
 						yield hpBar.setPercentage(eventVal.percentage);
 						break;
 				}
@@ -235,35 +266,27 @@ export default class BattleState extends State {
 		this.widget.draw(batch, dt, time);
 		const oldMatrix = batch.getTransformMatrix();
 
-		const drawPokemon = (flipped, offset) => {
-			const transform = mat4.create();
-			mat4.fromScaling(transform, [this.width / 2, this.width / 2, 0]);
-			const translation = vec3.create();
-			vec3.set(translation, 1, this.height / 2 / this.width * 2, 0);
-
-			mat4.multiply(transform, oldMatrix, transform);
-			mat4.translate(transform, transform, translation);
-
-			mat4.scale(transform, transform, [flipped ? -1 : 1, 1, 1]);
-
-			batch.setTransformMatrix(transform);
-
-			const bottomCenter = (width, height) => [-width / 2, -height],
+		const bottomCenter = (width, height) => [-width / 2, -height],
 			almostBottomCenter = (width, height) => [-width / 2, -0.9 * height],
 			middleCenter = (width, height) => [-width / 2, -height / 2];
-			const color = new Color(1, 1, 1, offset.a);
+
+		const drawPokemon = (flipped, offset, texture) => {
+			const transform = mat4.fromRotationTranslationScale(mat4.create(), quat.create(),
+				vec3.fromValues(this.width / 2, this.height / 2, 0),
+				vec3.fromValues(this.width / 2 * (flipped ? -1 : 1), this.width / 2, 0));
+			mat4.multiply(transform, oldMatrix, transform);
+			batch.setTransformMatrix(transform);
 
 			const draw = (tex, x, y, width, align, color) => {
 				const height = width * (tex.y1 - tex.y0) / (tex.x1 - tex.x0);
 				const [ox, oy] = align(width, height);
 				tex.draw(batch, x + ox, y + oy, width, height, color);
 			};
-
 			draw(this.groundTex, 0.5, 0.0, 0.7, middleCenter);
-			draw(this.pokemon0Tex, 0.5 + offset.x, 0.0 + offset.y, 0.4, almostBottomCenter, color);
+			draw(texture, 0.5 + offset.x, 0.0 + offset.y, 0.4, almostBottomCenter, Color.fromAlpha(offset.a));
 		};
-		drawPokemon(false, this.enemyOffset);
-		drawPokemon(true, this.playerOffset);
+		drawPokemon(false, this.enemyOffset, this.characterTex1);
+		drawPokemon(true, this.playerOffset, this.characterTex0);
 
 		batch.setTransformMatrix(oldMatrix);
 		batch.end();

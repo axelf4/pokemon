@@ -12,6 +12,10 @@ export class Color {
 		this.b = b;
 		this.a = a;
 	}
+
+	static fromAlpha(a) {
+		return new this(1, 1, 1, a);
+	}
 }
 
 export const white = new Color(1, 1, 1, 1);

@@ -14,7 +14,7 @@ Label.prototype.constructor = Label;
 
 Label.prototype.setText = function(text) {
 	this.text = text;
-	this.invalidateHierarchy();
+	this.requestLayout();
 };
 
 var computeVisibleGlyphs = function(font, str, start, end, maxAdvance) {

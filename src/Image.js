@@ -83,7 +83,6 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 		heightSize = resolveAdjustedSize(h, heightMeasureSpec);
 	}
 
-	console.log(widthSize, heightSize);
 	this.setDimension(widthSize, heightSize);
 
 	if (this.align & align.LEFT || widthSize <= w) {

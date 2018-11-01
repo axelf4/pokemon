@@ -3,9 +3,9 @@ var measureSpec = require("measureSpec.js");
 var lerp = require("lerp");
 const TWEEN = require("@tweenjs/tween.js");
 
-const Healthbar = function(loader) {
+const Healthbar = function(loader, percentage = 1) {
 	Widget.call(this);
-	this.percentage = 1;
+	this.percentage = percentage;
 
 	loader.loadTexture("assets/hpbar.png").then(texRegion => {
 		this.texRegion = texRegion;
@@ -30,10 +30,10 @@ Healthbar.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	this.setDimension(width, 7);
 };
 
-Healthbar.prototype.setPercentage = function(percentage) {
+Healthbar.prototype.setPercentage = function(percentage, animate = true) {
 	return new Promise((resolve, reject) => {
 		new TWEEN.Tween({ p: this.percentage }) // Create a new tween
-			.to({ p: percentage }, 1000) // Move to percentage in 1 second.
+			.to({ p: percentage }, animate ? 1000 : 0) // Move to percentage in 1 second.
 			.easing(TWEEN.Easing.Quadratic.Out) // Use an easing function to make the animation smooth.
 			.onUpdate(object => {
 				this.percentage = object.p;

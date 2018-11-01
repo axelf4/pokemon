@@ -143,7 +143,7 @@ export default class TransitionState extends State {
 			this.timer = 0;
 			this.finishListeners.forEach(listener => listener());
 			if (this.transitionState === TRANSITION_FADE_OUT) {
-				if (!this.toState) throw new Exception("toState should not be falsy.");
+				if (!this.toState) throw new Error("toState should not be falsy.");
 				if (this.toState) {
 					this.state = this.toState;
 					this.state.resize(this.width, this.height);
@@ -177,7 +177,7 @@ export default class TransitionState extends State {
 		gl.uniform3f(this.colorLocation, r, g, b);
 		gl.uniform2f(this.invResolutionLocation, 1 / this.width, 1 / this.height);
 
-		var u2 = this.width / this.texWidth, v2 = this.height / this.texHeight;
+		const u2 = this.width / this.texWidth, v2 = this.height / this.texHeight;
 		batch.draw(this.texture, 0, 0, this.width, this.height, 0, v2, u2, 0);
 
 		batch.end();

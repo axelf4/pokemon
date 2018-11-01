@@ -1,5 +1,6 @@
 export default class Trainer {
 	constructor(name, pokemon, isWild = false) {
+		if (!(pokemon instanceof Array)) throw new Error();
 		this.name = name;
 		this.pokemon = pokemon;
 		this.isWild = isWild;

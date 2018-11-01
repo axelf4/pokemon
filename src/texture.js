@@ -1,4 +1,4 @@
-var gl = require("renderer.js").gl;
+const renderer = require("renderer.js"), gl = renderer.gl;
 import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
 
 export function loadTexture(src) {
@@ -52,5 +52,9 @@ export class TexRegion {
 		batch.draw(this.texture, x, y, x + width, y + height,
 				this.x0 / this.width, this.y0 / this.height,
 				this.x1 / this.width, this.y1 / this.height, color);
+	}
+
+	static getPlaceholder() {
+		return new this(renderer.whiteTexture, 1, 1);
 	}
 }
