@@ -1,5 +1,5 @@
 var glMatrix = require("gl-matrix");
-var renderer = require("renderer.js");
+import * as renderer from "renderer";
 import SpriteBatch from "SpriteBatch";
 import FileLoader from "FileLoader";
 import LoaderFacade from "LoaderFacade";
@@ -29,9 +29,7 @@ import Trainer from "Trainer";
 import { move } from "move";
 import Pokemon, { getPokemonByName } from "pokemon";
 
-var gl = renderer.gl;
-var vec3 = glMatrix.vec3;
-var mat4 = glMatrix.mat4;
+const gl = renderer.gl, {mat4, vec3} = glMatrix;
 
 console.log("----- Starting the game -----");
 
@@ -50,7 +48,8 @@ const projectionMatrix = mat4.create();
 const batch = new SpriteBatch();
 
 input.setListener((type, key) => {
-	stateManager.getState().onKey(type, key);
+	if (type === input.KEY_ACTION_UP && key === "f") renderer.toggleFullscreen();
+	else stateManager.getState().onKey(type, key);
 });
 
 const loader = promiseTrap(cachingProxy(
