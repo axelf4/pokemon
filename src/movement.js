@@ -2,7 +2,7 @@
 
 var Position = require("Position.js");
 import * as direction from "direction";
-var DirectionComponent = require("DirectionComponent.js");
+import DirectionComponent from "DirectionComponent";
 var LineOfSightComponent = require("LineOfSightComponent");
 
 

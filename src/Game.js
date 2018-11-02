@@ -30,7 +30,7 @@ var measureSpec = require("measureSpec");
 import BattleState from "BattleState";
 
 var Position = require("Position.js");
-var DirectionComponent = require("DirectionComponent.js");
+import DirectionComponent from "DirectionComponent";
 var SpriteComponent = require("SpriteComponent.js");
 var InteractionComponent = require("InteractionComponent.js");
 var LineOfSightComponent = require("LineOfSightComponent");
@@ -549,4 +549,4 @@ Game.prototype.battle = async function(enemyTrainer) {
 	source.loop = true;
 });*/
 
-module.exports = Game;
+export default Game;

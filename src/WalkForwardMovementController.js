@@ -1,24 +1,24 @@
 import * as direction from "direction";
-var DirectionComponent = require("DirectionComponent");
+import DirectionComponent from "DirectionComponent";
 
 /**
  * Walks forward until it bumps into something.
  */
-var WalkForwardMovementController = function(callback) {
-	this.callback = callback;
-};
-
-WalkForwardMovementController.prototype.getTarget = function(game, dt, position, entity) {
-	var em = game.em;
-	var dir = em.getComponent(entity, DirectionComponent).value;
-	var dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
-
-	if (game.isSolid(position.x + dx, position.y + dy)) {
-		this.callback();
-		return direction.NO_DIRECTION;
+export default class WalkForwardMovementController {
+	constructor(callback) {
+		this.callback = callback;
 	}
 
-	return dir;
-};
+	getTarget(game, dt, position, entity) {
+		const em = game.em;
+		let dir = em.getComponent(entity, DirectionComponent).value;
+		let dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 
-module.exports = WalkForwardMovementController;
+		if (game.isSolid(position.x + dx, position.y + dy)) {
+			this.callback();
+			return direction.NO_DIRECTION;
+		}
+
+		return dir;
+	}
+}

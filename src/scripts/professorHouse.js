@@ -5,12 +5,12 @@ import thread from "thread";
 import save from "savegame";
 
 var Position = require("Position");
-var DirectionComponent = require("DirectionComponent");
+import DirectionComponent from "DirectionComponent";
 var InteractionComponent = require("InteractionComponent");
 var LineOfSightComponent = require("LineOfSightComponent");
 var DimensionComponent = require("DimensionComponent");
 
-module.exports = function(game, loader) {
+export default function(game, loader) {
 	loader.loadMap("assets/professor-house.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
@@ -85,4 +85,4 @@ module.exports = function(game, loader) {
 			game.release();
 	})));
 
-};
+}

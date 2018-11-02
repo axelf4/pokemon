@@ -7,12 +7,12 @@ import { move } from "move";
 import Pokemon, { getPokemonByName } from "pokemon";
 
 var Position = require("Position");
-var DirectionComponent = require("DirectionComponent");
+import DirectionComponent from "DirectionComponent";
 var InteractionComponent = require("InteractionComponent");
 var LineOfSightComponent = require("LineOfSightComponent");
 var DimensionComponent = require("DimensionComponent");
 
-module.exports = function(game, loader) {
+export default function(game, loader) {
 	loader.loadMap("assets/home.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
@@ -46,4 +46,4 @@ module.exports = function(game, loader) {
 			yield game.showDialog("\"How to microwave cheese\", starring Gordon Ramsay and macaroni.");
 			game.release();
 	})));
-};
+}
