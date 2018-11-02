@@ -323,8 +323,10 @@ Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.metaLayer = map.layers.findIndex(l => l.name === "meta");
 };
 
-Game.prototype.loadScript = function(name) {
-	this.loader.loadScript(name).then(script => script(this, this.loader));
+Game.prototype.loadScript = async function(name) {
+	const output = await this.loader.loadScript(name).then(script => script(this, this.loader));
+	await this.loader.all();
+	return output;
 };
 
 Game.prototype.addUpdateHook = function(hook) {

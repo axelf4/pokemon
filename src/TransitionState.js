@@ -117,6 +117,7 @@ export default class TransitionState extends State {
 	}
 
 	transitionTo(state) {
+		if (!state) throw new Error("State should not be falsy.");
 		if (this.state) {
 			this.toState = state;
 		} else {
@@ -143,7 +144,6 @@ export default class TransitionState extends State {
 			this.timer = 0;
 			this.finishListeners.forEach(listener => listener());
 			if (this.transitionState === TRANSITION_FADE_OUT) {
-				if (!this.toState) throw new Error("toState should not be falsy.");
 				if (this.toState) {
 					this.state = this.toState;
 					this.state.resize(this.width, this.height);
