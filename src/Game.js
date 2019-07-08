@@ -37,8 +37,7 @@ var LineOfSightComponent = require("LineOfSightComponent");
 var AnimationComponent = require("AnimationComponent");
 var DimensionComponent = require("DimensionComponent");
 
-var mat4 = glMatrix.mat4;
-var vec3 = glMatrix.vec3;
+const {mat4, vec3, quat} = glMatrix;
 var gl = renderer.gl;
 
 var font = resources.font;
@@ -215,54 +214,55 @@ Game.prototype.draw = function(batch, dt, time) {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
+	const gbaAspectRatio = 3 / 2, virtualWidth = 400, virtualHeight = virtualWidth / gbaAspectRatio,
+		scaleFactor = Math.ceil(Math.min(this.width / virtualWidth, this.height / virtualHeight));
 	const playerInterpPos = getEntityInterpPos(time, em, player,
 			em.getComponent(player, Position), em.getComponent(player, MovementComponent));
-	const transformX = Math.ceil(playerInterpPos.x * 16 - this.width / 2),
-		transformY = Math.ceil(playerInterpPos.y * 16 - this.height / 2);
+	const transformX = Math.ceil(this.width / 2 - 16 * scaleFactor * (playerInterpPos.x + 1 / 2)),
+		transformY = Math.ceil(this.height / 2 - 16 * scaleFactor * (playerInterpPos.y + 1 / 2));
 
-	vec3.set(positionVector, -transformX, -transformY, 0);
-	mat4.fromTranslation(mvMatrix, positionVector);
+	vec3.set(positionVector, transformX, transformY, 0);
+	mat4.fromRotationTranslationScale(mvMatrix, quat.create(), positionVector, vec3.fromValues(scaleFactor, scaleFactor, 1));
 	var oldTransformMatrix = batch.getTransformMatrix();
 	batch.setTransformMatrix(mvMatrix);
 	batch.begin();
 
 	drawMapLayers(batch, this.map, this.backgroundLayers);
 
-	range(em.count).filter(entity => em.matches(entity, this.spriteSystemMask))
-		.sort((a, b) => em.getComponent(a, Position).y - em.getComponent(b, Position).y)
-		.forEach(entity => {
-			const position = em.getComponent(entity, Position),
-				spriteComponent = em.getComponent(entity, SpriteComponent),
-				movement = em.hasComponent(entity, MovementComponent) ? em.getComponent(entity, MovementComponent) : null;
+	for (let entity of range(em.count).filter(entity => em.matches(entity, this.spriteSystemMask))
+		.sort((a, b) => em.getComponent(a, Position).y - em.getComponent(b, Position).y)) {
+		const position = em.getComponent(entity, Position),
+			spriteComponent = em.getComponent(entity, SpriteComponent),
+			movement = em.hasComponent(entity, MovementComponent) ? em.getComponent(entity, MovementComponent) : null;
 
-			var region;
-			if (em.hasComponent(entity, AnimationComponent)) {
-				const dir = em.getComponent(entity, DirectionComponent).value;
-				const animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
-				region = movement && movement.isMoving() ? animation.getFrame(time) : animation.getFrameByIndex(0);
-			} else {
-				region = spriteComponent.animation ? spriteComponent.animation.getFrame(time)
-					: spriteComponent.region;
-			}
+		var region;
+		if (em.hasComponent(entity, AnimationComponent)) {
+			const dir = em.getComponent(entity, DirectionComponent).value;
+			const animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
+			region = movement && movement.isMoving() ? animation.getFrame(time) : animation.getFrameByIndex(0);
+		} else {
+			region = spriteComponent.animation ? spriteComponent.animation.getFrame(time)
+				: spriteComponent.region;
+		}
 
-			const texture = spriteComponent.texture;
-			const u1 = region.x / texture.width, v1 = region.y / texture.height,
-				u2 = (region.x + region.width) / texture.width, v2 = (region.y + region.height) / texture.height;
+		const texture = spriteComponent.texture;
+		const u1 = region.x / texture.width, v1 = region.y / texture.height,
+			u2 = (region.x + region.width) / texture.width, v2 = (region.y + region.height) / texture.height;
 
-			let x, y;
-			if (movement) {
-				const interpPos = getEntityInterpPos(time, em, entity, position, movement);
-				x = interpPos.x * 16;
-				y = interpPos.y * 16;
-			} else {
-				x = position.x * 16;
-				y = position.y * 16;
-			}
-			x = Math.ceil(x + spriteComponent.offsetX);
-			y = Math.ceil(y + spriteComponent.offsetY);
-			const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
-			batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
-		});
+		let x, y;
+		if (movement) {
+			const interpPos = getEntityInterpPos(time, em, entity, position, movement);
+			x = interpPos.x * 16;
+			y = interpPos.y * 16;
+		} else {
+			x = position.x * 16;
+			y = position.y * 16;
+		}
+		x = Math.ceil(x + spriteComponent.offsetX);
+		y = Math.ceil(y + spriteComponent.offsetY);
+		const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
+		batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
+	}
 
 	drawMapLayers(batch, this.map, this.foregroundLayers);
 
