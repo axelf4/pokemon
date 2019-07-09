@@ -12,6 +12,7 @@ var Font = require("font.js");
 import NinePatch from "NinePatch";
 import Game from "Game";
 import TransitionState, {fade} from "TransitionState";
+import "touchControl";
 var fowl = require("fowl");
 const TWEEN = require("@tweenjs/tween.js");
 
