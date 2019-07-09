@@ -2,7 +2,6 @@ var fowl = require("fowl");
 var lerp = require("lerp");
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
-var Map = require("map.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var StillMovementController = require("StillMovementController.js");
@@ -177,13 +176,12 @@ const drawMapLayer = function(batch, map, layer) {
 		for (var col = 0, cols = map.width; col < cols; ++col) {
 			var gid = data[col + row * map.width];
 			if (gid !== 0) {
-				const tileset = layer.tilesetForGid[gid];
+				const tileset = map.getTileSetByGid(gid);
 				const x1 = x, y1 = y, x2 = x1 + map.tilewidth, y2 = y1 + map.tileheight;
-				const sx = (tileset.getTileX(gid) - 1) * tileset.tilewidth,
-					sy = tileset.getTileY(gid) * tileset.tileheight;
+				const sx = tileset.getTileX(gid), sy = tileset.getTileY(gid);
 				const imageWidth = tileset.texture.width, imageHeight = tileset.texture.height;
-				const u1 = (sx + 0.5) / imageWidth, v1 = (sy + 0.5) / imageHeight,
-					u2 = (sx - 0.5 + tileset.tilewidth) / imageWidth, v2 = (sy - 0.5 + tileset.tileheight) / imageHeight;
+				const u1 = sx / imageWidth, v1 = sy / imageHeight,
+					u2 = (sx + tileset.tilewidth) / imageWidth, v2 = (sy + tileset.tileheight) / imageHeight;
 
 				batch.draw(tileset.texture.texture, x1, y1, x2, y2, u1, v1, u2, v2);
 			}
@@ -218,8 +216,8 @@ Game.prototype.draw = function(batch, dt, time) {
 		scaleFactor = Math.ceil(Math.min(this.width / virtualWidth, this.height / virtualHeight));
 	const playerInterpPos = getEntityInterpPos(time, em, player,
 			em.getComponent(player, Position), em.getComponent(player, MovementComponent));
-	const transformX = Math.ceil(this.width / 2 - 16 * scaleFactor * (playerInterpPos.x + 1 / 2)),
-		transformY = Math.ceil(this.height / 2 - 16 * scaleFactor * (playerInterpPos.y + 1 / 2));
+	const transformX = this.width / 2 - 16 * scaleFactor * (playerInterpPos.x + 1 / 2),
+		transformY = this.height / 2 - 16 * scaleFactor * (playerInterpPos.y + 1 / 2);
 
 	vec3.set(positionVector, transformX, transformY, 0);
 	mat4.fromRotationTranslationScale(mvMatrix, quat.create(), positionVector, vec3.fromValues(scaleFactor, scaleFactor, 1));
@@ -258,8 +256,8 @@ Game.prototype.draw = function(batch, dt, time) {
 			x = position.x * 16;
 			y = position.y * 16;
 		}
-		x = Math.ceil(x + spriteComponent.offsetX);
-		y = Math.ceil(y + spriteComponent.offsetY);
+		x = x + spriteComponent.offsetX;
+		y = y + spriteComponent.offsetY;
 		const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 		batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 	}
@@ -312,7 +310,7 @@ Game.prototype.setMap = function(map, backgroundLayers, foregroundLayers) {
 	this.map = map;
 	var callback = function(item) {
 		if (typeof item === "string" || item instanceof String) {
-			return Map.getLayerIdByName(map, item);
+			return map.getLayerIdByName(item);
 		} else if (typeof item === "number") {
 			return item;
 		}

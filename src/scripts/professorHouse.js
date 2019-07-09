@@ -1,4 +1,3 @@
-var Map = require("map.js");
 var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
 import thread from "thread";

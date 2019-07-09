@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="24" height="24" tilewidth="16" tileheight="16" nextobjectid="1">
- <tileset firstgid="1" name="Forest" tilewidth="16" tileheight="16" tilecount="21000" columns="140">
-  <image source="tileset.png" width="2240" height="2400"/>
+<map version="1.2" tiledversion="1.2.4" orientation="orthogonal" renderorder="right-down" width="24" height="24" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="1">
+ <tileset firstgid="1" name="Forest" tilewidth="16" tileheight="16" spacing="2" margin="1" tilecount="21000" columns="140">
+  <image source="tileset-extruded.png" width="2520" height="2700"/>
  </tileset>
  <tileset firstgid="21001" source="meta.tsx"/>
- <layer name="Tile Layer 1" width="24" height="24">
+ <layer id="1" name="Tile Layer 1" width="24" height="24">
   <data encoding="csv">
 2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,
 2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2102,2104,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,
@@ -32,7 +32,7 @@
 2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802,2802
 </data>
  </layer>
- <layer name="Tile Layer 2" width="24" height="24">
+ <layer id="2" name="Tile Layer 2" width="24" height="24">
   <data encoding="csv">
 244,245,244,245,244,245,244,245,244,245,246,0,0,242,243,244,243,244,243,244,243,244,243,244,
 384,385,384,385,384,385,384,385,384,385,386,0,0,382,383,384,383,384,383,384,383,384,383,384,
@@ -60,7 +60,7 @@
 0,0,662,663,664,665,664,665,666,9456,9456,9456,9456,9456,9456,662,663,664,663,664,663,664,0,0
 </data>
  </layer>
- <layer name="Foreground" width="24" height="24">
+ <layer id="3" name="Foreground" width="24" height="24">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 664,665,666,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,662,663,664,
@@ -88,7 +88,7 @@
 664,665,666,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,662,663,664
 </data>
  </layer>
- <layer name="meta" width="24" height="24">
+ <layer id="4" name="meta" width="24" height="24">
   <data encoding="csv">
 21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,0,0,21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,
 21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,0,0,21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,21001,

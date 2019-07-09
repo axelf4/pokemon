@@ -1,4 +1,3 @@
-var Map = require("map.js");
 var InteractionComponent = require("InteractionComponent.js");
 var Animation = require("Animation.js");
 import thread from "thread";

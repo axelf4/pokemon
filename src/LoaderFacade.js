@@ -1,5 +1,5 @@
 import { loadTexture, TexRegion } from "texture";
-var map = require("map");
+import { loadMap } from "TiledMap";
 
 window.URL = window.URL || window.webkitURL;
 
@@ -81,7 +81,7 @@ export default class LoaderFacade {
 	}
 
 	loadMap(url) {
-		return map.loadMap(this, url);
+		return loadMap(this, url);
 	}
 
 	/**
