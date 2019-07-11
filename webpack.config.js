@@ -6,7 +6,6 @@ module.exports = {
 	resolve: {
 		modules: [
 			path.join(__dirname, "src"),
-			path.join(__dirname, "glsl"),
 			"node_modules",
 		]
 	},
@@ -38,7 +37,7 @@ module.exports = {
 		{ test: /BitSetModule/, loader: "exports-loader?BitSetModule" },
 		{
 			test: /fowl/,
-			loader: "imports-loader?BitsetModule=BitSetModule!exports-loader?fowl"
+			loader: "imports-loader?BitSetModule!exports-loader?fowl"
 		},
 		{ test: /flex\.js/, loader: "exports-loader?flex" },
 		]

@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "description": "A pokemon game am i right?",
   "author": "Axel Forsman",
+  "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "webpack-dev-server --mode development"
+    "start": "webpack-dev-server --open --mode development",
+    "build": "webpack"
   },
   "dependencies": {
     "@tweenjs/tween.js": "^17.2.0",
-    "BitSetModule": "^1.0.0",
     "base64-js": "^1.3.0",
     "equals": "^1.1.0",
     "fowl": "axelf4/fowl",
