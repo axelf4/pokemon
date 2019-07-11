@@ -2,7 +2,7 @@ import multiView from "multiView";
 import { damageNone, damagePhysical, damageSpecial } from "move";
 
 /**
- * Type effectiveness for [attacking move type][defending type].
+ * Type effectiveness for <code>[attacking move type][defending type]</code>.
  * Super effective is represented by two, not very effective by a half
  * and not effective by zero.
  */
@@ -27,7 +27,7 @@ const typeMultipliers = [
 ];
 
 /**
- * Calculates damage of the attack.
+ * Calculates the damage of an attack.
  * @see http://bulbapedia.bulbagarden.net/wiki/Damage_modification#Damage_formula
  */
 const calculateDamage = function(attacker, defender, move) {
@@ -71,20 +71,21 @@ const calculateDamage = function(attacker, defender, move) {
 const canFlee = (speed, enemySpeed, escapeAttempts) =>
 	Math.random() * 255 < (speed * 128 / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
 
+/** Returns whether usage of the specified move missed. */
 const isMiss = move => 100 * Math.random() >= move.accuracy;
 
-export const battleEventText = 0x0,
-	   battleEventQueryAction = 0x1,
-	   battleEventSendOut = 0x2,
-	   battleEventUseMove = 0x4,
-	   battleEventSetHealth = 0x8,
-	   battleEventFaint = 0x7;
+/** Types of events yielded from the battle generator function. */
+export const battleEvents = Object.freeze({
+	msgbox: Symbol("msgbox"),
+	queryAction: Symbol("queryAction"),
+	sendOut: Symbol("sendOut"),
+	useMove: Symbol("useMove"),
+	setHealth: Symbol("setHealth"),
+	faint: Symbol("faint"),
+})
 
-// These are numbered in ascending order of priority
-export const actionAttack = 0x0,
-	   actionSwitchPokemon = 0x1,
-	   actionRun = 0x2,
-	   actionUseItem = 0x3;
+/** Possible actions numbered in ascending order of priority. */
+export const actions = Object.freeze({ attack: 0, switchPokemon: 1, run: 2, useItem: 3, });
 
 /**
  * Simulates a battle.
@@ -97,20 +98,20 @@ export default function* battle(player, enemy) {
 
 	let escapeAttempts = 0;
 
-	yield { type: battleEventText, text: `${enemy.getName()} wants to fight!` };
-	yield { type: battleEventSendOut, isPlayer: false, pokemon: enemyPokemon };
-	yield { type: battleEventSendOut, isPlayer: true, pokemon: playerPokemon };
+	yield { type: battleEvents.msgbox, text: `${enemy.getName()} wants to fight!` };
+	yield { type: battleEvents.sendOut, isPlayer: false, pokemon: enemyPokemon };
+	yield { type: battleEvents.sendOut, isPlayer: true, pokemon: playerPokemon };
 
 	battleLoop:
 	for (;;) {
-		const playerAction = yield { type: battleEventQueryAction, pokemon: playerPokemon },
-			enemyAction = { type: actionAttack, move: enemyPokemon.moves[0], isPlayer: false }; // TODO add AI
+		const playerAction = yield { type: battleEvents.queryAction, pokemon: playerPokemon },
+			enemyAction = { type: actions.attack, move: enemyPokemon.moves[0], isPlayer: false }; // TODO add AI
 
 		const queue = [
 			{isPlayer: true, pokemon: playerPokemon, ...playerAction},
 			{isPlayer: false, pokemon: enemyPokemon, ...enemyAction}
 		].sort((a, b) =>
-				a.type === actionAttack && b.type === actionAttack
+				a.type === actions.attack && b.type === actions.attack
 				? b.move.priority - a.move.priority || b.pokemon.calculateStats().speed - a.pokemon.calculateStats().speed
 				: b.type - a.type);
 		actionLoop:
@@ -122,46 +123,46 @@ export default function* battle(player, enemy) {
 				const oldPokemon = isPlayer ? playerPokemon : enemyPokemon;
 				const pokemon = (isPlayer ? player : enemy).pokemon[pokemonIndex];
 				if (isPlayer) playerPokemon = pokemon; else enemyPokemon = pokemon;
-				return { type: battleEventSendOut, isPlayer, pokemon, oldPokemon, switching };
+				return { type: battleEvents.sendOut, isPlayer, pokemon, oldPokemon, switching };
 			};
 
 			switch (action.type) {
-				case actionRun:
+				case actions.run:
 					if (!isPlayer) throw new Error("Enemy fleeing not yet implemented.");
 					if (canFlee(playerPokemon.calculateStats().speed, enemyPokemon.calculateStats().speed, ++escapeAttempts)) {
-						yield { type: battleEventText, text: "Got away safely!" };
+						yield { type: battleEvents.msgbox, text: "Got away safely!" };
 						break battleLoop;
 					} else {
-						yield { type: battleEventText, text: "Can't escape!" };
+						yield { type: battleEvents.msgbox, text: "Can't escape!" };
 					}
 					break;
-				case actionAttack:
+				case actions.attack:
 					--action.move.pp; // Deplete PP
-					yield { type: battleEventText, text: `${attacker.name} used ${action.move.name}!` };
+					yield { type: battleEvents.msgbox, text: `${attacker.name} used ${action.move.name}!` };
 
 					if (isMiss(action.move)) {
-						yield { type: battleEventText, text: "But it missed." };
+						yield { type: battleEvents.msgbox, text: "But it missed." };
 					} else {
 						const { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, action.move);
-						if (crit) yield { type: battleEventText, text: "A critical hit!" }
+						if (crit) yield { type: battleEvents.msgbox, text: "A critical hit!" }
 						if (typeEffectiveness > 1)
-							yield { type: battleEventText, text: "It's super effective!" };
+							yield { type: battleEvents.msgbox, text: "It's super effective!" };
 						else if (typeEffectiveness === 0)
-							yield { type: battleEventText, text: "It's not effective..." };
+							yield { type: battleEvents.msgbox, text: "It's not effective..." };
 						else if (typeEffectiveness < 1)
-							yield { type: battleEventText, text: "It's not very effective..." };
+							yield { type: battleEvents.msgbox, text: "It's not very effective..." };
 
 						defender.hp = Math.max(0, defender.hp - damage);
-						yield { type: battleEventUseMove, move: action.move, isPlayer };
+						yield { type: battleEvents.useMove, move: action.move, isPlayer };
 
-						yield { type: battleEventSetHealth, isPlayer: !action.isPlayer, percentage: defender.getHpPercentage() };
-						yield { type: battleEventText, text: "It dealt " + damage + " damage.\nFoe has " + defender.hp + " remaining." };
+						yield { type: battleEvents.setHealth, isPlayer: !action.isPlayer, percentage: defender.getHpPercentage() };
+						yield { type: battleEvents.msgbox, text: "It dealt " + damage + " damage.\nFoe has " + defender.hp + " remaining." };
 					}
 
 					// Check both parties' health since a move can kill it's user
 					if (playerPokemon.hp <= 0) {
 						const promptForNext = !!player.getPrimaryPokemon();
-						const nextIndex = yield { type: battleEventFaint,
+						const nextIndex = yield { type: battleEvents.faint,
 							isPlayer: true,
 							pokemon: playerPokemon,
 							promptForNext,
@@ -170,21 +171,21 @@ export default function* battle(player, enemy) {
 						if (promptForNext && nextIndex) {
 							yield getSendOutEvent(true, nextIndex, false);
 						} else {
-							yield { type: battleEventText, text: player.name + " is out of usable pokemon!"};
-							yield { type: battleEventText, text: player.name + " blacked out!"};
+							yield { type: battleEvents.msgbox, text: player.name + " is out of usable pokemon!"};
+							yield { type: battleEvents.msgbox, text: player.name + " blacked out!"};
 							break battleLoop;
 						}
 						break actionLoop;
 					}
 					if (enemyPokemon.hp <= 0) {
 						// TODO check if enemy still has healthy pokemon
-						yield { type: battleEventFaint, isPlayer: false, pokemon: enemyPokemon };
-						yield { type: battleEventText, text: "Foe " + enemyPokemon.name + " fainted!"};
+						yield { type: battleEvents.faints, isPlayer: false, pokemon: enemyPokemon };
+						yield { type: battleEvents.msgbox, text: "Foe " + enemyPokemon.name + " fainted!"};
 						break battleLoop;
 					}
 
 					break;
-				case actionSwitchPokemon:
+				case actions.switchPokemon:
 					yield getSendOutEvent(isPlayer, action.pokemonIndex, true);
 					break;
 				default:

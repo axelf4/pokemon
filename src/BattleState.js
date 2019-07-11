@@ -16,10 +16,7 @@ var measureSpec = require("measureSpec");
 const Healthbar = require("Healthbar.js");
 var resources = require("resources.js");
 import { Color } from "SpriteBatch";
-import battle, { battleEventText, battleEventQueryAction,
-	battleEventSendOut, battleEventUseMove,
-	battleEventSetHealth, battleEventFaint,
-	actionAttack, actionSwitchPokemon, actionRun } from "battle";
+import battle, { battleEvents, actions } from "battle";
 const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
@@ -111,22 +108,20 @@ export default class BattleState extends State {
 			self.enemyOffset = { x: 1, y: 0, a: 1 };
 
 			const battleGen = battle(player, enemy);
-
 			let nextArg;
 			for (;;) {
-				let battleEvent = battleGen.next(nextArg);
+				let {done, value: battleEvent} = battleGen.next(nextArg);
+				if (done) break;
 				console.log("Battle event:", battleEvent);
-				if (battleEvent.done) break;
 
-				let eventVal = battleEvent.value;
-				const object0 = eventVal.isPlayer ? self.playerOffset : self.enemyOffset;
-				const object1 = eventVal.isPlayer ? self.enemyOffset : self.playerOffset;
-				switch (eventVal.type) {
-					case battleEventText:
-						yield showDialog(eventVal.text);
+				const object0 = battleEvent.isPlayer ? self.playerOffset : self.enemyOffset;
+				const object1 = battleEvent.isPlayer ? self.enemyOffset : self.playerOffset;
+				switch (battleEvent.type) {
+					case battleEvents.msgbox:
+						yield showDialog(battleEvent.text);
 						break;
-					case battleEventQueryAction:
-						let pokemon = eventVal.pokemon;
+					case battleEvents.queryAction:
+						let pokemon = battleEvent.pokemon;
 						let playerAction = null;
 						while (!playerAction) {
 							var selected = yield new Promise(function(resolve, reject) {
@@ -155,7 +150,7 @@ export default class BattleState extends State {
 									info.removeAllWidgets();
 									if (moveId !== -1) {
 										const move = pokemon.moves[moveId];
-										playerAction = { type: actionAttack, isPlayer: true, move };
+										playerAction = { type: actions.attack, isPlayer: true, move };
 									}
 									break;
 								case 1: // Bag
@@ -164,11 +159,11 @@ export default class BattleState extends State {
 								case 2: // Pokemon
 									let pokemonIndex = yield getPokemonToSwitchTo(loader, player);
 									if (pokemonIndex != -1)
-										playerAction = { type: actionSwitchPokemon, isPlayer: true, pokemonIndex };
+										playerAction = { type: actions.switchPokemon, isPlayer: true, pokemonIndex };
 									break;
 								case 3: // Run
 									if (enemy.canEscapeFrom())
-										playerAction = { type: actionRun, isPlayer: true };
+										playerAction = { type: actions.run, isPlayer: true };
 									else
 										yield showDialog("No! There's no running from a Trainer battle!");
 									break;
@@ -179,9 +174,9 @@ export default class BattleState extends State {
 						nextArg = playerAction;
 						break;
 
-					case battleEventSendOut:
-						if (eventVal.switching) {
-							yield showDialog(`Thats enough ${eventVal.oldPokemon.name}! Get the fuck back here.`);
+					case battleEvents.sendOut:
+						if (battleEvent.switching) {
+							yield showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`);
 							yield new Promise((resolve, reject) => {
 								new TWEEN.Tween(object0).to({ x: [0, 1] }, 1500)
 									.easing(TWEEN.Easing.Linear.None)
@@ -189,7 +184,7 @@ export default class BattleState extends State {
 							});
 						}
 
-						yield showDialog(`${eventVal.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${eventVal.pokemon.name}!`);
+						yield showDialog(`${battleEvent.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${battleEvent.pokemon.name}!`);
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0).to({
 								x: [1, 0.25, 0],
@@ -200,9 +195,9 @@ export default class BattleState extends State {
 								.easing(TWEEN.Easing.Bounce.Out)
 								.onComplete(resolve).start();
 						});
-						(eventVal.isPlayer ? playerInfoBox : enemyInfoBox).setup(eventVal.pokemon);
+						(battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).setup(battleEvent.pokemon);
 						break;
-					case battleEventUseMove:
+					case battleEvents.useMove:
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0)
 								.to({
@@ -222,14 +217,14 @@ export default class BattleState extends State {
 									.onComplete(resolve)).start();
 						});
 						break;
-					case battleEventFaint:
+					case battleEvents.faint:
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0).to({ y: -0.3, a: 0, }, 2000)
 								.easing(TWEEN.Easing.Linear.None)
 								.onComplete(resolve).start();
 						});
-						yield showDialog(`${eventVal.isPlayer ? "" : "Foe "}${eventVal.pokemon.name} fainted!`);
-						if (eventVal.promptForNext) {
+						yield showDialog(`${battleEvent.isPlayer ? "" : "Foe "}${battleEvent.pokemon.name} fainted!`);
+						if (battleEvent.promptForNext) {
 							let pokemonIndex;
 							do {
 								pokemonIndex = yield getPokemonToSwitchTo(loader, player);
@@ -237,9 +232,9 @@ export default class BattleState extends State {
 							nextArg = pokemonIndex;
 						}
 						break;
-					case battleEventSetHealth:
-						let hpBar = (eventVal.isPlayer ? playerInfoBox : enemyInfoBox).hpBar;
-						yield hpBar.setPercentage(eventVal.percentage);
+					case battleEvents.setHealth:
+						let hpBar = (battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).hpBar;
+						yield hpBar.setPercentage(battleEvent.percentage);
 						break;
 				}
 			}
