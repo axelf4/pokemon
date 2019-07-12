@@ -16,6 +16,8 @@ export default class Move {
 		this.accuracy = accuracy;
 		this.damageClass = damageClass;
 		this.priority = priority || 0;
+
+		if (new.target === Move) Object.freeze(this);
 	}
 
 	getType() {
@@ -23,16 +25,17 @@ export default class Move {
 	}
 
 	toString() {
-		return this.name + " (" + this.type + " - " + (this.power == 1 ? 'X' : this.power) + " power - " + this.accuracy + " accuracy)";
+		return `${this.name} (${this.type} - ${this.power === 1 ? 'X' : this.power} power - ${this.accuracy} accuracy)`;
 	}
 }
 
-export const move = {
+/** Collection of all moves. */
+export const moves = Object.freeze({
 	tackle: new Move("Tackle", type.normal, 35, 40, 100, damagePhysical),
 	growl: new Move("Growl", type.normal, 40, 0, 100, damageNone),
-};
+});
 
 export const getMoveByName = function(name) {
 	if (!(name in move)) throw new Error("Move doesn't exist.");
-	return move[name];
+	return moves[name];
 };

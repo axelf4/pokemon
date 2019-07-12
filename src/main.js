@@ -27,8 +27,8 @@ var AnimationComponent = require("AnimationComponent");
 var DimensionComponent = require("DimensionComponent");
 
 import Trainer from "Trainer";
-import { move } from "move";
-import Pokemon, { getPokemonByName } from "pokemon";
+import { moves } from "move";
+import Pokemon, { pokemons } from "pokemon";
 
 const gl = renderer.gl, {mat4, vec3} = glMatrix;
 
@@ -64,8 +64,8 @@ loader.loadTexture("textures/frame.9.png").then(texRegion => {
 	resources.frame = NinePatch.fromTextureRegion(texRegion);
 }).then(() => {
 	const playerTrainer = new Trainer("Axel", [
-			new Pokemon("Snoop Dogg", 6, [ move.tackle, move.growl ]),
-			new Pokemon("Slowpoke", 4, [ move.tackle, move.growl ]),
+			new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
+			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle, moves.growl ]),
 	]);
 	const game = new Game(loader, batch, playerTrainer);
 	game.loadScript("home.js");

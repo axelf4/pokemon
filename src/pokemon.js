@@ -1,34 +1,44 @@
-import { getTypeByName } from "type";
+/**
+ * @file Pokemon data types and definitions.
+ *
+ * A distinction is made between species and instances of Pokémon. A species is
+ * the type of Pokémon, whereas an instance is an actual Pokémon, whose life
+ * can be depleted, et cetera.
+ */
+
+import * as types from "type";
 /** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
 import table from "pokemon.json";
-import multiView from "multiView";
 
-export const getPokemonById = (function() {
-	const pokemonProxyHandler = {
-		get(target, key) {
-			switch (key) {
-				case "name": return target[0];
-				case "hp": return target[1];
-				case "attack": return target[2];
-				case "defense": return target[3];
-				case "specialAttack": return target[4];
-				case "specialDefense": return target[5];
-				case "speed": return target[6];
-				case "types": return target[7].map(typeName => getTypeByName(typeName));
-				case "moveSet": return target[8]; // TODO
-				default: return Reflect.get(...arguments);
-			}
-		},
+/**
+ * Returns the pokemon with the specified identifier.
+ * @param name The identifier of the pokemon to return.
+ * @return The pokemon in question.
+ */
+export const getPokemonByName = (function() {
+	const proto = {
+		get name() { return this[0]; },
+		get hp() { return this[1]; },
+		get attack() { return this[2]; },
+		get defense() { return this[3]; },
+		get specialAttack() { return this[4]; },
+		get specialDefense() { return this[5]; },
+		get speed() { return this[6]; },
+		get types() { return this[7].map(typeName => types[typeName]); },
+		get moveSet() { return this[8]; }, // TODO
 	};
-	return id => new Proxy(table[id], pokemonProxyHandler);
+	return function(name) {
+		if (!table.hasOwnProperty(name)) throw new Error("Cannot find the pokemon named `" + name + "`.")
+		return Object.freeze(Object.assign(Object.create(proto), table[name]));
+	};
 })();
 
-export function getPokemonByName(name) {
-	for (let i = 0, length = table.length; i < length; ++i) {
-		if (table[i][0] === name) return getPokemonById(i);
+/** Dictionary of all Pokémon species. */
+export const pokemons = new Proxy(table, {
+	get(target, prop, receiver) {
+		return getPokemonByName(prop);
 	}
-	throw new Error("Cannot find pokemon with specified name.");
-};
+});
 
 /**
  * Returns the total amount of experience required for the next level.
@@ -40,15 +50,14 @@ export const getTotalExpForLevel = level => 4 * level ** 3 / 5 | 0;
 /** An instance of a pokemon. */
 export default class Pokemon {
 	constructor(species, level, moves) {
-		this.species = typeof species === "string" ? getPokemonByName(species)
-			: typeof species === "number" ? getPokemonById(species) : species;
+		this.species = typeof species === "string" ? getPokemonByName(species) : species;
 		this.name = this.species.name; // Allow renaming pokemon
 		this.level = level;
 		this.exp = 0;
 		this.hp = this.calculateStats().hp;
-		this.moves = moves.map(move => multiView({ pp: move.pp }, move));
+		this.moves = moves.map(move => Object.create(move, { pp: {value: move.pp, writable: true}}));
 
-		if (new.target === Pokemon) Object.preventExtensions(this);
+		if (new.target === Pokemon) Object.seal(this);
 	}
 
 	// TODO add JSON de/serialization
@@ -60,8 +69,7 @@ export default class Pokemon {
 	 * @return An object with the stats.
 	 */
 	calculateStats() {
-		const stats = this.species,
-			getStat = base => 2 * base * this.level / 100 + 5 | 0;
+		const stats = this.species, getStat = base => 2 * base * this.level / 100 + 5 | 0;
 		return {
 			hp: 2 * stats.hp * this.level / 100 + this.level + 10 | 0,
 			attack: getStat(stats.attack),

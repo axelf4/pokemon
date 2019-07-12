@@ -2,8 +2,8 @@ var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
 import thread from "thread";
 import Trainer from "Trainer";
-import { move } from "move";
-import Pokemon, { getPokemonByName } from "pokemon";
+import { moves } from "move";
+import Pokemon, { pokemons } from "pokemon";
 
 var Position = require("Position");
 import DirectionComponent from "DirectionComponent";
@@ -31,7 +31,7 @@ export default function(game, loader) {
 		yield game.showDialog("Stop watching anime and go out and play, you son of a bitch.");
 		yield game.showDialog("I heard Prof. Clark has moved in. Maybe you could go bother him.");
 		yield game.battle(new Trainer("Charles Ingvar", [
-			new Pokemon("Slowpoke", 4, [ move.tackle ])
+			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle ])
 		]));
 		game.release();
 	})));
