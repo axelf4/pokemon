@@ -27,9 +27,9 @@ export default function(game, loader) {
 	em.addComponent(mom, new InteractionComponent(thread.bind(undefined, function*(game) {
 		game.lock();
 		game.faceEachOther(mom, game.player);
-		yield game.showDialog("Happy birthday! Now that you are 16 I no longer receive Child Benefit, hence you are useless.");
-		yield game.showDialog("Stop watching anime and go out and play, you son of a bitch.");
-		yield game.showDialog("I heard Prof. Clark has moved in. Maybe you could go bother him.");
+		yield game.showDialog("Happy birthday! Now that you are 16 I no longer receive Child Benefit, hence you are useless.\n"
+			+ "Stop watching anime and go out and play, you son of a bitch.\n"
+			+ "I heard Prof. Clark has moved in.\nMaybe you could go bother him.");
 		yield game.battle(new Trainer("Charles Ingvar", [
 			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle ])
 		]));

@@ -7,6 +7,8 @@ var Label = function(font, text) {
 	Widget.call(this);
 	this.font = font;
 	this.text = text || "";
+	this.lastDisplayedIndex = this.text.length;
+	this.displayUpTo = this.text.length; // Used to animate text
 	this.justify = this.align = align.START;
 };
 Label.prototype = Object.create(Widget.prototype);
@@ -14,6 +16,7 @@ Label.prototype.constructor = Label;
 
 Label.prototype.setText = function(text) {
 	this.text = text;
+	this.displayUpTo = text.length;
 	this.requestLayout();
 };
 
@@ -37,6 +40,10 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	var wrappingWidth = 0;
 	if (widthMode === measureSpec.EXACTLY || widthMode === measureSpec.AT_MOST) {
 		wrappingWidth = widthSize;
+	}
+	var maxLines;
+	if (heightMode === measureSpec.EXACTLY || heightMode === measureSpec.AT_MOST) {
+		maxLines = Math.floor(heightSize / this.font.getLineHeight());
 	}
 
 	var glyphLines = this.glyphLines = [];
@@ -98,7 +105,10 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 			numLines++;
 			advance = 0;
 			last = nextLast;
+			this.lastDisplayedIndex = endIndex;
 			// while (isWhitespace(this.text.charAt(index + 1))) ++index; // Strip whitespace at the beginning of the next line
+
+			if (maxLines !== undefined && numLines >= maxLines) break;
 		}
 	}
 
@@ -134,11 +144,35 @@ Label.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 Label.prototype.draw = function(batch) {
 	var y = this.y + this.offsetY;
+	let numCharsDrawn = 0;
 	for (var i = 0; i < this.glyphLines.length; ++i) {
 		var line = this.glyphLines[i];
-		this.font.drawText(batch, this.x + line.x, y, line.str);
+		let str = line.str.substring(0, this.displayUpTo - numCharsDrawn);
+		this.font.drawText(batch, this.x + line.x, y, str);
 		y += this.font.getLineHeight();
+		numCharsDrawn += str.length;
 	}
+};
+
+Label.prototype.isShowingWholePage = function() { return this.displayUpTo >= this.lastDisplayedIndex; }
+
+Label.prototype.showAllText = function() {
+	if (this.isShowingWholePage()) return false;
+	this.displayUpTo = this.lastDisplayedIndex;
+	return true;
+};
+
+/**
+ * Tries to advance visible text and returns if successful.
+ *
+ * If the size of the label is too small some text might not be visible. In
+ * that case this function can advance the text so that the following text is
+ * showed instead.
+ */
+Label.prototype.advance = function() {
+	if (this.lastDisplayedIndex === this.text.length) return false;
+	this.setText(this.text.slice(this.lastDisplayedIndex + 1));
+	return true;
 };
 
 module.exports = Label;
