@@ -138,24 +138,23 @@ export default function* battle(player, enemy) {
 					break;
 				case actions.attack:
 					--action.move.pp; // Deplete PP
-					yield { type: battleEvents.msgbox, text: `${attacker.name} used ${action.move.name}!` };
+					yield { type: battleEvents.msgbox, text: `${attacker.name} used ${action.move.name}!`, time: 1000 };
 
 					if (isMiss(action.move)) {
-						yield { type: battleEvents.msgbox, text: "But it missed." };
+						yield { type: battleEvents.msgbox, text: "But it missed.", time: 1500 };
 					} else {
 						const { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, action.move);
-						if (crit) yield { type: battleEvents.msgbox, text: "A critical hit!" }
-						if (typeEffectiveness > 1)
-							yield { type: battleEvents.msgbox, text: "It's super effective!" };
-						else if (typeEffectiveness === 0)
-							yield { type: battleEvents.msgbox, text: "It's not effective..." };
-						else if (typeEffectiveness < 1)
-							yield { type: battleEvents.msgbox, text: "It's not very effective..." };
-
 						defender.hp = Math.max(0, defender.hp - damage);
 						yield { type: battleEvents.useMove, move: action.move, isPlayer };
 
 						yield { type: battleEvents.setHealth, isPlayer: !action.isPlayer, percentage: defender.getHpPercentage() };
+						if (crit) yield { type: battleEvents.msgbox, text: "A critical hit!", time: 1500 }
+						if (typeEffectiveness > 1)
+							yield { type: battleEvents.msgbox, text: "It's super effective!", time: 1500 };
+						else if (typeEffectiveness === 0)
+							yield { type: battleEvents.msgbox, text: "It's not effective...", time: 1500 };
+						else if (typeEffectiveness < 1)
+							yield { type: battleEvents.msgbox, text: "It's not very effective...", time: 1500 };
 						yield { type: battleEvents.msgbox, text: "It dealt " + damage + " damage.\nFoe has " + defender.hp + " remaining." };
 					}
 
@@ -179,8 +178,7 @@ export default function* battle(player, enemy) {
 					}
 					if (enemyPokemon.hp <= 0) {
 						// TODO check if enemy still has healthy pokemon
-						yield { type: battleEvents.faints, isPlayer: false, pokemon: enemyPokemon };
-						yield { type: battleEvents.msgbox, text: "Foe " + enemyPokemon.name + " fainted!"};
+						yield { type: battleEvents.faint, isPlayer: false, pokemon: enemyPokemon };
 						break battleLoop;
 					}
 

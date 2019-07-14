@@ -1,7 +1,7 @@
 import State from "State";
 var Panel = require("Panel.js");
 var Container = require("Container.js");
-var Dialog = require("Dialog.js");
+import Dialog from "Dialog";
 var align = require("align.js");
 var texture = require("texture.js");
 var Image = require("Image.js");
@@ -22,6 +22,7 @@ const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
 import TransitionState, {fade} from "TransitionState";
 import { switchPokemon as getPokemonToSwitchTo } from "ListPokemonState";
+import wait from "wait";
 
 const { mat4, vec3, quat } = glMatrix;
 
@@ -94,13 +95,21 @@ export default class BattleState extends State {
 			info.style.height = 100;
 			widget.addWidget(info);
 
-			const showDialog = function(text) {
+			const showDialog = function(text, options) {
+				options = options || {};
 				return new Promise(function(resolve, reject) {
-					var dialog = new Dialog(text, resolve);
+					const passive = options.passive || options.showFor;
+					var dialog = new Dialog(text, resolve, passive);
 					dialog.style.align = align.STRETCH;
 					dialog.flex = 1;
 					info.addWidget(dialog);
 					dialog.requestFocus();
+					if (options.showFor) {
+						thread(function*() {
+							do yield wait(options.showFor);
+							while (dialog.advance());
+						});
+					}
 				});
 			};
 
@@ -118,14 +127,16 @@ export default class BattleState extends State {
 				const object1 = battleEvent.isPlayer ? self.enemyOffset : self.playerOffset;
 				switch (battleEvent.type) {
 					case battleEvents.msgbox:
-						yield showDialog(battleEvent.text);
+						let options = {};
+						if (battleEvent.time) options.showFor = battleEvent.time;
+						yield showDialog(battleEvent.text, options);
 						break;
 					case battleEvents.queryAction:
 						let pokemon = battleEvent.pokemon;
 						let playerAction = null;
 						while (!playerAction) {
 							var selected = yield new Promise(function(resolve, reject) {
-								var dialog = new Dialog(`What will ${pokemon.name} do?`);
+								var dialog = new Dialog(`What will ${pokemon.name} do?`, null, true);
 								dialog.style.align = align.STRETCH;
 								dialog.flex = 1;
 								info.addWidget(dialog);
@@ -176,25 +187,27 @@ export default class BattleState extends State {
 
 					case battleEvents.sendOut:
 						if (battleEvent.switching) {
-							yield showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`);
+							showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`, true);
 							yield new Promise((resolve, reject) => {
-								new TWEEN.Tween(object0).to({ x: [0, 1] }, 1500)
+								new TWEEN.Tween(object0).to({ x: [0, 1] }, 2000)
 									.easing(TWEEN.Easing.Linear.None)
 									.onComplete(resolve).start();
 							});
+							info.removeAllWidgets();
 						}
 
-						yield showDialog(`${battleEvent.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${battleEvent.pokemon.name}!`);
+						showDialog(`${battleEvent.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${battleEvent.pokemon.name}!`, true);
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0).to({
 								x: [1, 0.25, 0],
 								y: [0, -0.15, 0],
 								a: [0, 1, 1],
-							}, 1500)
+							}, 2000)
 								.interpolation(TWEEN.Interpolation.Bezier)
 								.easing(TWEEN.Easing.Bounce.Out)
 								.onComplete(resolve).start();
 						});
+						info.removeAllWidgets();
 						(battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).setup(battleEvent.pokemon);
 						break;
 					case battleEvents.useMove:
@@ -216,14 +229,19 @@ export default class BattleState extends State {
 									.delay(100)
 									.onComplete(resolve)).start();
 						});
+						info.removeAllWidgets();
 						break;
 					case battleEvents.faint:
-						yield new Promise((resolve, reject) => {
-							new TWEEN.Tween(object0).to({ y: -0.3, a: 0, }, 2000)
-								.easing(TWEEN.Easing.Linear.None)
-								.onComplete(resolve).start();
-						});
-						yield showDialog(`${battleEvent.isPlayer ? "" : "Foe "}${battleEvent.pokemon.name} fainted!`);
+						yield Promise.all([
+							new Promise((resolve, reject) => {
+								new TWEEN.Tween(object0).to({ y: -0.3, a: 0, }, 2000)
+									.easing(TWEEN.Easing.Linear.None)
+									.onComplete(resolve).start();
+							}),
+							showDialog(`${battleEvent.isPlayer ? "" : "Foe "}${battleEvent.pokemon.name} fainted!`, {
+								showFor: 1500,
+							})
+						]);
 						if (battleEvent.promptForNext) {
 							let pokemonIndex;
 							do {

@@ -8,7 +8,7 @@ var StillMovementController = require("StillMovementController.js");
 var resources = require("resources.js");
 var Stack = require("Stack.js");
 var Panel = require("Panel.js");
-var Dialog = require("Dialog.js");
+import Dialog from "Dialog";
 var align = require("align.js");
 import { MovementSystem, MovementComponent } from "movement";
 import State from "State";

@@ -6,44 +6,64 @@ var resources = require("resources.js");
 
 const dialogSpeed = 1 / 50;
 
-// msgbox
-var Dialog = function(text, listener) {
-	Container.call(this);
-	this.text = text;
-	this.listener = listener;
-	this.setFocusable(true);
-	this.setBackground(resources.frame);
+export default class Dialog extends Container {
+	/**
+	 * @param passive Whether user interaction is disabled or not.
+	 */
+	constructor(text, listener, passive) {
+		super();
+		this.text = text;
+		this.listener = listener;
+		this.setFocusable(true);
+		this.setBackground(resources.frame);
 
-	var label = this.label = new Label(resources.font, text);
-	label.justify = label.align = align.START;
-	label.margin(8);
-	label.displayUpTo = 0;
-	this.addWidget(label);
-};
-Dialog.prototype = Object.create(Container.prototype);
-Dialog.prototype.constructor = Dialog;
+		var label = this.label = new Label(resources.font, text);
+		label.justify = label.align = align.START;
+		label.margin(8);
+		label.displayUpTo = 0;
+		this.addWidget(label);
 
-Dialog.prototype.onKey = function(type, key) {
-	if (type === input.KEY_ACTION_DOWN && key === " ") {
-		if (this.label.showAllText()) return;
+		this.passive = passive;
+		if (this.passive) this.label.showAllText();
+	}
+
+	/**
+	 * Advances the text, closing the dialog if there is no more text.
+	 *
+	 * @return True, if there is text left, otherwise false.
+	 */
+	advance() {
+		if (this.label.showAllText()) return true;
 		// Advance multi-page text
 		if (this.label.advance()) {
 			this.label.displayUpTo = 0;
-			return;
+			if (this.passive) this.label.showAllText();
+			return true;
 		}
+		this.close();
+	}
+
+	onKey(type, key) {
+		if (this.passive) return;
+		if (type === input.KEY_ACTION_DOWN && key === " ")
+			this.advance();
+	}
+
+	draw(batch, dt, time) {
+		if (!this.label.isShowingWholePage()) this.label.displayUpTo += dialogSpeed * dt;
+
+		Container.prototype.draw.call(this, batch, dt, time);
+	}
+
+	showAllText() { this.label.showAllText(); }
+
+	setOnClickListener(listener) {
+		this.listener = listener;
+	}
+
+	/** Closes this dialog box. */
+	close() {
 		this.remove();
 		if (this.listener) this.listener();
 	}
-};
-
-Dialog.prototype.draw = function(batch, dt, time) {
-	if (!this.label.isShowingWholePage()) this.label.displayUpTo += dialogSpeed * dt;
-
-	Container.prototype.draw.call(this, batch, dt, time);
-};
-
-Dialog.prototype.setOnClickListener = function(listener) {
-	this.listener = listener;
-};
-
-module.exports = Dialog;
+}
