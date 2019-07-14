@@ -10,6 +10,7 @@ import { MovementComponent } from "movement";
 var RandomMovementController = require("RandomMovementController.js");
 var StillMovementController = require("StillMovementController.js");
 var direction = require("direction");
+import wait from "wait";
 
 module.exports = function(game, loader) {
 	loader.loadMap("assets/forest.tmx").then(map => {
@@ -51,7 +52,7 @@ module.exports = function(game, loader) {
 		entityMovement.pushController(new StillMovementController());
 		yield game.walkForward(lollipopMan);
 		yield game.showDialog("Why, hello there little boy. Want a lollipop?");
-		yield game.wait(1000);
+		yield wait(1000);
 		yield game.showDialog("You've been struck by the lollipop man.");
 		playerMovement.popController();
 		entityMovement.popController();

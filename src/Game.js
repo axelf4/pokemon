@@ -434,12 +434,6 @@ Game.prototype.saveTheGame = function() {
 	window.localStorage.setItem("gameSave", JSON.stringify(save));
 };
 
-Game.prototype.wait = function(ms) {
-	return new Promise(function(resolve, reject) {
-		window.setTimeout(resolve, ms);
-	});
-};
-
 Game.prototype.walkForward = function(entity) {
 	return new Promise((resolve, reject) => {
 		var em = this.em;

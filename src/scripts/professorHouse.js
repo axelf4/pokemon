@@ -2,6 +2,7 @@ var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
 import thread from "thread";
 import save from "savegame";
+import wait from "wait";
 
 var Position = require("Position");
 import DirectionComponent from "DirectionComponent";
@@ -37,7 +38,7 @@ export default function(game, loader) {
 			yield game.showDialog("Pokémon are beautiful creatures that live alongside humans. Some use Pokémon to play while some only see them as tools for their own benefit.");
 			yield game.showDialog("I have devoted my life to researching diffent Pokémon's mating behaviours. Most of my work is conducted here in my laboratory.");
 			yield game.showDialog("Funnily enough, I have three especially horny buggers here with me today for a special experi...");
-			yield game.wait(700);
+			yield wait(700);
 			yield game.showDialog("Huh, you want to steal one? What, you high or something?");
 			var selected = yield game.multichoice("Which Pokemon will you steal?", ["FIRE - Laserturken", "GRASS - dat boi", "WATER - Dolan"]);
 			if (selected === -1) yield game.showDialog("You didn't steal any Pokémon...");
