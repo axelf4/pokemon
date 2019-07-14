@@ -82,10 +82,33 @@ export const battleEvents = Object.freeze({
 	useMove: Symbol("useMove"),
 	setHealth: Symbol("setHealth"),
 	faint: Symbol("faint"),
+	gainExp: Symbol("gainExp"),
 })
 
 /** Possible actions numbered in ascending order of priority. */
 export const actions = Object.freeze({ attack: 0, switchPokemon: 1, run: 2, useItem: 3, });
+
+export const weatherTypes = Object.freeze({
+	/** The default weather type. */
+	clearSkies: Symbol("clearSkies"),
+	/** Makes all pokemon immune to freezing. */
+	harshSunlight: Symbol("harshSunlight"),
+	rain: Symbol("rain"),
+	sandstorm: Symbol("sandstorm"),
+	hail: Symbol("hail"),
+});
+
+/**
+ * Returns the experience yield from defeating a enemy pokemon.
+ * @param isWild Whether the fainted Pokémon is wild
+ * @param fainted The fainted Pokémon.
+ * @param participators The Pokémon that participated in the battle from the victorious party.
+ * @return The experience gained for each participant.
+ *
+ * @see https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula
+ */
+const expGain = (isWild, fainted, participators) => (isWild ? 1 : 1.5) * 125 * fainted.level
+	/ (7 * participators.filter(p => !p.isFainted()).length) | 0;
 
 /**
  * Simulates a battle.
@@ -179,6 +202,24 @@ export default function* battle(player, enemy) {
 					if (enemyPokemon.hp <= 0) {
 						// TODO check if enemy still has healthy pokemon
 						yield { type: battleEvents.faint, isPlayer: false, pokemon: enemyPokemon };
+
+						// TODO Handle multiple participants
+						const gainedExp = expGain(enemy.isWild, enemyPokemon, [playerPokemon]);
+						let prevExp = playerPokemon.exp;
+						playerPokemon.exp += gainedExp;
+						for (;;) {
+							let totalForLevelUp = playerPokemon.getTotalExpForLevelUp();
+							let newExp = Math.min(totalForLevelUp, playerPokemon.exp);
+							yield { type: battleEvents.gainExp, pokemon: playerPokemon, prevExp, newExp };
+							if (playerPokemon.exp >= totalForLevelUp) {
+								playerPokemon.exp -= totalForLevelUp;
+								++playerPokemon.level;
+								yield { type: battleEvents.msgbox, text: `${playerPokemon.name} leveled up!` };
+							} else {
+								break;
+							}
+							prevExp = 0;
+						}
 						break battleLoop;
 					}
 

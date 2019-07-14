@@ -81,12 +81,21 @@ export default class BattleState extends State {
 				hpBar.style.align = align.STRETCH;
 				vPanel.addWidget(hpBar);
 
+				let expLabel;
+				if (isPlayer) {
+					expLabel = new Label(resources.font);
+					vPanel.addWidget(expLabel);
+				}
+
 				const setup = pokemon => {
 					container.setVisible(true);
 					label.setText(`${pokemon.name}  Lv.${pokemon.level}`);
-					hpBar.setPercentage(pokemon.getHpPercentage(), false)
+					hpBar.setPercentage(pokemon.getHpPercentage(), false);
+					if (isPlayer) {
+						expLabel.setText(`Exp ${pokemon.exp} out of ${pokemon.getTotalExpForLevelUp()}`);
+					}
 				};
-				return { hpBar, setup };
+				return { hpBar, expLabel, setup };
 			};
 			const playerInfoBox = createInfoBox(true), enemyInfoBox = createInfoBox(false);
 
@@ -253,6 +262,16 @@ export default class BattleState extends State {
 					case battleEvents.setHealth:
 						let hpBar = (battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).hpBar;
 						yield hpBar.setPercentage(battleEvent.percentage);
+						break;
+					case battleEvents.gainExp:
+						yield new Promise((resolve, reject) => {
+							new TWEEN.Tween({ exp: battleEvent.prevExp })
+								.to({ exp: battleEvent.newExp }, 1000).easing(TWEEN.Easing.Quadratic.Out)
+								.onUpdate(o => {
+									playerInfoBox.expLabel.setText(`Exp ${o.exp | 0} out of ${battleEvent.pokemon.getTotalExpForLevelUp()}`);
+								})
+								.onComplete(resolve).onStop(reject).start();
+						});
 						break;
 				}
 			}

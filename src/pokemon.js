@@ -51,7 +51,7 @@ export const getTotalExpForLevel = level => 4 * level ** 3 / 5 | 0;
 export default class Pokemon {
 	constructor(species, level, moves) {
 		this.species = typeof species === "string" ? getPokemonByName(species) : species;
-		this.name = this.species.name; // Allow renaming pokemon
+		this.nickname = null;
 		this.level = level;
 		this.exp = 0;
 		this.hp = this.calculateStats().hp;
@@ -80,7 +80,15 @@ export default class Pokemon {
 		};
 	};
 
+	get name() { return this.nickname || this.species.name; }
+
+	isFainted() { return this.hp <= 0; }
+
 	getHpPercentage() {
 		return this.hp / this.calculateStats().hp;
+	}
+
+	getTotalExpForLevelUp() {
+		return getTotalExpForLevel(this.level);
 	}
 }
