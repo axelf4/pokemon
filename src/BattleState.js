@@ -170,7 +170,7 @@ export default class BattleState extends State {
 									info.removeAllWidgets();
 									if (moveId !== -1) {
 										const move = pokemon.moves[moveId];
-										playerAction = { type: actions.attack, isPlayer: true, move };
+										playerAction = { type: actions.attack, move };
 									}
 									break;
 								case 1: // Bag
@@ -179,11 +179,11 @@ export default class BattleState extends State {
 								case 2: // Pokemon
 									let pokemonIndex = yield getPokemonToSwitchTo(loader, player);
 									if (pokemonIndex != -1)
-										playerAction = { type: actions.switchPokemon, isPlayer: true, pokemonIndex };
+										playerAction = { type: actions.switchPokemon, pokemonIndex };
 									break;
 								case 3: // Run
 									if (enemy.canEscapeFrom())
-										playerAction = { type: actions.run, isPlayer: true };
+										playerAction = { type: actions.run };
 									else
 										yield showDialog("No! There's no running from a Trainer battle!");
 									break;
@@ -196,7 +196,7 @@ export default class BattleState extends State {
 
 					case battleEvents.sendOut:
 						if (battleEvent.switching) {
-							showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`, true);
+							showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`, {passive: true});
 							yield new Promise((resolve, reject) => {
 								new TWEEN.Tween(object0).to({ x: [0, 1] }, 2000)
 									.easing(TWEEN.Easing.Linear.None)
@@ -205,7 +205,7 @@ export default class BattleState extends State {
 							info.removeAllWidgets();
 						}
 
-						showDialog(`${battleEvent.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${battleEvent.pokemon.name}!`, true);
+						showDialog(`${battleEvent.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${battleEvent.pokemon.name}!`, {passive: true});
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0).to({
 								x: [1, 0.25, 0],

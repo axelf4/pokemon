@@ -47,6 +47,22 @@ export const pokemons = new Proxy(table, {
  */
 export const getTotalExpForLevel = level => 4 * level ** 3 / 5 | 0;
 
+/**
+ * Enumeration of non-volatile status conditions.
+ *
+ * A Pokémon can only be afflicted by one at a time and they remain outside of
+ * battle and after being switched out.
+ *
+ * @see https://bulbapedia.bulbagarden.net/wiki/Status_condition#Non-volatile_status
+ */
+export const nonVolatileStatuses = Object.freeze({
+	burn: Symbol("burn"),
+	freeze: Symbol("freeze"),
+	paralysis: Symbol("paralysis"),
+	poison: Symbol("poison"),
+	sleep: Symbol("sleep"),
+});
+
 /** An instance of a pokemon. */
 export default class Pokemon {
 	constructor(species, level, moves) {
@@ -56,6 +72,7 @@ export default class Pokemon {
 		this.exp = 0;
 		this.hp = this.calculateStats().hp;
 		this.moves = moves.map(move => Object.create(move, { pp: {value: move.pp, writable: true}}));
+		this.nonVolatileStatus = null; // The current non-volatile status condition or null
 
 		if (new.target === Pokemon) Object.seal(this);
 	}
@@ -80,6 +97,7 @@ export default class Pokemon {
 		};
 	};
 
+	/** Returns the nickname or, if there is none, the name of the species. */
 	get name() { return this.nickname || this.species.name; }
 
 	isFainted() { return this.hp <= 0; }

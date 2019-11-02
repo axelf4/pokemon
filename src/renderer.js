@@ -1,4 +1,4 @@
-export const canvas = (function() {
+export const canvas = function() {
 	let canvas = document.getElementById("canvas");
 	if (!canvas) {
 		const body = document.body;
@@ -10,16 +10,16 @@ export const canvas = (function() {
 		document.body.appendChild(canvas);
 	}
 	return canvas;
-})();
+}();
 
-export const gl = (function() {
+export const gl = function() {
 	try {
 		// Try to grab the standard context. If it fails, fallback to experimental.
 		return canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 	} catch (e) {}
 	// If we don't have a GL context, give up now
 	alert("Unable to initialize WebGL. Your browser may not support it.");
-})();
+}();
 
 export function sizeCanvas() {
 	const devicePixelRatio = window.devicePixelRatio || 1,
@@ -80,10 +80,8 @@ export function createShader(type, source) {
 	gl.shaderSource(shader, source);
 	gl.compileShader(shader); // Compile the shader program
 	// See if it compiled successfully
-	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
-		return null;
-	}
+	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+		throw gl.getShaderInfoLog(shader);
 	return shader;
 }
 

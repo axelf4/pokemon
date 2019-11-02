@@ -22,4 +22,11 @@ export default class Trainer {
 	getPrimaryPokemon() {
 		return this.pokemon.find(p => p.hp > 0);
 	}
+
+	/**
+	 * Returns whether this trainer has any remaining healthy pokemon.
+	 */
+	hasUsablePokemon() {
+		return !!this.getPrimaryPokemon();
+	}
 }

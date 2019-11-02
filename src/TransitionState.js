@@ -93,6 +93,11 @@ export default class TransitionState extends State {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
 
+		const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+		if (status !== gl.FRAMEBUFFER_COMPLETE) {
+			throw 'Bad framebuffer';
+		}
+
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 		this.program = renderer.createProgram({
