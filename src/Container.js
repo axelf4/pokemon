@@ -22,9 +22,8 @@ Container.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 	var marginRow = child.marginLeft + child.marginRight;
 	var marginColumn = child.marginTop + child.marginBottom;
 
-	var childWidthMeasureSpec, childHeightMeasureSpec;
-	childWidthMeasureSpec = measureSpec.adjust(widthMeasureSpec, -marginRow);
-	childHeightMeasureSpec = measureSpec.adjust(heightMeasureSpec, -marginColumn);
+	const childWidthMeasureSpec = measureSpec.adjust(widthMeasureSpec, -marginRow),
+		childHeightMeasureSpec = measureSpec.adjust(heightMeasureSpec, -marginColumn);
 	child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
 
 	// TODO handle aligning

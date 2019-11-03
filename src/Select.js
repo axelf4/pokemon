@@ -5,14 +5,14 @@ var align = require("align.js");
 var resources = require("resources.js");
 var input = require("input.js");
 
-// TODO add arrow instead of border
-const Option = function(content) {
-	Container.call(this);
-	content.margin(8);
-	this.addWidget(content);
-};
-Option.prototype = Object.create(Container.prototype);
-Option.prototype.constructor = Option;
+// TODO Add arrow instead of border
+class Option extends Container {
+	constructor(content) {
+		super();
+		content.margin(8);
+		this.addWidget(content);
+	}
+}
 
 // multichoice
 export default class Select extends Container {
@@ -63,30 +63,22 @@ export default class Select extends Container {
 	onKey(type, key) {
 		if (type !== input.KEY_ACTION_DOWN) return;
 
-		// If space was pressed
-		if (key === " ") {
-			var selectedOption = this.cursorX + this.cursorY * this.columnCount;
-			this.listener(selectedOption);
-			return;
+		let newCursorX = this.cursorX, newCursorY = this.cursorY;
+		switch (key) {
+			case " ": // If space was pressed
+				const selectedOption = this.cursorX + this.cursorY * this.columnCount;
+				this.listener(selectedOption);
+				return;
+			case "Shift": // Shift was pressed; return no option
+				this.listener(-1);
+				return;
+			case "a": --newCursorX; break;
+			case "d": ++newCursorX; break;
+			case "w": --newCursorY; break;
+			case "s": ++newCursorY; break;
 		}
 
-		// Shift was pressed; return no option
-		if (key === "Shift") {
-			this.listener(-1);
-			return;
-		}
-
-		var newCursorX = this.cursorX, newCursorY = this.cursorY;
-		if (key === "a") {
-			--newCursorX;
-		} else if (key === "d") {
-			++newCursorX;
-		} else if (key === "w") {
-			--newCursorY;
-		} else if (key === "s") {
-			++newCursorY;
-		}
-
+		// Try to move the cursor
 		if ((newCursorX !== this.cursorX || newCursorY !== this.cursorY)
 			&& typeof this.options[newCursorX] !== 'undefined'
 			&& typeof this.options[newCursorX][newCursorY] !== 'undefined') {
