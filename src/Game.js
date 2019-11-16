@@ -13,7 +13,7 @@ var align = require("align.js");
 import { MovementSystem, MovementComponent } from "movement";
 import State from "State";
 var WidgetGroup = require("WidgetGroup.js");
-var input = require("input.js");
+import * as input from "input";
 var direction = require("direction");
 var WalkForwardMovementController = require("WalkForwardMovementController");
 var PathMovementController = require("PathMovementController");

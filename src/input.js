@@ -1,8 +1,8 @@
-var keys = {}; // String->Boolean dictionary of pressed keys
-var listener = null;
+/** Dictionary of pressed keys. String->boolean */
+export const keys = {};
+let listener = null;
 
-var KEY_ACTION_UP = exports.KEY_ACTION_UP = 0x0;
-var KEY_ACTION_DOWN = exports.KEY_ACTION_DOWN = 0x1;
+export const KEY_ACTION_UP = 0x0, KEY_ACTION_DOWN = 0x1;
 
 window.addEventListener('keydown', function(event) {
 	if (!event.repeat) {
@@ -16,8 +16,4 @@ window.addEventListener('keyup', function(event) {
 	if (listener !== null) listener(KEY_ACTION_UP, event.key);
 }, false);
 
-exports.setListener = function(value) {
-	listener = value;
-};
-
-exports.keys = keys;
+export function setListener(value) { listener = value; }

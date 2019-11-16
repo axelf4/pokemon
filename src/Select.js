@@ -3,7 +3,7 @@ var Panel = require("Panel.js");
 var Label = require("Label.js");
 var align = require("align.js");
 var resources = require("resources.js");
-var input = require("input.js");
+import * as input from "input";
 
 // TODO Add arrow instead of border
 class Option extends Container {

@@ -1,4 +1,4 @@
-var input = require("input.js");
+import * as input from "input";
 import * as direction from "direction";
 var Position = require("Position.js");
 import DirectionComponent from "DirectionComponent";

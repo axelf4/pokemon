@@ -3,7 +3,7 @@ import * as renderer from "renderer";
 import SpriteBatch from "SpriteBatch";
 import FileLoader from "FileLoader";
 import LoaderFacade from "LoaderFacade";
-var input = require("input.js");
+import * as input from "input";
 import * as stateManager from "stateManager";
 import promiseTrap from "promise-trap";
 import cachingProxy from "cachingProxy";

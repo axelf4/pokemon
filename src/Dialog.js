@@ -1,4 +1,4 @@
-var input = require("input.js");
+import * as input from "input";
 var Container = require("Container.js");
 var Label = require("Label.js");
 var align = require("align.js");
