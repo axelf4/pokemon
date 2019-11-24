@@ -14,9 +14,7 @@ var WidgetGroup = function() {
 	Widget.call(this);
 	this.children = [];
 	this.focused = null; // The currently focused child or null
-	this.groupFlags = 0;
-
-	this.groupFlags |= FOCUS_BEFORE_DESCENDANTS;
+	this.groupFlags = FOCUS_BEFORE_DESCENDANTS;
 
 	this.transform = mat4.create();
 };
@@ -51,20 +49,15 @@ WidgetGroup.prototype.removeWidget = function(child) {
 };
 
 WidgetGroup.prototype.removeAllWidgets = function() {
-	var clearChildFocus = false;
-	var focused = this.focused;
-	for (var i = 0, length = this.children.length; i < length; ++i) {
-		var child = this.children[i];
-		if (focused === child) {
+	for (const child of this.children) {
+		if (this.focused == child)
 			child.blur();
-			clearChildFocus = true;
-		}
-		this.children[i].parent = null;
+		child.parent = null;
 	}
 	this.children = [];
 	this.invalidate();
-	if (clearChildFocus) {
-		this.clearChildFocus(focused);
+	if (this.focused) {
+		this.clearChildFocus(this.focused);
 		this.getRootWidget().requestFocus();
 	}
 };
@@ -96,7 +89,7 @@ WidgetGroup.prototype.draw = WidgetGroup.prototype.drawChildren = function(batch
 	}
 };
 
-WidgetGroup.prototype.clearFocus = function() {
+WidgetGroup.prototype.blur = WidgetGroup.prototype.clearFocus = function() {
 	Widget.prototype.clearFocus.call(this);
 	if (this.focused !== null) {
 		this.focused.clearFocus();

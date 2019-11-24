@@ -1,6 +1,6 @@
 var Widget = function() {
 	this.parent = null;
-	// this.flags = 0;
+	this.flags = 0;
 
 	this.y = this.x = 0;
 	this.height = this.width = 0;
@@ -10,7 +10,6 @@ var Widget = function() {
 
 	// this.measureCache = {}; // TODO
 };
-Widget.prototype.flags = 0;
 
 var FLAG_LAYOUT_REQUIRED = Widget.FLAG_LAYOUT_REQUIRED = 0x1;
 var FLAG_FOCUSED = Widget.FLAG_FOCUSED = 0x2;
