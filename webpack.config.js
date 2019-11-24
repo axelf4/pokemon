@@ -1,5 +1,6 @@
-const path = require('path');
-const webpack = require('webpack');
+const path = require('path'),
+	webpack = require('webpack'),
+	ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 module.exports = {
 	entry: ["@babel/polyfill", "./src/main.js"],
@@ -7,14 +8,16 @@ module.exports = {
 		modules: [
 			path.join(__dirname, "src"),
 			"node_modules",
-		]
+		],
+		extensions: ['.wasm', '.mjs', '.js', '.json', '.ts'],
 	},
-	devtool: "cheap-module-eval-source-map",
+	devtool: "source-map",
 	devServer: {
 		hot: true,
 	},
 	plugins: [
 		new webpack.HotModuleReplacementPlugin(),
+		new ForkTsCheckerWebpackPlugin(),
 	],
 	output: {
 		// path: path.join(__dirname, 'build'),
@@ -24,12 +27,12 @@ module.exports = {
 	module: {
 		rules: [
 		{
-			test: /\.js$/,
+			test: /\.(js|ts)$/,
 			include: path.resolve(__dirname, 'src'),
 			exclude: /(node_modules|bower_components)/,
 			loader: "babel-loader",
 			options: {
-				presets: ["@babel/preset-env"],
+				presets: ["@babel/preset-env", "@babel/typescript"],
 				plugins: ["@babel/plugin-syntax-dynamic-import"]
 			}
 		},
