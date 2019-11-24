@@ -2,6 +2,8 @@ var Widget = require("Widget");
 var measureSpec = require("measureSpec");
 var renderer = require("renderer");
 
+const gl = renderer.gl;
+
 export default class State {
 	constructor() {
 		this.widget = null;
@@ -18,6 +20,9 @@ export default class State {
 
 			this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 		}
+
+		gl.clearColor(1.0, 1.0, 1.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		batch.begin();
 		this.widget.draw(batch, dt, time);
