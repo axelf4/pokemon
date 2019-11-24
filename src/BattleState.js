@@ -21,7 +21,7 @@ const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
 import TransitionState, {fade} from "TransitionState";
-import { switchPokemon as getPokemonToSwitchTo } from "ListPokemonState";
+import { choosePokemon as getPokemonToSwitchTo } from "ListState";
 import wait from "wait";
 
 const { mat4, vec3, quat } = glMatrix;

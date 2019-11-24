@@ -24,7 +24,7 @@ var renderer = require("renderer");
 import range from "range";
 import * as stateManager from "stateManager";
 import TransitionState, {fade, createBattleTransition} from "TransitionState";
-import ListPokemonState from "ListPokemonState";
+import {ListPokemonState} from "ListState";
 var measureSpec = require("measureSpec");
 import BattleState from "BattleState";
 
@@ -77,13 +77,10 @@ const showPauseMenu = async function(game) {
 	});
 	switch (selected) {
 		case 0: // Pokemon
-			const listPokemon = new ListPokemonState(game.loader, game.playerTrainer);
+			const listState = new ListPokemonState(game.loader, game.playerTrainer.pokemon);
 			await game.loader.all();
-			const exitPromise = new Promise((resolve, reject) => {
-				listPokemon.setCloseCallback(resolve);
-			});
-			stateManager.setState(listPokemon);
-			await exitPromise;
+			stateManager.setState(listState);
+			await new Promise(resolve => listState.setCloseCallback(resolve));
 			stateManager.setState(game);
 			break;
 		case 1: // Bag
