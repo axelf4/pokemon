@@ -13,6 +13,7 @@ module.exports = {
 		],
 		extensions: ['.wasm', '.mjs', '.js', '.json', '.ts'],
 	},
+	mode: 'development',
 	devtool: "source-map",
 	devServer: {
 		hot: true,
