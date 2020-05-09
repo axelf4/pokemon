@@ -1,5 +1,7 @@
 const path = require('path'),
 	webpack = require('webpack'),
+	HtmlWebpackPlugin = require('html-webpack-plugin'),
+	CopyPlugin = require('copy-webpack-plugin'),
 	ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 module.exports = {
@@ -17,26 +19,29 @@ module.exports = {
 	},
 	plugins: [
 		new webpack.HotModuleReplacementPlugin(),
+		new HtmlWebpackPlugin({
+			title: 'Game',
+			meta: {viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'},
+		}),
+		new CopyPlugin([
+			{ from: 'assets', to: 'assets' },
+			{ from: 'textures', to: 'textures' },
+		]),
 		new ForkTsCheckerWebpackPlugin(),
 	],
-	output: {
-		// path: path.join(__dirname, 'build'),
-		path: __dirname,
-		filename: "bundle.js",
-	},
 	module: {
 		rules: [
-		{
-			test: /\.(js|ts)$/,
-			include: path.resolve(__dirname, 'src'),
-			exclude: /(node_modules|bower_components)/,
-			loader: "babel-loader",
-			options: {
-				presets: ["@babel/typescript", "@babel/preset-env"],
-				plugins: ["@babel/plugin-syntax-dynamic-import", "@babel/plugin-proposal-class-properties"]
-			}
-		},
-		{ test: /\.glsl$/, loader: "webpack-glsl-loader" },
+			{
+				test: /\.(js|ts)$/,
+				include: path.resolve(__dirname, 'src'),
+				exclude: /(node_modules|bower_components)/,
+				loader: "babel-loader",
+				options: {
+					presets: ["@babel/typescript", "@babel/preset-env"],
+					plugins: ["@babel/plugin-syntax-dynamic-import", "@babel/plugin-proposal-class-properties"]
+				}
+			},
+			{ test: /\.glsl$/, loader: "webpack-glsl-loader" },
 		]
 	}
 };
