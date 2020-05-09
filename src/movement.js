@@ -1,20 +1,16 @@
-/* The new movement system */
-
-var Position = require("Position.js");
+import Position from "Position";
 import * as direction from "direction";
-import DirectionComponent from "DirectionComponent";
-var LineOfSightComponent = require("LineOfSightComponent");
-
 
 /** Amount of ticks it takes to move one grid at slowest speed. */
-export const BASE_SPEED = 300;
-export const STILL = 0x0, SPEED_ONE = 0x1, SPEED_TWO = 0x2;
+export const BASE_SPEED = 250;
+export const STILL = 0;
 
-export class MovementComponent {
-	constructor(controller) {
+/** Movement component. */
+export class Movement {
+	constructor(self, controller) {
 		if (!controller) throw new ReferenceError("The specified controller must not be null.");
 		this.controllerStack = [controller];
-		this.state = 0;
+		this.speed = 0;
 	}
 
 	get controller() {
@@ -35,27 +31,38 @@ export class MovementComponent {
 		this.controllerStack.pop();
 	};
 
-	isMoving() {
-		return this.state != STILL;
+	get isMoving() {
+		return this.speed != STILL;
 	}
 
 	getInterpolationValue(time) {
-		if (!this.isMoving()) return 0;
-		const duration = BASE_SPEED >>> (this.state - 1);
+		if (!this.isMoving) return 0;
+		const duration = BASE_SPEED >>> (this.speed - 1);
 		return time % duration / duration;
 	}
 
 	snap() {
-		this.state = STILL;
+		this.speed = STILL;
+	}
+}
+
+// Constants returned by triggerCheck
+export const LOS_NO_ACTION = 0,
+	LOS_TRIGGER = 1,
+	LOS_TRIGGER_AND_SNAP = 2;
+
+export class LineOfSight {
+	constructor(entity, script) {
+		if (!script) throw new Error("script must not be null.");
+		this.script = script;
+		this.length = length || 16;
+		this.currentBlocker = null; // The entity that is standing in our sights or null
 	}
 }
 
 export class MovementSystem {
 	constructor(game) {
 		this.game = game;
-		const em = game.em;
-		this.mask = em.getMask([Position, DirectionComponent, MovementComponent]);
-		this.lOSMask = em.getMask([Position, DirectionComponent, LineOfSightComponent]);
 	}
 
 	/**
@@ -63,12 +70,12 @@ export class MovementSystem {
 	 * @param enterDirection The direction from which the entity entered lOS from
 	 */
 	checkLineOfSight(game, em, entity1) {
-		const pos1 = em.getComponent(entity1, Position),
-		dir1 = em.getComponent(entity1, DirectionComponent).value;
+		const pos1 = entity1.position,
+			dir1 = entity1.directionComponent.value;
 
 		// Check if we caught another entity in our lOS
-		if (em.hasComponent(entity1, LineOfSightComponent)) {
-			const lOS = em.getComponent(entity1, LineOfSightComponent),
+		if (entity1.hasComponent(LineOfSight)) {
+			const lOS = entity1.lineOfSight,
 				blocker = game.findEntityInLineOfSight(entity1);
 			if (blocker !== -1) {
 				if (lOS.currentBlocker !== blocker) {
@@ -82,52 +89,124 @@ export class MovementSystem {
 
 		// TODO handle case where we stepped into a short lOS
 		// Check if we stepped into other entity's lOS
-		for (var entity2 = 0, length = em.count; entity2 < length; ++entity2) {
+		let entities = em.queryComponents([Position, direction.DirectionComponent, LineOfSight])
+		for (let entity2 of entities) {
 			if (entity2 === entity1) continue; // Can't see itself
 
-			if (em.matches(entity2, this.lOSMask)) {
-				var blocker = game.findEntityInLineOfSight(entity2);
-				if (blocker === entity1) {
-					const pos2 = em.getComponent(entity2, Position);
-					const dirBetween = direction.getDirectionToPos(pos2, pos1);
-					if (dirBetween !== dir1 && dirBetween !== direction.getReverse(dir1)) {
-						var lOS = em.getComponent(entity2, LineOfSightComponent);
-						lOS.currentBlocker = blocker;
-						lOS.script(game, em, entity2, blocker);
-					}
+			var blocker = game.findEntityInLineOfSight(entity2);
+			if (blocker === entity1) {
+				const pos2 = entity2.position;
+				const dirBetween = direction.getDirectionToPos(pos2, pos1);
+				if (dirBetween !== dir1 && dirBetween !== direction.getReverse(dir1)) {
+					let lOS = entity2.lineOfSight;
+					lOS.currentBlocker = blocker;
+					lOS.script(game, em, entity2, blocker);
 				}
 			}
 		}
 	}
 
 	update(dt, time) {
-		const game = this.game, em = game.em;
-		for (var entity = 0, length = em.count; entity < length; ++entity) {
-			if (em.matches(entity, this.mask)) {
-				const position = em.getComponent(entity, Position),
-					directionComponent = em.getComponent(entity, DirectionComponent),
-					movement = em.getComponent(entity, MovementComponent);
+		let game = this.game, em = game.em;
+		let entities = em.queryComponents([Position, direction.DirectionComponent, Movement]);
+		for (let entity of entities) {
+			let position = entity.position,
+				directionComponent = entity.directionComponent,
+				movement = entity.movement;
 
-				const altSpeed = 1;
-				const past = time % (BASE_SPEED >>> (altSpeed - 1));
-				if (dt > past) {
-					if (movement.state != STILL) {
-						this.checkLineOfSight(game, em, entity);
-					}
+			const altSpeed = 1;
+			const past = time % (BASE_SPEED >>> (altSpeed - 1));
+			if (dt > past) {
+				if (movement.isMoving) {
+					this.checkLineOfSight(game, em, entity);
+				}
 
-					const newDirection = movement.getController().getTarget(this.game, dt, position, entity);
-					if (newDirection !== direction.NO_DIRECTION) {
-						if (newDirection === null) throw new Error("The specified direction should be NO_DIRECTION instead of null.");
-						directionComponent.value = newDirection;
-						position.x += direction.getDeltaX(newDirection);
-						position.y += direction.getDeltaY(newDirection);
+				const newDirection = movement.controller.getTarget(this.game, dt, position, entity);
+				if (newDirection !== direction.NO_DIRECTION) {
+					if (newDirection === null) throw new Error("The specified direction should be NO_DIRECTION instead of null.");
+					directionComponent.value = newDirection;
+					position.x += direction.getDeltaX(newDirection);
+					position.y += direction.getDeltaY(newDirection);
 
-						movement.state = SPEED_ONE;
-					} else {
-						movement.state = STILL;
-					}
+					movement.speed = 1;
+				} else {
+					movement.speed = STILL;
 				}
 			}
 		}
+	}
+}
+
+export class StillMovementController {
+	getTarget(dt, context, position, entity) { return direction.NO_DIRECTION; }
+}
+
+/**
+ * Walks forward until it bumps into something.
+ */
+export class WalkForwardMovementController {
+	constructor(callback) {
+		this.callback = callback;
+	}
+
+	getTarget(game, dt, position, entity) {
+		let dir = entity.directionComponent.value;
+		let dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
+
+		if (game.isSolid(position.x + dx, position.y + dy)) {
+			this.callback();
+			return direction.NO_DIRECTION;
+		}
+
+		return dir;
+	}
+}
+
+export class RandomMovementController {
+	contructor(interval) {
+		this.interval = interval || 2000;
+		this.timer = 0;
+	}
+
+	getTarget(game, dt, position, entity) {
+		this.timer += dt;
+		if (this.timer >= this.interval) {
+			this.timer -= this.interval;
+			let possible = [];
+			if (!game.isSolid(position.x - 1, position.y)) possible.push(direction.LEFT);
+			if (!game.isSolid(position.x + 1, position.y)) possible.push(direction.RIGHT);
+			if (!game.isSolid(position.x, position.y - 1)) possible.push(direction.UP);
+			if (!game.isSolid(position.x, position.y + 1)) possible.push(direction.DOWN);
+			if (possible.length > 0) {
+				return possible[Math.floor(Math.random() * possible.length)];
+			}
+		}
+		return direction.NO_DIRECTION;
+	}
+}
+
+export class PathMovementController {
+	constructor(path, callback) {
+		this.path = path;
+		this.callback = callback;
+	}
+
+	/**
+	 * @warning If you try to walk into something solid you could get stuck indefinitely.
+	 */
+	getTarget(game, dt, position, entity) {
+		if (this.path.length === 0) {
+			this.callback();
+			return direction.NO_DIRECTION;
+		}
+
+		// Check for collisions
+		const dir = this.path[0];
+		const dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
+		if (game.isSolid(position.x + dx, position.y + dy)) {
+			return direction.NO_DIRECTION;
+		}
+
+		return this.path.shift();
 	}
 }

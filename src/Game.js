@@ -1,22 +1,17 @@
-var fowl = require("fowl");
-var lerp = require("lerp");
+import nano from "nano-ecs";
 var texture = require("texture.js");
 var NinePatch = require("NinePatch.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
-var StillMovementController = require("StillMovementController.js");
 var resources = require("resources.js");
 var Stack = require("Stack.js");
 var Panel = require("Panel.js");
 import Dialog from "Dialog";
 var align = require("align.js");
-import { MovementSystem, MovementComponent } from "movement";
 import State from "State";
 var WidgetGroup = require("WidgetGroup.js");
 import * as input from "input";
-var direction = require("direction");
-var WalkForwardMovementController = require("WalkForwardMovementController");
-var PathMovementController = require("PathMovementController");
+import * as direction from "direction";
 var Animation = require("Animation");
 var glMatrix = require("gl-matrix");
 import Select from "Select";
@@ -27,14 +22,15 @@ import TransitionState, {fade, createBattleTransition} from "TransitionState";
 import {ListPokemonState} from "ListState";
 var measureSpec = require("measureSpec");
 import BattleState from "BattleState";
+import { MovementSystem, Movement, LineOfSight,
+	StillMovementController, WalkForwardMovementController } from "movement";
+var lerp = require("lerp");
 
-var Position = require("Position.js");
-import DirectionComponent from "DirectionComponent";
-var SpriteComponent = require("SpriteComponent.js");
-var InteractionComponent = require("InteractionComponent.js");
-var LineOfSightComponent = require("LineOfSightComponent");
-var AnimationComponent = require("AnimationComponent");
-var DimensionComponent = require("DimensionComponent");
+import Position from "Position";
+import SpriteComponent from "SpriteComponent";
+import Interactable from "Interactable";
+import Animatable from "Animatable";
+import Size from "Size";
 
 const {mat4, vec3, quat} = glMatrix;
 var gl = renderer.gl;
@@ -99,17 +95,16 @@ GameScreen.prototype.onKey = function(type, key) {
 			var game = this.game;
 			var em = this.game.em;
 			// Hacky way of connecting input to player interacting with shit
-			var pos = em.getComponent(game.player, Position);
-			var movement = em.getComponent(game.player, MovementComponent);
-			if (!movement.isMoving() && movement.getController() instanceof player.PlayerMovementController) {
-				var playerDirection = em.getComponent(game.player, DirectionComponent);
+			let pos = game.player.position,
+				movement = game.player.movement;
+			if (!movement.isMoving && movement.getController() instanceof player.PlayerMovementController) {
+				let playerDirection = game.player.directionComponent;
 				switch (key) {
 					case " ":
-						var interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
+						let interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
 								pos.y + direction.getDeltaY(playerDirection.value));
-						if (interactable !== null) {
-							var interaction = em.getComponent(interactable, InteractionComponent);
-							if (interaction) interaction.callback(game);
+						if (interactable && interactable.hasComponent(Interactable)) {
+							interactable.interactable.callback(game);
 						}
 						break;
 					case "w": playerDirection.value = direction.UP; break;
@@ -139,9 +134,7 @@ var Game = function(loader, batch, playerTrainer) {
 	this.map = null;
 	this.metaLayer = -1; // Index of meta layer or -1
 
-	this.em = new fowl.EntityManager(0x64);
-	this.spriteSystemMask = this.em.getMask([Position, SpriteComponent]);
-	this.collisionSystemMask = this.em.getMask([Position]);
+	this.em = nano();
 	this.movementSystem = new MovementSystem(this);
 
 	this.updateHooks = [];
@@ -154,11 +147,11 @@ var Game = function(loader, batch, playerTrainer) {
 Game.prototype = Object.create(State.prototype);
 Game.prototype.constructor = Game;
 
-const getEntityInterpPos = function(time, em, entity, pos, mov) {
-	if (mov.isMoving()) {
-		const dir = em.getComponent(entity, DirectionComponent).value;
-		const oldPos = direction.getPosInDirection(pos, direction.getReverse(dir)),
-			t = mov.getInterpolationValue(time);
+const getEntityInterpPos = function(time, em, entity, pos, movement) {
+	if (movement.isMoving) {
+		let dir = entity.directionComponent.value,
+			oldPos = direction.getPosInDirection(pos, direction.getReverse(dir)),
+			t = movement.getInterpolationValue(time);
 		return { x: lerp(oldPos.x, pos.x, t), y: lerp(oldPos.y, pos.y, t) };
 	} else {
 		return { x: pos.x, y: pos.y };
@@ -211,8 +204,7 @@ Game.prototype.draw = function(batch, dt, time) {
 
 	const gbaAspectRatio = 3 / 2, virtualWidth = 400, virtualHeight = virtualWidth / gbaAspectRatio,
 		scaleFactor = Math.ceil(Math.min(this.width / virtualWidth, this.height / virtualHeight));
-	const playerInterpPos = getEntityInterpPos(time, em, player,
-			em.getComponent(player, Position), em.getComponent(player, MovementComponent));
+	const playerInterpPos = getEntityInterpPos(time, em, player, player.position, player.movement);
 	const transformX = this.width / 2 - 16 * scaleFactor * (playerInterpPos.x + 1 / 2),
 		transformY = this.height / 2 - 16 * scaleFactor * (playerInterpPos.y + 1 / 2);
 
@@ -224,17 +216,17 @@ Game.prototype.draw = function(batch, dt, time) {
 
 	drawMapLayers(batch, this.map, this.backgroundLayers);
 
-	for (let entity of range(em.count).filter(entity => em.matches(entity, this.spriteSystemMask))
-		.sort((a, b) => em.getComponent(a, Position).y - em.getComponent(b, Position).y)) {
-		const position = em.getComponent(entity, Position),
-			spriteComponent = em.getComponent(entity, SpriteComponent),
-			movement = em.hasComponent(entity, MovementComponent) ? em.getComponent(entity, MovementComponent) : null;
+	let entities = this.em.queryComponents([Position, SpriteComponent]);
+	for (let entity of entities.sort((a, b) => a.position.y - b.position.y)) {
+		const position = entity.position,
+			spriteComponent = entity.spriteComponent,
+			movement = entity.movement;
 
 		var region;
-		if (em.hasComponent(entity, AnimationComponent)) {
-			const dir = em.getComponent(entity, DirectionComponent).value;
-			const animation = em.getComponent(entity, AnimationComponent).getAnimation(dir);
-			region = movement && movement.isMoving() ? animation.getFrame(time) : animation.getFrameByIndex(0);
+		if (entity.hasComponent(Animatable)) {
+			const dir = entity.directionComponent.value;
+			const animation = entity.animatable.getAnimation(dir);
+			region = movement && movement.isMoving ? animation.getFrame(time) : animation.getFrameByIndex(0);
 		} else {
 			region = spriteComponent.animation ? spriteComponent.animation.getFrame(time)
 				: spriteComponent.region;
@@ -339,48 +331,37 @@ Game.prototype.getPlayer = function() {
 
 Game.prototype.lock = function(entity) {
 	if (!entity) entity = this.player;
-	var movement = this.em.getComponent(entity, MovementComponent);
-	movement.pushController(new StillMovementController());
+	entity.movement.pushController(new StillMovementController());
 };
 
 Game.prototype.release = function(entity) {
 	if (!entity) entity = this.player;
-	var movement = this.em.getComponent(entity, MovementComponent);
-	movement.popController();
+	entity.movement.popController();
 };
 
 /**
  * Returns the entity at tile x,y or null if there is none.
  */
 Game.prototype.getEntityAtCell = function(x, y) {
-	var em = this.em;
-	var result = null;
-	for (var entity = 0, length = em.count; entity < length; entity++) {
-		if (em.matches(entity, this.collisionSystemMask)) {
-			var position = em.getComponent(entity, Position);
-			if (em.hasComponent(entity, DimensionComponent)) {
-				var dimension = em.getComponent(entity, DimensionComponent);
-				if (position.x <= x && position.x + dimension.width > x
-						&& position.y <= y && position.y + dimension.height > y) {
-					result = entity;
-					break;
-				}
-			} else {
-				if (position.x === x && position.y === y) {
-					result = entity;
-					break;
-				}
-			}
+	let em = this.em;
+	for (let entity of em.queryComponents([Position])) {
+		let position = entity.position;
+		let width = 1, height = 1;
+		if (entity.hasComponent(Size)) {
+			width = entity.size.width;
+			height = entity.size.height;
 		}
+		if (position.x <= x && position.x + width > x
+			&& position.y <= y && position.y + height > y)
+			return entity;
 	}
-	return result;
 };
 
 Game.prototype.isSolid = function(x, y) {
 	// Can't walk outside map boundaries
 	if (x < 0 || x >= this.map.width || y < 0 || y >= this.map.height) return true;
 	// Check for entity at cell
-	if (this.getEntityAtCell(x, y) !== null) return true;
+	if (this.getEntityAtCell(x, y)) return true;
 	// Check for collidable tile at cell
 	var map = this.map, metaLayer = this.metaLayer;
 	if (metaLayer !== -1) return map.layers[metaLayer].data[x + map.width * y];
@@ -412,17 +393,15 @@ Game.prototype.warp = async function(x, y, mapScript) {
 		const transition = new TransitionState(this, fade);
 		stateManager.setState(transition);
 		game = new Game(this.loader, this.batch, this.playerTrainer);
-		game.em.getComponent(game.player, DirectionComponent).value =
-			this.em.getComponent(this.player, DirectionComponent).value;
+		game.player.directionComponent.value =
+			this.player.directionComponent.value;
 		await game.loadScript(mapScript);
 		transition.transitionTo(game);
 	} else {
 		game = this;
 	}
 
-	const pos = game.em.getComponent(game.player, Position);
-	pos.x = x;
-	pos.y = y;
+	game.player.position.set(x, y);
 };
 
 Game.prototype.save = JSON.parse(window.localStorage.getItem("gameSave"));
@@ -433,13 +412,10 @@ Game.prototype.saveTheGame = function() {
 
 Game.prototype.walkForward = function(entity) {
 	return new Promise((resolve, reject) => {
-		var em = this.em;
-		var movement = em.getComponent(entity, MovementComponent);
-		var controller = new WalkForwardMovementController(() => {
+		entity.movement.pushController(new WalkForwardMovementController(() => {
 			movement.popController();
 			resolve();
-		});
-		movement.pushController(controller);
+		}));
 	});
 };
 
@@ -448,24 +424,22 @@ Game.prototype.walkForward = function(entity) {
  */
 Game.prototype.findEntityInLineOfSight = function(caster) {
 	const em = this.em;
-	const pos1 = em.getComponent(caster, Position);
-	const dir = em.getComponent(caster, DirectionComponent).value; // The direction of the line of sight
-	const LoS = em.getComponent(caster, LineOfSightComponent); // LoS
+	const pos1 = caster.position;
+	const dir = caster.directionComponent.value; // The direction of the line of sight
+	const lOS = caster.lineOfSight;
 	const dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 
-	for (var entity = 0, length = em.count; entity < length; ++entity) {
-		if (entity !== caster /* Can't see itself! */
-				&& em.matches(entity, this.collisionMask)) {
-			const pos2 = em.getComponent(entity, Position);
+	for (let entity of em.queryComponents([Position])) {
+		if (entity === caster) continue; // Cannot see itself
+		const pos2 = entity.position;
 
-			for (let step = 1, max = LoS.length; step <= max; ++step) {
-				const x = pos1.x + step * dx, y = pos1.y + step * dy;
+		for (let step = 1, max = lOS.length; step <= max; ++step) {
+			const x = pos1.x + step * dx, y = pos1.y + step * dy;
 
-				if (pos2.x === x && pos2.y === y) return entity;
+			if (pos2.x === x && pos2.y === y) return entity;
 
-				// If the sight is obstructed: quit
-				if (this.isSolid(x, y)) break;
-			}
+			// If the sight is obstructed: quit
+			if (this.isSolid(x, y)) break;
 		}
 	}
 
@@ -474,15 +448,15 @@ Game.prototype.findEntityInLineOfSight = function(caster) {
 
 Game.prototype.facePlayer = function(entity) {
 	var em = this.em;
-	var entityPos = em.getComponent(entity, Position);
-	var playerPos = em.getComponent(this.player, Position);
-	em.getComponent(entity, DirectionComponent).value = direction.getDirectionToPos(entityPos, playerPos);
+	var entityPos = entity.position;
+	var playerPos = this.player.position;
+	entity.directionComponent.value = direction.getDirectionToPos(entityPos, playerPos);
 };
 
 Game.prototype.walkPath = function(entity, path) {
 	return new Promise((resolve, reject) => {
 		var em = this.em;
-		var movement = em.getComponent(entity, MovementComponent);
+		let movement = entity.movement;
 		movement.pushController(new PathMovementController(path, () => {
 			movement.popController();
 			resolve();
@@ -495,35 +469,35 @@ Game.prototype.walkPath = function(entity, path) {
  */
 Game.prototype.snapEntity = function(entity) {
 	var em = this.em;
-	if (em.hasComponent(entity, MovementComponent)) em.getComponent(entity, MovementComponent).snap();
+	if (entity.hasComponent(Movement)) entity.movement.snap();
 };
 
 Game.prototype.loadCharacterSprite = function(entity, url) {
 	return this.loader.loadTexture(url).then(textureRegion => {
 		var em = this.em;
-		var spriteComponent = new SpriteComponent(textureRegion);
+		entity.addComponent(SpriteComponent, textureRegion);
+		let spriteComponent = entity.spriteComponent;
 		spriteComponent.offsetX = -8;
 		spriteComponent.offsetY = -16;
-		em.addComponent(entity, spriteComponent);
 		var animations = {
 			down: new Animation(250, Animation.getSheetFromTexture(4, 0, 0, 32, 32, 4, 0)),
 			up: new Animation(250, Animation.getSheetFromTexture(4, 0, 32, 32, 32, 4, 0)),
 			left: new Animation(250, Animation.getSheetFromTexture(4, 0, 64, 32, 32, 4, 0)),
 			right: new Animation(250, Animation.getSheetFromTexture(4, 0, 96, 32, 32, 4, 0)),
 		};
-		em.addComponent(entity, new AnimationComponent(animations));
+		entity.addComponent(Animatable, animations);
 	});
 };
 
 Game.prototype.faceDirection = function(entity, dir) {
-	this.em.getComponent(entity, DirectionComponent).value = dir;
+	entity.directionComponent.value = dir;
 };
 
 Game.prototype.faceEachOther = function(entity1, entity2) {
 	var em = this.em;
-	var pos1 = em.getComponent(entity1, Position), pos2 = em.getComponent(entity2, Position);
-	em.getComponent(entity1, DirectionComponent).value = direction.getDirectionToPos(pos1, pos2);
-	em.getComponent(entity2, DirectionComponent).value = direction.getDirectionToPos(pos2, pos1);
+	var pos1 = entity1.position, pos2 = entity2.position;
+	entity1.directionComponent.value = direction.getDirectionToPos(pos1, pos2);
+	entity2.directionComponent.value = direction.getDirectionToPos(pos2, pos1);
 };
 
 Game.prototype.battle = async function(enemyTrainer) {

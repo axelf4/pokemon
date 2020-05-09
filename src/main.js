@@ -13,18 +13,7 @@ import NinePatch from "NinePatch";
 import Game from "Game";
 import TransitionState, {fade} from "TransitionState";
 import "touchControl";
-var fowl = require("fowl");
 const TWEEN = require("@tweenjs/tween.js");
-
-var Position = require("Position.js");
-import DirectionComponent from "DirectionComponent";
-var SpriteComponent = require("SpriteComponent.js");
-var PlayerComponent = require("PlayerComponent.js");
-var InteractionComponent = require("InteractionComponent.js");
-import { MovementComponent } from "movement";
-var LineOfSightComponent = require("LineOfSightComponent");
-var AnimationComponent = require("AnimationComponent");
-var DimensionComponent = require("DimensionComponent");
 
 import Trainer from "Trainer";
 import { moves } from "move";
@@ -33,17 +22,6 @@ import Pokemon, { pokemons } from "pokemon";
 const gl = renderer.gl, {mat4, vec3} = glMatrix;
 
 console.log("----- Starting the game -----");
-
-fowl.registerComponents(
-		Position,
-		DirectionComponent,
-		SpriteComponent,
-		PlayerComponent,
-		InteractionComponent,
-		MovementComponent,
-		LineOfSightComponent,
-		AnimationComponent,
-		DimensionComponent);
 
 const projectionMatrix = mat4.create();
 const batch = new SpriteBatch();

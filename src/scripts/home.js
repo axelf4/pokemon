@@ -1,48 +1,46 @@
-var direction = require("direction");
 var PushTrigger = require("PushTrigger.js");
+import {DirectionComponent, UP} from "direction";
 import thread from "thread";
 import Trainer from "Trainer";
 import { moves } from "move";
 import Pokemon, { pokemons } from "pokemon";
 
-var Position = require("Position");
-import DirectionComponent from "DirectionComponent";
-var InteractionComponent = require("InteractionComponent");
-var LineOfSightComponent = require("LineOfSightComponent");
-var DimensionComponent = require("DimensionComponent");
+import Position from "Position";
+import Interactable from "Interactable";
+import {LineOfSight} from "movement";
+import Size from "Size";
 
 export default function(game, loader) {
+	let em = game.em;
 	loader.loadMap("assets/home.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
 
 	game.addPushTrigger(PushTrigger.createWarp(game, 2, 9, 6, 8, "ballettown.js"));
 
-	var em = game.em;
-
-	var mom = em.createEntity();
-	em.addComponent(mom, new Position(6, 6));
-	em.addComponent(mom, new DirectionComponent(direction.UP));
+	let mom = em.createEntity()
+		.addComponent(Position, 6, 6)
+		.addComponent(DirectionComponent, UP)
+		.addComponent(Interactable, thread.bind(undefined, function*(game) {
+			game.lock();
+			game.faceEachOther(mom, game.player);
+			yield game.showDialog("Happy birthday! Now that you are 16 I no longer receive Child Benefit, hence you are useless.\n"
+				+ "Stop watching anime and go out and play, you son of a bitch.\n"
+				+ "I heard Prof. Clark has moved in.\nMaybe you could go bother him.");
+			yield game.battle(new Trainer("Charles Ingvar", [
+				new Pokemon(pokemons.slowpoke, 4, [ moves.tackle ])
+			]));
+			game.release();
+		}));
 	game.loadCharacterSprite(mom, "assets/girlSprite.png");
-	em.addComponent(mom, new InteractionComponent(thread.bind(undefined, function*(game) {
-		game.lock();
-		game.faceEachOther(mom, game.player);
-		yield game.showDialog("Happy birthday! Now that you are 16 I no longer receive Child Benefit, hence you are useless.\n"
-			+ "Stop watching anime and go out and play, you son of a bitch.\n"
-			+ "I heard Prof. Clark has moved in.\nMaybe you could go bother him.");
-		yield game.battle(new Trainer("Charles Ingvar", [
-			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle ])
-		]));
-		game.release();
-	})));
 
-	var tv = em.createEntity();
-	em.addComponent(tv, new Position(5, 4));
-	em.addComponent(tv, new DimensionComponent(2, 1));
-	em.addComponent(tv, new InteractionComponent(thread.bind(undefined, function*(game) {
+	let tv = em.createEntity()
+		.addComponent(Position, 5, 4)
+		.addComponent(Size, 2, 1)
+		.addComponent(Interactable, thread.bind(undefined, function*(game) {
 			game.lock();
 			yield game.showDialog("A cooking show is airing on the television.");
 			yield game.showDialog("\"How to microwave cheese\", starring Gordon Ramsay and macaroni.");
 			game.release();
-	})));
+		}));
 }

@@ -32,17 +32,11 @@ module.exports = {
 			exclude: /(node_modules|bower_components)/,
 			loader: "babel-loader",
 			options: {
-				presets: ["@babel/preset-env", "@babel/typescript"],
-				plugins: ["@babel/plugin-syntax-dynamic-import"]
+				presets: ["@babel/typescript", "@babel/preset-env"],
+				plugins: ["@babel/plugin-syntax-dynamic-import", "@babel/plugin-proposal-class-properties"]
 			}
 		},
 		{ test: /\.glsl$/, loader: "webpack-glsl-loader" },
-		{ test: /BitSetModule/, loader: "exports-loader?BitSetModule" },
-		{
-			test: /fowl/,
-			loader: "imports-loader?BitSetModule!exports-loader?fowl"
-		},
-		{ test: /flex\.js/, loader: "exports-loader?flex" },
 		]
 	}
 };

@@ -1,4 +1,4 @@
-const Position = require("Position");
+import Position from "Position";
 
 export const LEFT = 0x11, UP = 0x21, RIGHT = 0x42, DOWN = 0x82,
 	   NO_DIRECTION = 0;
@@ -35,5 +35,11 @@ export const getDirectionToPos = function(pos1, pos2) {
 
 export const getPosInDirection = function(pos, dir) {
 	const dx = getDeltaX(dir), dy = getDeltaY(dir);
-	return new Position(pos.x + dx, pos.y + dy);
+	return new Position(null, pos.x + dx, pos.y + dy);
+};
+
+export class DirectionComponent {
+	constructor(entity, value) {
+		this.value = value || NO_DIRECTION;
+	}
 };

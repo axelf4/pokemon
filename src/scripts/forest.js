@@ -1,14 +1,9 @@
-var InteractionComponent = require("InteractionComponent.js");
 var Animation = require("Animation.js");
 import thread from "thread";
 var PushTrigger = require("PushTrigger.js");
 var Position = require("Position.js");
 var SpriteComponent = require("SpriteComponent.js");
-var DirectionComponent = require("DirectionComponent.js");
-var LineOfSightComponent = require("LineOfSightComponent");
-import { MovementComponent } from "movement";
-var RandomMovementController = require("RandomMovementController.js");
-var StillMovementController = require("StillMovementController.js");
+import { Movement, StillMovementController, RandomMovementController } from "movement";
 var direction = require("direction");
 import wait from "wait";
 

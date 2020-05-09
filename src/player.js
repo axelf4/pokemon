@@ -1,21 +1,14 @@
 import * as input from "input";
 import * as direction from "direction";
-var Position = require("Position.js");
-import DirectionComponent from "DirectionComponent";
-var SpriteComponent = require("SpriteComponent.js");
-var InteractionComponent = require("InteractionComponent.js");
-import { MovementComponent } from "movement";
-var Animation = require("Animation.js");
-var texture = require("texture.js");
-var AnimationComponent = require("AnimationComponent");
+import Position from "Position";
+import { Movement } from "movement";
 
 var keys = input.keys;
 
 export class PlayerMovementController {
 	getTarget(game, dt, position, entity) {
 		let em = game.em;
-		let pos = em.getComponent(entity, Position);
-		let dir = em.getComponent(entity, DirectionComponent);
+		let pos = entity.position, dir = entity.directionComponent;
 
 		let dx = 0, dy = 0;
 		if (keys["a"]) {
@@ -52,12 +45,10 @@ export class PlayerMovementController {
 }
 
 export function createPlayer(game, loader, em) {
-	const player = em.createEntity();
-	em.addComponent(player, new Position());
-	em.addComponent(player, new DirectionComponent(direction.DOWN));
-	em.addComponent(player, new MovementComponent(new PlayerMovementController()));
-
+	const player = em.createEntity()
+		.addComponent(Position)
+		.addComponent(direction.DirectionComponent, direction.DOWN)
+		.addComponent(Movement, new PlayerMovementController())
 	game.loadCharacterSprite(player, "assets/playerSprite.png");
-
 	return player;
 }
