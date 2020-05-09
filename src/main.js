@@ -19,6 +19,8 @@ import Trainer from "Trainer";
 import { moves } from "move";
 import Pokemon, { pokemons } from "pokemon";
 
+import * as lootTable from "lootTable";
+
 const gl = renderer.gl, {mat4, vec3} = glMatrix;
 
 console.log("----- Starting the game -----");
@@ -41,7 +43,8 @@ resources.font = new Font(loader);
 loader.loadTexture("textures/frame.9.png").then(texRegion => {
 	resources.frame = NinePatch.fromTextureRegion(texRegion);
 }).then(() => {
-	const playerTrainer = new Trainer("Axel", [
+	let playerName = lootTable.choose([[1, "Axel"], [1, "Bob"]]);
+	const playerTrainer = new Trainer(playerName, [
 			new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
 			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle, moves.growl ]),
 	]);
