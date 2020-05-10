@@ -1,9 +1,18 @@
+import Item from "./item";
+
+type Pokemon = any;
+
 export default class Trainer {
-	constructor(name, pokemon, isWild = false) {
-		if (!(pokemon instanceof Array)) throw new Error();
+	name: string;
+	pokemon: Pokemon[];
+	isWild: boolean;
+	items: Item[];
+
+	constructor(name: string, pokemon: Pokemon[], isWild = false) {
 		this.name = name;
 		this.pokemon = pokemon;
 		this.isWild = isWild;
+		this.items = [];
 	}
 
 	getName() {

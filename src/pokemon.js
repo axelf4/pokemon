@@ -9,6 +9,7 @@
 import * as types from "type";
 /** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
 import table from "pokemon.json";
+import {moves} from "./move";
 
 /**
  * Returns the pokemon with the specified identifier.
@@ -25,7 +26,8 @@ export const getPokemonByName = (function() {
 		get specialDefense() { return this[5]; },
 		get speed() { return this[6]; },
 		get types() { return this[7].map(typeName => types[typeName]); },
-		get moveSet() { return this[8]; }, // TODO
+		get moveSet() { return Object.fromEntries(Object.entries(this[8])
+			.map(([k, v]) => [+k, moves[v]])); },
 	};
 	return function(name) {
 		if (!table.hasOwnProperty(name)) throw new Error("Cannot find the pokemon named `" + name + "`.")
@@ -62,6 +64,23 @@ export const nonVolatileStatuses = Object.freeze({
 	poison: Symbol("poison"),
 	sleep: Symbol("sleep"),
 });
+
+/** Highest number of moves a pokemon can know at any one time. */
+export const maxMoveCount = 4;
+
+/**
+ * Returns the moves for a wild pokemon of some level.
+ *
+ * When encountered, a wild Pokémon's moveset will generally consist of the
+ * most recent four moves its species would know by leveling-up.
+ */
+function getMovesForLevel(pokemon, level) {
+	return Object.entries(pokemon.moveSet)
+		.filter(([l, ]) => l <= level)
+		.sort(([a, ], [b, ]) => b - a) // Highest level first
+		.splice(maxMoveCount)
+		.map(([l, m]) => m);
+}
 
 /** An instance of a pokemon. */
 export default class Pokemon {

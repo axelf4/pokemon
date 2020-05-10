@@ -1,6 +1,5 @@
-import multiView from "multiView";
-import { damageNone, damagePhysical, damageSpecial } from "move";
 import Pokemon from "pokemon";
+import { damageNone, damagePhysical, damageSpecial } from "move";
 
 /**
  * Type effectiveness for <code>[attacking move type][defending type]</code>.
