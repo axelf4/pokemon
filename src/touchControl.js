@@ -96,7 +96,7 @@ function attach() {
 		</div>
 	`;
 	controls.id = "controls";
-	for (let [eventType, keyEvent] of [["mousedown", "keydown"], ["mouseup", "keyup"], ["mouseout", "keyup"]]) {
+	for (let [eventType, keyEvent] of [["pointerdown", "keydown"], ["pointerup", "keyup"], ["pointerout", "keyup"]]) {
 		controls.addEventListener(eventType, event => {
 			if (!(event.target && "key" in event.target.dataset)) return;
 			window.dispatchEvent(new KeyboardEvent(keyEvent, { key: event.target.dataset.key }));
