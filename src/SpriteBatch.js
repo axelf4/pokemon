@@ -97,9 +97,9 @@ export default class SpriteBatch {
 
 		let vertexPositionAttribute, textureCoordAttribute, colorAttribute;
 		if (this.customProgram !== null) {
-			vertexPositionAttribute = gl.getAttribLocation(this.program, "aVertexPosition");
-			textureCoordAttribute = gl.getAttribLocation(this.program, "aTextureCoord");
-			colorAttribute = gl.getAttribLocation(this.program, "aColor");
+			vertexPositionAttribute = gl.getAttribLocation(this.customProgram, "aVertexPosition");
+			textureCoordAttribute = gl.getAttribLocation(this.customProgram, "aTextureCoord");
+			colorAttribute = gl.getAttribLocation(this.customProgram, "aColor");
 			gl.useProgram(this.customProgram);
 		} else {
 			vertexPositionAttribute = this.vertexPositionAttribute;

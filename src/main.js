@@ -75,7 +75,7 @@ var update = function(timestamp) {
 
 	var resized = renderer.sizeCanvas();
 	if (resized) {
-		var width = renderer.getWidth(), height = renderer.getHeight();
+		let {width, height} = renderer.getSize();
 		mat4.ortho(projectionMatrix, 0, width, height, 0, -1, 1);
 		batch.setProjectionMatrix(projectionMatrix);
 

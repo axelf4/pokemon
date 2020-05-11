@@ -21,20 +21,34 @@ export const gl = function() {
 	alert("Unable to initialize WebGL. Your browser may not support it.");
 }();
 
+/** Returns the size of the canvas in pixels. */
+export function getSize() {
+	const devicePixelRatio = window.devicePixelRatio || 1;
+	return {
+		width: canvas.clientWidth * devicePixelRatio | 0,
+		height: canvas.clientHeight * devicePixelRatio | 0,
+	};
+}
+
+/** Returns the size of the drawing buffer. */
+export function drawingBufferSize() {
+	return { width: gl.drawingBufferWidth, height: gl.drawingBufferHeight };
+}
+
+export function viewport2DrawingBuffer() {
+	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+}
+
 export function sizeCanvas() {
-	const devicePixelRatio = window.devicePixelRatio || 1,
-		width = canvas.clientWidth * devicePixelRatio | 0, height = canvas.clientHeight * devicePixelRatio | 0;
+	const {width, height} = getSize();
 	if (canvas.width !== width || canvas.height !== height) {
 		canvas.width = width;
 		canvas.height = height;
-		gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+		viewport2DrawingBuffer();
 		return true;
 	}
 	return false;
 }
-
-export function getWidth() { return canvas.clientWidth; }
-export function getHeight() { return canvas.clientHeight; }
 
 export function toggleFullscreen() {
 	if (document.fullscreenElement || document.mozFullScreenElement

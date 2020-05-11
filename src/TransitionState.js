@@ -1,6 +1,6 @@
 import State from "State";
 import * as stateManager from "stateManager";
-var renderer = require("renderer");
+import * as renderer from "./renderer";
 import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
 
 var gl = renderer.gl;
@@ -8,14 +8,14 @@ var gl = renderer.gl;
 const vertexShaderSource =
 "attribute vec2 aVertexPosition;" +
 "attribute vec2 aTextureCoord;" +
+"attribute vec2 aColor;" +
 
-"uniform mat4 uMVMatrix;" +
 "uniform mat4 uPMatrix;" +
 
 "varying highp vec2 vTextureCoord;" +
 
 "void main(void) {" +
-"	vTextureCoord = aTextureCoord;" +
+"	vTextureCoord = aTextureCoord + 0.0 * aColor;" +
 "	gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
 "}";
 const fragmentShaderSource =
@@ -164,6 +164,7 @@ export default class TransitionState extends State {
 		}
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+		gl.viewport(0, 0, this.width, this.height);
 		if (this.state) {
 			this.state.draw(batch, dt, time);
 		} else {
@@ -171,6 +172,7 @@ export default class TransitionState extends State {
 			gl.clear(gl.COLOR_BUFFER_BIT);
 		}
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		renderer.viewport2DrawingBuffer();
 
 		batch.setProgram(this.program);
 		gl.activeTexture(gl.TEXTURE1);
@@ -180,7 +182,8 @@ export default class TransitionState extends State {
 		gl.uniform1f(this.cutoffLocation, c);
 		gl.uniform1f(this.fadeLocation, f);
 		gl.uniform3f(this.colorLocation, r, g, b);
-		gl.uniform2f(this.invResolutionLocation, 1 / this.width, 1 / this.height);
+		let {width: viewportWidth, height: viewportHeight} = renderer.drawingBufferSize();
+		gl.uniform2f(this.invResolutionLocation, 1 / viewportWidth, 1 / viewportHeight);
 
 		const u2 = this.width / this.texWidth, v2 = this.height / this.texHeight;
 		batch.draw(this.texture, 0, 0, this.width, this.height, 0, v2, u2, 0);

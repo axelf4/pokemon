@@ -1,4 +1,4 @@
-const renderer = require("renderer");
+import * as renderer from "renderer";
 
 let state = null;
 
@@ -9,5 +9,6 @@ export let getState = function() {
 export let setState = function(value) {
 	if (!value) throw new ReferenceError("The specified state cannot be null.");
 	state = value;
-	state.resize(renderer.getWidth(), renderer.getHeight());
+	let {width, height} = renderer.getSize();
+	state.resize(width, height);
 };
