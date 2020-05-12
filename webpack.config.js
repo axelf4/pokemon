@@ -11,7 +11,7 @@ module.exports = {
 			path.join(__dirname, "src"),
 			"node_modules",
 		],
-		extensions: ['.wasm', '.mjs', '.js', '.json', '.ts'],
+		extensions: ['.js', '.ts'],
 	},
 	mode: 'development',
 	devtool: "source-map",

@@ -1,4 +1,4 @@
 {
-	"slowpoke": ["Slowpoke", 90, 65, 65, 40, 40, 15, ["water", "psychic"]],
-	"snoopDogg": ["Snoop Dogg", 45, 50, 55, 75, 65, 30, ["grass", "poison"]]
+	"slowpoke": ["Slowpoke", 90, 65, 65, 40, 40, 15, ["Water", "Psychic"], {"1": "tackle"}],
+	"snoopDogg": ["Snoop Dogg", 45, 50, 55, 75, 65, 30, ["Grass", "Poison"], {"1": "tackle"}]
 }

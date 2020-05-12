@@ -2,8 +2,7 @@ var PushTrigger = require("PushTrigger.js");
 import {DirectionComponent, UP} from "direction";
 import thread from "thread";
 import Trainer from "Trainer";
-import { moves } from "move";
-import Pokemon, { pokemons } from "pokemon";
+import Pokemon, { pokemons, moves } from "pokemon";
 
 import Position from "Position";
 import Interactable from "Interactable";

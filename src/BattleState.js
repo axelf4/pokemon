@@ -9,14 +9,13 @@ import Select from "Select";
 import NinePatch from "NinePatch";
 import thread from "thread";
 import * as stateManager from "stateManager";
-var pokemon = require("pokemon.js");
 var Label = require("Label.js");
 var Widget = require("Widget");
 var measureSpec = require("measureSpec");
 const Healthbar = require("Healthbar.js");
 var resources = require("resources.js");
 import { Color } from "SpriteBatch";
-import battle, { battleEvents, actions } from "battle";
+import battle, { ActionType } from "battle";
 const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
@@ -135,12 +134,12 @@ export default class BattleState extends State {
 				const object0 = battleEvent.isPlayer ? self.playerOffset : self.enemyOffset;
 				const object1 = battleEvent.isPlayer ? self.enemyOffset : self.playerOffset;
 				switch (battleEvent.type) {
-					case battleEvents.msgbox:
+					case "msgbox":
 						let options = {};
 						if (battleEvent.time) options.showFor = battleEvent.time;
 						yield showDialog(battleEvent.text, options);
 						break;
-					case battleEvents.queryAction:
+					case "queryAction":
 						let pokemon = battleEvent.pokemon;
 						let playerAction = null;
 						while (!playerAction) {
@@ -170,7 +169,7 @@ export default class BattleState extends State {
 									info.removeAllWidgets();
 									if (moveId !== -1) {
 										const move = pokemon.moves[moveId];
-										playerAction = { type: actions.attack, move };
+										playerAction = { type: ActionType.Attack, move };
 									}
 									break;
 								case 1: // Bag
@@ -179,11 +178,11 @@ export default class BattleState extends State {
 								case 2: // Pokemon
 									let pokemonIndex = yield getPokemonToSwitchTo(loader, player);
 									if (pokemonIndex != -1)
-										playerAction = { type: actions.switchPokemon, pokemonIndex };
+										playerAction = { type: ActionType.SwitchPokemon, pokemonIndex };
 									break;
 								case 3: // Run
 									if (enemy.canEscapeFrom())
-										playerAction = { type: actions.run };
+										playerAction = { type: ActionType.Run };
 									else
 										yield showDialog("No! There's no running from a Trainer battle!");
 									break;
@@ -194,7 +193,7 @@ export default class BattleState extends State {
 						nextArg = playerAction;
 						break;
 
-					case battleEvents.sendOut:
+					case "sendOut":
 						if (battleEvent.switching) {
 							showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`, {passive: true});
 							yield new Promise((resolve, reject) => {
@@ -219,7 +218,7 @@ export default class BattleState extends State {
 						info.removeAllWidgets();
 						(battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).setup(battleEvent.pokemon);
 						break;
-					case battleEvents.useMove:
+					case "useMove":
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0)
 								.to({
@@ -240,7 +239,7 @@ export default class BattleState extends State {
 						});
 						info.removeAllWidgets();
 						break;
-					case battleEvents.faint:
+					case "faint":
 						yield Promise.all([
 							new Promise((resolve, reject) => {
 								new TWEEN.Tween(object0).to({ y: -0.3, a: 0, }, 2000)
@@ -256,14 +255,14 @@ export default class BattleState extends State {
 							do {
 								pokemonIndex = yield getPokemonToSwitchTo(loader, player);
 							} while (pokemonIndex === -1);
-							nextArg = pokemonIndex;
+							nextArg = {type: ActionType.SwitchPokemon, pokemonIndex};
 						}
 						break;
-					case battleEvents.setHealth:
+					case "setHealth":
 						let hpBar = (battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).hpBar;
 						yield hpBar.setPercentage(battleEvent.percentage);
 						break;
-					case battleEvents.gainExp:
+					case "gainExp":
 						yield new Promise((resolve, reject) => {
 							new TWEEN.Tween({ exp: battleEvent.prevExp })
 								.to({ exp: battleEvent.newExp }, 1000).easing(TWEEN.Easing.Quadratic.Out)

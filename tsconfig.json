@@ -1,7 +1,11 @@
 {
-	"strict": true,
 	"compilerOptions": {
-		"noImplicitAny": true
+		"strict": true,
+		"moduleResolution": "Node",
+		"resolveJsonModule": true,
+		"target": "ES2020",
+		"noEmit": true,
+		"isolatedModules": true
 	},
 	"include": ["src/**/*"]
 }

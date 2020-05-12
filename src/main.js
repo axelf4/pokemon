@@ -16,8 +16,7 @@ import "touchControl";
 const TWEEN = require("@tweenjs/tween.js");
 
 import Trainer from "Trainer";
-import { moves } from "move";
-import Pokemon, { pokemons } from "pokemon";
+import Pokemon, {pokemons, moves} from "./pokemon";
 
 import * as lootTable from "lootTable";
 

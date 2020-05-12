@@ -1,16 +1,15 @@
+import Pokemon from "./pokemon";
 import Item from "./item";
-
-type Pokemon = any;
 
 export default class Trainer {
 	name: string;
-	pokemon: Pokemon[];
+	pokemons: Pokemon[];
 	isWild: boolean;
 	items: Item[];
 
-	constructor(name: string, pokemon: Pokemon[], isWild = false) {
+	constructor(name: string, pokemons: Pokemon[], isWild = false) {
 		this.name = name;
-		this.pokemon = pokemon;
+		this.pokemons = pokemons;
 		this.isWild = isWild;
 		this.items = [];
 	}
@@ -29,7 +28,7 @@ export default class Trainer {
 	 * @return The pokemon or undefined if no such pokemon exists.
 	 */
 	getPrimaryPokemon() {
-		return this.pokemon.find(p => p.hp > 0);
+		return this.pokemons.find(p => p.hp > 0);
 	}
 
 	/**

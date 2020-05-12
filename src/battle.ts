@@ -1,5 +1,5 @@
-import Pokemon from "pokemon";
-import { damageNone, damagePhysical, damageSpecial } from "move";
+import Pokemon, {Move, DamageCategory, Stats} from "./pokemon";
+import Trainer from "./Trainer";
 
 /**
  * Type effectiveness for <code>[attacking move type][defending type]</code>.
@@ -26,85 +26,14 @@ const typeMultipliers = [
 	[1, .5, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, .5], // Dark
 ];
 
-/**
- * Calculates the damage of an attack.
- *
- * @param attacker The attacker battler.
- * @param defender The defender battler.
- * @param move The move in question.
- * @see http://bulbapedia.bulbagarden.net/wiki/Damage_modification#Damage_formula
- */
-const calculateDamage = function(attacker, defender, move) {
-	const attackerStats = attacker.calculateStats(),
-		defenderStats = defender.calculateStats();
-	let attack, defense;
-	switch (move.damageClass) {
-		case damagePhysical:
-			attack = attackerStats.attack;
-			defense = defenderStats.defense;
-			break;
-		case damageSpecial:
-			attack = attackerStats.specialAttack;
-			defense = defenderStats.specialDefense;
-			break;
-		case damageNone:
-			return { damage: 0, typeEffectiveness: 1, crit: false };
-		default:
-			throw new Error();
-	}
-
-	const crit = Math.random() < attackerStats.speed / 0x200;
-	const typeEffectiveness = defender.pokemon.species.types.reduce((acc, type) => acc * typeMultipliers[move.type][type], 1);
-
-	const stab = attacker.pokemon.species.types.some(type => type === move.type) ? 1.5 : 1;
-	const multipliers = stab * typeEffectiveness * (crit ? 2 : 1);
-
-	return {
-		damage: ((2 * attacker.pokemon.level + 10) / 250 * (attack / defense) * move.power + 2)
-			* (0.15 * Math.random() + 0.88) * multipliers | 0,
-		typeEffectiveness,
-		crit,
-	};
-};
-
-/**
- * Returns whether a flee attempt was successful.
- * @see http://bulbapedia.bulbagarden.net/wiki/Escape
- */
-const canFlee = (speed, enemySpeed, escapeAttempts) =>
-	Math.random() * 255 < (speed * 128 / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
-
-/** Returns whether usage of the specified move missed. */
-const isMiss = move => 100 * Math.random() >= move.accuracy;
-
-/** Types of events yielded from the battle generator function. */
-export const battleEvents = Object.freeze({
-	msgbox: Symbol("msgbox"),
-	queryAction: Symbol("queryAction"),
-	sendOut: Symbol("sendOut"),
-	useMove: Symbol("useMove"),
-	setHealth: Symbol("setHealth"),
-	faint: Symbol("faint"),
-	gainExp: Symbol("gainExp"),
-})
-
-/** Possible actions numbered in ascending order of priority. */
-export const actions = Object.freeze({ attack: 0, switchPokemon: 1, run: 2, useItem: 3, });
-
-/**
- * Enumeration of weather types.
- *
- * @see https://bulbapedia.bulbagarden.net/wiki/Weather#Types_of_weather_and_effects
- */
-export const weatherTypes = Object.freeze({
-	/** The default weather type. */
-	clearSkies: Symbol("clearSkies"),
-	/** Makes all pokemon immune to freezing. */
-	harshSunlight: Symbol("harshSunlight"),
-	rain: Symbol("rain"),
-	sandstorm: Symbol("sandstorm"),
-	hail: Symbol("hail"),
-});
+interface StatStages {
+	attack: number;
+	defense: number;
+	specialAttack: number;
+	specialDefense: number;
+	speed: number;
+	// TODO Add accuracy/evasion
+}
 
 /**
  * Returns the multiplier for calculating the effective stat given the stat stage.
@@ -115,7 +44,132 @@ export const weatherTypes = Object.freeze({
  * @return The multiplier.
  * @see https://www.dragonflycave.com/mechanics/stat-stages
  */
-const statStageMultiplier = s => 2 * Math.max(2, 2 + s) / Math.max(2, 2 - s);
+const statStageMultiplier = (s: number) => 2 * Math.max(2, 2 + s) / Math.max(2, 2 - s);
+
+const getDefaultStatStages = () => ({
+	attack: 0, defense: 0, specialAttack: 0, specialDefense: 0, speed: 0,
+});
+
+/** A player/enemy battler that may have a pokemon in battle. */
+class Battler {
+	trainer: Trainer;
+	isPlayer: boolean;
+	active?: {pokemon: Pokemon, statStages: StatStages};
+
+	constructor(trainer: Trainer, isPlayer: boolean) {
+		this.trainer = trainer;
+		this.isPlayer = isPlayer;
+	}
+
+	/**
+	 * Makes this battler switch to the specified pokemon.
+	 *
+	 * Returns a battle event for this action.
+	 */
+	sendOut(newPokemon: Pokemon): BattleEvent {
+		const oldPokemon = this.active?.pokemon;
+		// Reset stat stages and volatile statuses
+		this.active = {pokemon: newPokemon, statStages: getDefaultStatStages()};
+		return {
+			type: "sendOut", isPlayer: this.isPlayer,
+			pokemon: newPokemon, oldPokemon,
+			switching: !!oldPokemon && !oldPokemon.isFainted()
+		};
+	}
+
+	get pokemon() {
+		return this.active!.pokemon;
+	}
+
+	calculateStats() {
+		let {pokemon, statStages} = this.active!;
+		let stats = pokemon.calculateStats();
+		for (let key of Object.keys(stats).filter(k => k !== "hp"))
+			stats[key as keyof Stats] *= statStageMultiplier(statStages[key as keyof StatStages]);
+		return stats;
+	}
+}
+
+/**
+ * Calculates the damage of an attack.
+ *
+ * @param attacker The attacker battler.
+ * @param defender The defender battler.
+ * @param move The move in question.
+ * @see http://bulbapedia.bulbagarden.net/wiki/Damage_modification#Damage_formula
+ */
+function calculateDamage(attacker: Battler, defender: Battler, move: Move): {damage: number, typeEffectiveness: number, crit: boolean} {
+	const attackerStats = attacker.calculateStats(),
+		defenderStats = defender.calculateStats();
+	let attack, defense;
+	switch (move.damageCategory) {
+		case DamageCategory.Physical:
+			attack = attackerStats.attack;
+			defense = defenderStats.defense;
+			break;
+		case DamageCategory.Special:
+			attack = attackerStats.specialAttack;
+			defense = defenderStats.specialDefense;
+			break;
+		case DamageCategory.Status:
+			return { damage: 0, typeEffectiveness: 1, crit: false };
+	}
+
+	const crit = Math.random() < attackerStats.speed / 0x200;
+	const typeEffectiveness = defender.pokemon.species.types.reduce((acc, type) => acc * typeMultipliers[move.type][type], 1);
+
+	const stab = attacker.pokemon.species.types.some(type => type === move.type) ? 1.5 : 1;
+	const multipliers = stab * typeEffectiveness * (crit ? 2 : 1);
+
+	return {
+		damage: ((2 * attacker.pokemon.level + 10) / 250 * (attack / defense) * move.power + 2)
+		* (0.15 * Math.random() + 0.88) * multipliers | 0,
+		typeEffectiveness,
+		crit,
+	};
+}
+
+/**
+ * Returns whether a flee attempt was successful.
+ * @see http://bulbapedia.bulbagarden.net/wiki/Escape
+ */
+const canFlee = (speed: number, enemySpeed: number, escapeAttempts: number) =>
+	Math.random() * 255 < (speed * 128 / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
+
+/** Returns whether usage of the specified move missed. */
+const isMiss = (move: Move) => 100 * Math.random() >= move.accuracy;
+
+/** Types of events yielded from the battle generator function. */
+type BattleEvent =
+	| { type: "msgbox"; text: string, time?: number }
+	| { type: "queryAction"; pokemon: Pokemon }
+	| { type: "sendOut"; isPlayer: boolean, switching: boolean,
+		pokemon: Pokemon, oldPokemon: Pokemon | undefined }
+	| { type: "useMove"; move: Move, isPlayer: boolean }
+	| { type: "setHealth"; percentage: number, isPlayer: boolean }
+	| { type: "faint"; pokemon: Pokemon, isPlayer: true, promptForNext: boolean }
+	| { type: "faint"; pokemon: Pokemon, isPlayer: false }
+	| { type: "gainExp", pokemon: Pokemon, prevExp: number, newExp: number };
+
+/** Possible actions numbered in ascending order of priority. */
+export enum ActionType { Attack, SwitchPokemon, Run, UseItem }
+
+type Action =
+	| { type: ActionType.Attack, move: Move }
+	| { type: ActionType.SwitchPokemon; pokemonIndex: number }
+	| { type: ActionType.Run };
+
+/**
+ * Enumeration of weather types.
+ *
+ * @see https://bulbapedia.bulbagarden.net/wiki/Weather#Types_of_weather_and_effects
+ */
+enum WeatherType {
+	/** The default weather type. */
+	ClearSkies,
+		/** Makes all pokemon immune to freezing. */
+		HarshSunlight, Rain, Sandstorm, Hail
+}
 
 /**
  * Returns the experience yield from defeating a enemy pokemon.
@@ -126,7 +180,7 @@ const statStageMultiplier = s => 2 * Math.max(2, 2 + s) / Math.max(2, 2 - s);
  *
  * @see https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula
  */
-const expGain = (isWild, fainted, participators) => (isWild ? 1 : 1.5) * 125 * fainted.level
+const expGain = (isWild: boolean, fainted: Pokemon, participators: Pokemon[]) => (isWild ? 1 : 1.5) * 125 * fainted.level
 	/ (7 * participators.filter(p => !p.isFainted()).length) | 0;
 
 /**
@@ -135,59 +189,21 @@ const expGain = (isWild, fainted, participators) => (isWild ? 1 : 1.5) * 125 * f
  * @param playerTrainer The player trainer.
  * @param enemyTrainer The enemy trainer.
  */
-export default function* battle(playerTrainer, enemyTrainer) {
-	const getDefaultStatStages = () => ({
-		attack: 0, defense: 0, specialAttack: 0, specialDefense: 0, speed: 0,
-		// TODO add accuracy/evasion
-	});
-
-	/** A player/enemy battler that may have a pokemon in battle. */
-	class Battler {
-		constructor(trainer, isPlayer) {
-			this.trainer = trainer;
-			this.isPlayer = isPlayer;
-			this.pokemon = null;
-			this.statStages = null;
-		}
-
-		/**
-		 * Makes this battler switch to the specified pokemon.
-		 *
-		 * Returns a battle event for this action.
-		 */
-		sendOut(newPokemon) {
-			const oldPokemon = this.pokemon;
-			this.pokemon = newPokemon;
-			// Reset stat stages and volatile statuses
-			this.statStages = getDefaultStatStages();
-			return {
-				type: battleEvents.sendOut, isPlayer: this.isPlayer,
-				pokemon: newPokemon, oldPokemon,
-				switching: oldPokemon && !oldPokemon.isFainted()
-			};
-		}
-
-		calculateStats() {
-			let stats = this.pokemon.calculateStats();
-			for (let key of Object.keys(stats).filter(k => k !== "hp"))
-				stats[key] *= statStageMultiplier(this.statStages[key]);
-			return stats;
-		}
-	}
+export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): Generator<BattleEvent, void, Action> {
 	const player = new Battler(playerTrainer, true), enemy = new Battler(enemyTrainer, false);
 
-	yield { type: battleEvents.msgbox, text: `${enemy.trainer.getName()} wants to fight!` };
-	yield enemy.sendOut(enemy.trainer.getPrimaryPokemon());
-	yield player.sendOut(player.trainer.getPrimaryPokemon());
+	yield { type: "msgbox", text: `${enemy.trainer.getName()} wants to fight!` };
+	yield enemy.sendOut(enemy.trainer.getPrimaryPokemon()!);
+	yield player.sendOut(player.trainer.getPrimaryPokemon()!);
 
 	let escapeAttempts = 0;
 	battleLoop:
 	for (;;) {
-		const playerAction = yield { type: battleEvents.queryAction, pokemon: player.pokemon },
-			enemyAction = { type: actions.attack, move: enemy.pokemon.moves[0] }; // TODO add AI
+		const playerAction = yield { type: "queryAction", pokemon: player.pokemon },
+			enemyAction: Action = { type: ActionType.Attack, move: enemy.pokemon.moves[0]! }; // TODO add AI
 
 		const queue = [{battler: player, ...playerAction}, {battler: enemy, ...enemyAction}].sort((a, b) =>
-			a.type === actions.attack && b.type === actions.attack
+			a.type === ActionType.Attack && b.type === ActionType.Attack
 			? b.move.priority - a.move.priority || b.battler.calculateStats().speed - a.battler.calculateStats().speed
 			: b.type - a.type);
 		actionLoop:
@@ -196,28 +212,28 @@ export default function* battle(playerTrainer, enemyTrainer) {
 			const [attacker, defender] = isPlayer ? [player, enemy] : [enemy, player];
 
 			switch (action.type) {
-				case actions.run:
+				case ActionType.Run:
 					if (!isPlayer) throw new Error("Enemy fleeing not yet implemented.");
 					if (canFlee(player.calculateStats().speed, enemy.calculateStats().speed, ++escapeAttempts)) {
-						yield { type: battleEvents.msgbox, text: "Got away safely!" };
+						yield { type: "msgbox", text: "Got away safely!" };
 						break battleLoop;
 					} else {
-						yield { type: battleEvents.msgbox, text: "Can't escape!" };
+						yield { type: "msgbox", text: "Can't escape!" };
 					}
 					break;
-				case actions.attack:
+				case ActionType.Attack:
 					--action.move.pp; // Deplete PP
-					yield { type: battleEvents.msgbox, text: `${attacker.pokemon.name} used ${action.move.name}!`, time: 1000 };
+					yield { type: "msgbox", text: `${attacker.pokemon.name} used ${action.move.name}!`, time: 1000 };
 
 					if (isMiss(action.move)) {
-						yield { type: battleEvents.msgbox, text: "But it missed.", time: 1500 };
+						yield { type: "msgbox", text: "But it missed.", time: 1500 };
 					} else {
 						const { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, action.move);
 						defender.pokemon.hp = Math.max(0, defender.pokemon.hp - damage);
-						yield { type: battleEvents.useMove, move: action.move, isPlayer };
+						yield { type: "useMove", move: action.move, isPlayer };
 
-						yield { type: battleEvents.setHealth, isPlayer: !isPlayer, percentage: defender.pokemon.getHpPercentage() };
-						if (crit) yield { type: battleEvents.msgbox, text: "A critical hit!", time: 1500 }
+						yield { type: "setHealth", isPlayer: !isPlayer, percentage: defender.pokemon.getHpPercentage() };
+						if (crit) yield { type: "msgbox", text: "A critical hit!", time: 1500 }
 
 						let effectivenessNotice;
 						switch (typeEffectiveness) {
@@ -225,33 +241,34 @@ export default function* battle(playerTrainer, enemyTrainer) {
 							case 0: effectivenessNotice = "It's not effective..."; break;
 							case 2: effectivenessNotice = "It's super effective..."; break;
 						}
-						if (effectivenessNotice) yield { type: battleEvents.msgbox, text: effectivenessNotice, time: 1500 };
+						if (effectivenessNotice) yield { type: "msgbox", text: effectivenessNotice, time: 1500 };
 
-						yield { type: battleEvents.msgbox, text: `It dealt ${damage} damage.\nFoe has ${defender.pokemon.hp} remaining.` };
+						yield { type: "msgbox", text: `It dealt ${damage} damage.\nFoe has ${defender.pokemon.hp} remaining.` };
 					}
 
 					// Check both parties' health since a move can kill it's user
 					if (player.pokemon.hp <= 0) {
 						const promptForNext = player.trainer.hasUsablePokemon();
-						const nextIndex = yield { type: battleEvents.faint,
+						const nextIndex = yield { type: "faint",
 							isPlayer: true,
 							pokemon: player.pokemon,
 							promptForNext,
 						};
 
-						if (promptForNext && nextIndex !== -1) {
-							let newPokemon = player.trainer.pokemon[nextIndex];
+						if (promptForNext) {
+							if (nextIndex.type !== ActionType.SwitchPokemon) throw new Error();
+							let newPokemon = player.trainer.pokemons[nextIndex.pokemonIndex];
 							yield player.sendOut(newPokemon);
 						} else {
-							yield { type: battleEvents.msgbox, text: player.trainer.name + " is out of usable pokemon!"};
-							yield { type: battleEvents.msgbox, text: player.trainer.name + " blacked out!"};
+							yield { type: "msgbox", text: player.trainer.name + " is out of usable pokemon!"};
+							yield { type: "msgbox", text: player.trainer.name + " blacked out!"};
 							break battleLoop;
 						}
 						break actionLoop;
 					}
 					if (enemy.pokemon.hp <= 0) {
 						// TODO check if enemy still has healthy pokemon
-						yield { type: battleEvents.faint, isPlayer: false, pokemon: enemy.pokemon };
+						yield { type: "faint", isPlayer: false, pokemon: enemy.pokemon };
 
 						// TODO Handle multiple participants
 						const gainedExp = expGain(enemy.trainer.isWild, enemy.pokemon, [player.pokemon]);
@@ -260,11 +277,11 @@ export default function* battle(playerTrainer, enemyTrainer) {
 						for (;;) {
 							let totalForLevelUp = player.pokemon.getTotalExpForLevelUp();
 							let newExp = Math.min(totalForLevelUp, player.pokemon.exp);
-							yield { type: battleEvents.gainExp, pokemon: player.pokemon, prevExp, newExp };
+							yield { type: "gainExp", pokemon: player.pokemon, prevExp, newExp };
 							if (player.pokemon.exp >= totalForLevelUp) {
 								player.pokemon.exp -= totalForLevelUp;
 								++player.pokemon.level;
-								yield { type: battleEvents.msgbox, text: `${player.pokemon.name} leveled up!` };
+								yield { type: "msgbox", text: `${player.pokemon.name} leveled up!` };
 							} else {
 								break;
 							}
@@ -274,8 +291,8 @@ export default function* battle(playerTrainer, enemyTrainer) {
 					}
 
 					break;
-				case actions.switchPokemon:
-					let newPokemon = battler.trainer.pokemon[action.pokemonIndex];
+				case ActionType.SwitchPokemon:
+					let newPokemon = battler.trainer.pokemons[action.pokemonIndex];
 					yield battler.sendOut(newPokemon);
 					break;
 				default:
