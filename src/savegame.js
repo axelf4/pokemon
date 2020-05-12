@@ -17,7 +17,7 @@ export default save;
 export function clearSave() {
 	Object.keys(save).forEach(k => delete save[k]);
 
-	save.hasGottenPokemon = true; // should be false
+	save.hasGottenPokemon = false;
 };
 clearSave(); // Set defaults
 

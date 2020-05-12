@@ -30,14 +30,14 @@ export default function(game, loader) {
 			game.lock();
 			game.faceEachOther(professor, game.player);
 			if (!save.hasGottenPokemon) {
-				yield game.showDialog("Hello, I am your new neighbor, the Pokémon professor Clark.");
-				yield game.showDialog("Pokémon are beautiful creatures that live alongside humans. Some use Pokémon to play while some only see them as tools for their own benefit.");
-				yield game.showDialog("I have devoted my life to researching diffent Pokémon's mating behaviours. Most of my work is conducted here in my laboratory.");
+				yield game.showDialog("Hello, I am your new neighbor, the Pokemon professor Beech.");
+				yield game.showDialog("Pokemon are beautiful creatures that live alongside humans. Some use Pokemon to play while some only see them as tools for their own benefit.");
+				yield game.showDialog("I have devoted my life to researching diffent Pokemon's mating behaviours. Most of my work is conducted here in my laboratory.");
 				yield game.showDialog("Funnily enough, I have three especially horny buggers here with me today for a special experi...");
 				yield wait(700);
 				yield game.showDialog("Huh, you want to steal one? What, you high or something?");
-				var selected = yield game.multichoice("Which Pokemon will you steal?", ["FIRE - Laserturken", "GRASS - dat boi", "WATER - Dolan"]);
-				if (selected === -1) yield game.showDialog("You didn't steal any Pokémon...");
+				var selected = yield game.multichoice("Which Pokemon will you steal?", ["FIRE, Laserturken", "GRASS, dat boi", "WATER, Dolan"]);
+				if (selected === -1) yield game.showDialog("You didn't steal any Pokemon...");
 				else {
 					if (selected === 0) {
 						yield game.showDialog("You received Laserturken.");
@@ -69,7 +69,7 @@ export default function(game, loader) {
 		.addComponent(Size, 2, 1)
 		.addComponent(Interactable, thread.bind(undefined, function*(game) {
 			game.lock();
-			yield game.showDialog("The label reads: \"Sliquid Silver Silicone Intimate Lubricant\".");
+			yield game.showDialog("The label reads \"Sliquid Silver Silicone Intimate Lubricant\".");
 			game.release();
 		}));
 
