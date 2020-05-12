@@ -24,7 +24,7 @@ export const modes = Object.freeze({
 const numItemsPerPage = 3;
 
 export default class ListState extends State {
-	constructor(loader, items, itemToWidget, mode = modes.list) {
+	constructor(loader, items, mode = modes.list) {
 		super();
 		if (new.target === ListState) throw new TypeError("Abstract class cannot be instantiated.");
 
@@ -160,7 +160,7 @@ export class ListPokemonState extends ListState {
 export function choosePokemon(loader, trainer) {
 	const lastState = stateManager.getState();
 	return new Promise(resolve => {
-		const listState = new ListPokemonState(loader, trainer.pokemon, modes.choose)
+		const listState = new ListPokemonState(loader, trainer.pokemons, modes.choose)
 		listState.setCloseCallback(resolve);
 
 		const transition = new TransitionState(lastState, fade);
