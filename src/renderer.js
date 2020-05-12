@@ -22,12 +22,17 @@ export const gl = function() {
 }();
 
 /** Returns the size of the canvas in pixels. */
-export function getSize() {
+export function getPixelSize() {
 	const devicePixelRatio = window.devicePixelRatio || 1;
 	return {
 		width: canvas.clientWidth * devicePixelRatio | 0,
 		height: canvas.clientHeight * devicePixelRatio | 0,
 	};
+}
+
+/** Returns the internal size of the game. */
+export function getSize() {
+	return { width: canvas.clientWidth, height: canvas.clientHeight };
 }
 
 /** Returns the size of the drawing buffer. */
@@ -40,7 +45,7 @@ export function viewport2DrawingBuffer() {
 }
 
 export function sizeCanvas() {
-	const {width, height} = getSize();
+	const {width, height} = getPixelSize();
 	if (canvas.width !== width || canvas.height !== height) {
 		canvas.width = width;
 		canvas.height = height;

@@ -163,8 +163,9 @@ export default class TransitionState extends State {
 			}
 		}
 
+		let {width: viewportWidth, height: viewportHeight} = renderer.drawingBufferSize();
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-		gl.viewport(0, 0, this.width, this.height);
+		gl.viewport(0, 0, viewportWidth, viewportHeight);
 		if (this.state) {
 			this.state.draw(batch, dt, time);
 		} else {
@@ -182,10 +183,9 @@ export default class TransitionState extends State {
 		gl.uniform1f(this.cutoffLocation, c);
 		gl.uniform1f(this.fadeLocation, f);
 		gl.uniform3f(this.colorLocation, r, g, b);
-		let {width: viewportWidth, height: viewportHeight} = renderer.drawingBufferSize();
 		gl.uniform2f(this.invResolutionLocation, 1 / viewportWidth, 1 / viewportHeight);
 
-		const u2 = this.width / this.texWidth, v2 = this.height / this.texHeight;
+		const u2 = viewportWidth / this.texWidth, v2 = viewportHeight / this.texHeight;
 		batch.draw(this.texture, 0, 0, this.width, this.height, 0, v2, u2, 0);
 
 		batch.end();
@@ -197,8 +197,9 @@ export default class TransitionState extends State {
 		if (this.state)
 			this.state.resize(width, height);
 
-		this.texWidth = isPowerOfTwo(width) ? width : nextPowerOfTwo(width);
-		this.texHeight = isPowerOfTwo(height) ? height : nextPowerOfTwo(height);
+		let {width: viewportWidth, height: viewportHeight} = renderer.drawingBufferSize();
+		this.texWidth = isPowerOfTwo(viewportWidth) ? viewportWidth : nextPowerOfTwo(viewportWidth);
+		this.texHeight = isPowerOfTwo(viewportHeight) ? viewportHeight : nextPowerOfTwo(viewportHeight);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.texWidth, this.texHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 	}
