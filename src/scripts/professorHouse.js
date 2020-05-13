@@ -14,14 +14,15 @@ export default function(game, loader) {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
 
-	// game.addPushTrigger(PushTrigger.createWarp(game, 5, 12, 16, 15, "ballettown.js"));
-	game.addPushTrigger(new PushTrigger.TilePushTrigger(thread.bind(undefined, function*() {
-		if (save.hasGottenPokemon) {
-			yield game.showDialog("Why didn't you just take all my Pokemon. Stupid idiot...");
-		}
-		game.warp(16, 15, "ballettown.js");
+	game.addPushTrigger(new PushTrigger.TilePushTrigger(() => {
+		thread(function*() {
+			if (save.hasGottenPokemon) {
+				yield game.showDialog("Why didn't you just take all my Pokemon. Stupid idiot...");
+			}
+			game.warp(16, 15, "ballettown.js");
+		});
 		return true;
-	}), 5, 12));
+	}, 5, 12));
 
 	let professor = em.createEntity()
 		.addComponent(Position, 5, 5)
