@@ -6,7 +6,7 @@ import { Movement } from "movement";
 var keys = input.keys;
 
 export class PlayerMovementController {
-	getTarget(game, dt, position, entity) {
+	getTarget(game, time, entity, position) {
 		let em = game.em;
 		let pos = entity.position, dir = entity.directionComponent;
 

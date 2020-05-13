@@ -2,8 +2,8 @@ import Position from "Position";
 import * as direction from "direction";
 
 /** Amount of ticks it takes to move one grid at slowest speed. */
-export const BASE_SPEED = 250;
-export const STILL = 0;
+export const BASE_SPEED = 250,
+	maxSpeed = 2, STILL = 0;
 
 /** Movement component. */
 export class Movement {
@@ -37,8 +37,8 @@ export class Movement {
 
 	getInterpolationValue(time) {
 		if (!this.isMoving) return 0;
-		const duration = BASE_SPEED >>> (this.speed - 1);
-		return time % duration / duration;
+		const duration = BASE_SPEED / 2**(this.speed - 1);
+		return time / duration % 1;
 	}
 
 	snap() {
@@ -46,16 +46,11 @@ export class Movement {
 	}
 }
 
-// Constants returned by triggerCheck
-export const LOS_NO_ACTION = 0,
-	LOS_TRIGGER = 1,
-	LOS_TRIGGER_AND_SNAP = 2;
-
 export class LineOfSight {
 	constructor(entity, script) {
 		if (!script) throw new Error("script must not be null.");
 		this.script = script;
-		this.length = length || 16;
+		this.length = length || 8;
 		this.currentBlocker = null; // The entity that is standing in our sights or null
 	}
 }
@@ -63,74 +58,70 @@ export class LineOfSight {
 export class MovementSystem {
 	constructor(game) {
 		this.game = game;
-	}
-
-	/**
-	 * @param entity1 The entity that checks if it stepped into other entities' lOS.
-	 * @param enterDirection The direction from which the entity entered lOS from
-	 */
-	checkLineOfSight(game, em, entity1) {
-		const pos1 = entity1.position,
-			dir1 = entity1.directionComponent.value;
-
-		// Check if we caught another entity in our lOS
-		if (entity1.hasComponent(LineOfSight)) {
-			const lOS = entity1.lineOfSight,
-				blocker = game.findEntityInLineOfSight(entity1);
-			if (blocker !== -1) {
-				if (lOS.currentBlocker !== blocker) {
-					lOS.currentBlocker = blocker;
-					lOS.script(game, em, entity1, blocker);
-				}
-			} else {
-				lOS.currentBlocker = null;
-			}
-		}
-
-		// TODO handle case where we stepped into a short lOS
-		// Check if we stepped into other entity's lOS
-		let entities = em.queryComponents([Position, direction.DirectionComponent, LineOfSight])
-		for (let entity2 of entities) {
-			if (entity2 === entity1) continue; // Can't see itself
-
-			var blocker = game.findEntityInLineOfSight(entity2);
-			if (blocker === entity1) {
-				const pos2 = entity2.position;
-				const dirBetween = direction.getDirectionToPos(pos2, pos1);
-				if (dirBetween !== dir1 && dirBetween !== direction.getReverse(dir1)) {
-					let lOS = entity2.lineOfSight;
-					lOS.currentBlocker = blocker;
-					lOS.script(game, em, entity2, blocker);
-				}
-			}
-		}
+		this.lastTime = null;
 	}
 
 	update(dt, time) {
+		const lastTime = this.lastTime || time;
+		this.lastTime = time;
 		let game = this.game, em = game.em;
 		let entities = em.queryComponents([Position, direction.DirectionComponent, Movement]);
-		for (let entity of entities) {
-			let position = entity.position,
-				directionComponent = entity.directionComponent,
-				movement = entity.movement;
+		let casters = em.queryComponents([Position, direction.DirectionComponent, LineOfSight])
 
-			const altSpeed = 1;
-			const past = time % (BASE_SPEED >>> (altSpeed - 1));
-			if (dt > past) {
-				if (movement.isMoving) {
-					this.checkLineOfSight(game, em, entity);
-				}
+		// Discretize time into units of smallest move duration
+		const dur = BASE_SPEED / 2**(maxSpeed - 1);
+		for (let t = lastTime / dur + 1 | 0; t <= time / dur; ++t) {
+			const isReadyToMove = speed => (t & (1 << maxSpeed - speed) - 1) === 0;
 
-				const newDirection = movement.controller.getTarget(this.game, dt, position, entity);
-				if (newDirection !== direction.NO_DIRECTION) {
-					if (newDirection === null) throw new Error("The specified direction should be NO_DIRECTION instead of null.");
-					directionComponent.value = newDirection;
-					position.x += direction.getDeltaX(newDirection);
-					position.y += direction.getDeltaY(newDirection);
+			// Check line of sights
+			casterLoop:
+			for (let caster of casters) {
+				const pos1 = caster.position, lOS = caster.lineOfSight,
+					dir = caster.directionComponent.value; // The direction of the line of sight
+				let previousBlocker = lOS.currentBlocker;
+				lOS.currentBlocker = null;
+				const dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
+				let speed1 = caster.hasComponent(Movement) ? caster.movement.speed : STILL;
 
-					movement.speed = 1;
-				} else {
-					movement.speed = STILL;
+				let found = em.queryComponents([Position])
+					.map(entity => {
+						let pos2 = entity.position;
+						return [entity, pos2.x == pos1.x || pos2.y == pos1.y
+							? (pos2.x - pos1.x) * dx + (pos2.y - pos1.y) * dy : 0];
+					})
+					.filter(([, d]) => 0 < d && d <= lOS.length) // Cannot see itself nor those behind
+					.sort(([, a], [, b]) => a - b)[0];
+				if (!found) continue;
+				let [blocker, distance] = found;
+				// If the sight is obstructed: ignore
+				for (let i = 1; i < distance; ++i)
+					if (game.isTileSolid(pos1.x + i * dx, pos1.y + i * dy))
+						continue casterLoop;
+
+				let speed2 = blocker.hasComponent(Movement) ? blocker.movement.speed : STILL;
+				if (isReadyToMove(Math.max(speed1, speed2))) { // Do not snap unnecessarily
+					lOS.currentBlocker = blocker;
+					if (previousBlocker !== blocker) lOS.script(game, em, caster, blocker);
+				} else lOS.currentBlocker = previousBlocker;
+			}
+
+			for (let entity of entities) {
+				let position = entity.position,
+					directionComponent = entity.directionComponent,
+					movement = entity.movement;
+				// TODO Ask entity what speed it wants to avoid having to wait for sync
+				if (isReadyToMove(movement.speed || 1)) {
+					const newDirection = movement.controller.getTarget(this.game, time, entity, position);
+					if (newDirection !== direction.NO_DIRECTION) {
+						if (newDirection === null) throw new Error("The specified direction should be NO_DIRECTION instead of null.");
+						directionComponent.value = newDirection;
+						position.x += direction.getDeltaX(newDirection);
+						position.y += direction.getDeltaY(newDirection);
+
+						movement.speed = 1;
+					} else {
+						movement.speed = STILL;
+					}
 				}
 			}
 		}
@@ -138,7 +129,7 @@ export class MovementSystem {
 }
 
 export class StillMovementController {
-	getTarget(dt, context, position, entity) { return direction.NO_DIRECTION; }
+	getTarget(game, time, entity, position) { return direction.NO_DIRECTION; }
 }
 
 /**
@@ -149,7 +140,7 @@ export class WalkForwardMovementController {
 		this.callback = callback;
 	}
 
-	getTarget(game, dt, position, entity) {
+	getTarget(game, time, entity, position) {
 		let dir = entity.directionComponent.value;
 		let dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 
@@ -163,23 +154,22 @@ export class WalkForwardMovementController {
 }
 
 export class RandomMovementController {
-	contructor(interval) {
-		this.interval = interval || 2000;
-		this.timer = 0;
+	contructor(interval = 2000) {
+		this.interval = interval;
+		this.lastTime;
 	}
 
-	getTarget(game, dt, position, entity) {
-		this.timer += dt;
-		if (this.timer >= this.interval) {
-			this.timer -= this.interval;
+	getTarget(game, time, entity, position) {
+		const prevTime = this.lastTime;
+		this.lastTime = time;
+		if (!prevTime || time - prevTime >= this.interval) {
 			let possible = [];
 			if (!game.isSolid(position.x - 1, position.y)) possible.push(direction.LEFT);
 			if (!game.isSolid(position.x + 1, position.y)) possible.push(direction.RIGHT);
 			if (!game.isSolid(position.x, position.y - 1)) possible.push(direction.UP);
 			if (!game.isSolid(position.x, position.y + 1)) possible.push(direction.DOWN);
-			if (possible.length > 0) {
+			if (possible.length > 0)
 				return possible[Math.floor(Math.random() * possible.length)];
-			}
 		}
 		return direction.NO_DIRECTION;
 	}
@@ -194,7 +184,7 @@ export class PathMovementController {
 	/**
 	 * @warning If you try to walk into something solid you could get stuck indefinitely.
 	 */
-	getTarget(game, dt, position, entity) {
+	getTarget(game, time, entity, position) {
 		if (this.path.length === 0) {
 			this.callback();
 			return direction.NO_DIRECTION;

@@ -23,7 +23,8 @@ import {ListPokemonState} from "ListState";
 var measureSpec = require("measureSpec");
 import BattleState from "BattleState";
 import { MovementSystem, Movement, LineOfSight,
-	StillMovementController, WalkForwardMovementController } from "movement";
+	StillMovementController, WalkForwardMovementController,
+	PathMovementController } from "movement";
 var lerp = require("lerp");
 
 import Position from "Position";
@@ -147,7 +148,7 @@ var Game = function(loader, batch, playerTrainer) {
 Game.prototype = Object.create(State.prototype);
 Game.prototype.constructor = Game;
 
-const getEntityInterpPos = function(time, em, entity, pos, movement) {
+const getEntityInterpPos = function(time, entity, pos, movement) {
 	if (movement.isMoving) {
 		let dir = entity.directionComponent.value,
 			oldPos = direction.getPosInDirection(pos, direction.getReverse(dir)),
@@ -204,7 +205,7 @@ Game.prototype.draw = function(batch, dt, time) {
 
 	const gbaAspectRatio = 3 / 2, virtualWidth = 400, virtualHeight = virtualWidth / gbaAspectRatio,
 		scaleFactor = Math.ceil(Math.min(this.width / virtualWidth, this.height / virtualHeight));
-	const playerInterpPos = getEntityInterpPos(time, em, player, player.position, player.movement);
+	const playerInterpPos = getEntityInterpPos(time, player, player.position, player.movement);
 	const transformX = this.width / 2 - 16 * scaleFactor * (playerInterpPos.x + 1 / 2),
 		transformY = this.height / 2 - 16 * scaleFactor * (playerInterpPos.y + 1 / 2);
 
@@ -233,20 +234,12 @@ Game.prototype.draw = function(batch, dt, time) {
 		}
 
 		const texture = spriteComponent.texture;
-		const u1 = region.x / texture.width, v1 = region.y / texture.height,
-			u2 = (region.x + region.width) / texture.width, v2 = (region.y + region.height) / texture.height;
+		const u1 = region.x / texture.width, u2 = (region.x + region.width) / texture.width,
+			v1 = region.y / texture.height,	v2 = (region.y + region.height) / texture.height;
 
-		let x, y;
-		if (movement) {
-			const interpPos = getEntityInterpPos(time, em, entity, position, movement);
-			x = interpPos.x * 16;
-			y = interpPos.y * 16;
-		} else {
-			x = position.x * 16;
-			y = position.y * 16;
-		}
-		x = x + spriteComponent.offsetX;
-		y = y + spriteComponent.offsetY;
+		let pos = movement ? getEntityInterpPos(time, entity, position, movement) : position;
+		let x = 16 * pos.x + spriteComponent.offsetX,
+			y = 16 * pos.y + spriteComponent.offsetY;
 		const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
 		batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
 	}
@@ -357,15 +350,17 @@ Game.prototype.getEntityAtCell = function(x, y) {
 	}
 };
 
-Game.prototype.isSolid = function(x, y) {
+Game.prototype.isTileSolid = function(x, y) {
 	// Can't walk outside map boundaries
 	if (x < 0 || x >= this.map.width || y < 0 || y >= this.map.height) return true;
-	// Check for entity at cell
-	if (this.getEntityAtCell(x, y)) return true;
 	// Check for collidable tile at cell
 	var map = this.map, metaLayer = this.metaLayer;
 	if (metaLayer !== -1) return map.layers[metaLayer].data[x + map.width * y];
 	throw new Error("Current map has no meta layer.");
+}
+
+Game.prototype.isSolid = function(x, y) {
+	return this.isTileSolid(x, y) || !!this.getEntityAtCell(x, y);
 };
 
 Game.prototype.getPushTriggers = function() {
