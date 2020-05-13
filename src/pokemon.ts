@@ -14,14 +14,8 @@ export enum Type {
 		Fire, Water, Grass, Electric, Psychic, Ice, Dragon, Dark
 }
 
-export interface Stats {
-	hp: number;
-	attack: number;
-	defense: number;
-	specialAttack: number;
-	specialDefense: number;
-	speed: number;
-}
+export type Stats = Record<'hp' | 'attack' | 'defense' | 'specialAttack' | 'specialDefense'
+	| 'speed', number>
 
 type Species = Stats & {
 	name: string;
@@ -29,21 +23,23 @@ type Species = Stats & {
 	moveSet: {[level: number]: Move};
 };
 
-/**
- * Dictionary of pokemon species.
- */
-export const pokemons: {[name: string]: Species} = Object.fromEntries(Object.entries(table).map(([k, v]) => [k, Object.freeze(Object.assign(Object.create({
-		get name(this: any[]) { return this[0]; },
-		get hp(this: any[]) { return this[1]; },
-		get attack(this: any[]) { return this[2]; },
-		get defense(this: any[]) { return this[3]; },
-		get specialAttack(this: any[]) { return this[4]; },
-		get specialDefense(this: any[]) { return this[5]; },
-		get speed(this: any[]) { return this[6]; },
-		get types(this: any[]) { return this[7].map((typeName: string) => Type[typeName as keyof typeof Type]); },
-		get moveSet(this: any[]) { return Object.fromEntries(Object.entries(this[8] as {[lvl: string]: string})
-			.map(([k, v]) => [+k, moves[v]])); },
-	}), v))]));
+/** Dictionary of pokemon species. */
+export const pokemons: {[K in keyof typeof table]: Species} = new Proxy(table, {
+	get(obj, prop) {
+		let data = obj[prop];
+		return Object.freeze({
+			name: data[0],
+			hp: data[1],
+			attack: data[2],
+			defense: data[3],
+			specialAttack: data[4],
+			specialDefense: data[5],
+			speed: data[6],
+			types: data[7].map((typeName: string) => Type[typeName as keyof typeof Type]),
+			moveSet: Object.fromEntries(Object.entries(data[8]).map(([k, data]) => [+k, moves[data as string]])),
+		});
+	}
+});
 
 /**
  * Returns the total amount of experience required for the next level.
