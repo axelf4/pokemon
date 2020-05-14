@@ -20,7 +20,7 @@ const glMatrix = require("gl-matrix");
 const renderer = require("renderer");
 const TWEEN = require("@tweenjs/tween.js");
 import TransitionState, {fade} from "TransitionState";
-import { choosePokemon as getPokemonToSwitchTo } from "ListState";
+import { listPokemon, modes } from "ListState";
 import wait from "wait";
 
 const { mat4, vec3, quat } = glMatrix;
@@ -176,8 +176,8 @@ export default class BattleState extends State {
 									yield showDialog("There's a time and place for everything, but not now...");
 									break;
 								case 2: // Pokemon
-									let pokemonIndex = yield getPokemonToSwitchTo(loader, player);
-									if (pokemonIndex != -1)
+									let pokemonIndex = yield listPokemon(loader, player, modes.choose);
+									if (pokemonIndex !== -1)
 										playerAction = { type: ActionType.SwitchPokemon, pokemonIndex };
 									break;
 								case 3: // Run
@@ -253,7 +253,7 @@ export default class BattleState extends State {
 						if (battleEvent.promptForNext) {
 							let pokemonIndex;
 							do {
-								pokemonIndex = yield getPokemonToSwitchTo(loader, player);
+								pokemonIndex = yield listPokemon(loader, player, modes.choose);
 							} while (pokemonIndex === -1);
 							nextArg = {type: ActionType.SwitchPokemon, pokemonIndex};
 						}

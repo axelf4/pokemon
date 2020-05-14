@@ -6,12 +6,12 @@ const Panel = require("Panel");
 import Select from "Select";
 const align = require("align");
 const resources = require("resources");
-import TransitionState, {fade} from "TransitionState";
 import swapElements from "swapElements";
 const Label = require("Label");
 const Image = require("Image");
 const Healthbar = require("Healthbar");
 import clamp from "clamp";
+import LoadGuard from "LoadGuard";
 
 /** Enumeration of possible ListState modes. */
 export const modes = Object.freeze({
@@ -50,8 +50,8 @@ export default class ListState extends State {
 			contents.push(new Label(resources.font, "Exit"));
 
 			const select = new Select(contents, 1, selected => {
-				if (selected === contents.length - 1) {
-					// Exit was selected
+				if (selected === -1 // No option was selected
+					|| selected === contents.length - 1) { // Exit was selected
 					this.callback(-1);
 					return;
 				}
@@ -91,7 +91,7 @@ export default class ListState extends State {
 			select.margin(10);
 			mainPanel.addWidget(select);
 
-			this.widget.addWidget(mainPanel);
+			this.widget.addWidget(new LoadGuard(loader, mainPanel));
 			this.widget.addWidget(contextPanel);
 
 			this.widget.requestFocus();
@@ -119,6 +119,16 @@ export default class ListState extends State {
 
 		super.onKey(type, key);
 	}
+}
+
+function showListState(loader, listState) {
+	const prevState = stateManager.getState();
+	return loader.all()
+		.then(() => new Promise(resolve => {
+			listState.setCloseCallback(resolve);
+			stateManager.setState(listState);
+		}))
+		.finally(() => { stateManager.setState(prevState); });
 }
 
 export class ListPokemonState extends ListState {
@@ -157,14 +167,7 @@ export class ListPokemonState extends ListState {
 	}
 }
 
-export function choosePokemon(loader, trainer) {
-	const lastState = stateManager.getState();
-	return new Promise(resolve => {
-		const listState = new ListPokemonState(loader, trainer.pokemons, modes.choose)
-		listState.setCloseCallback(resolve);
-
-		const transition = new TransitionState(lastState, fade);
-		stateManager.setState(transition);
-		loader.all().then(() => { transition.transitionTo(listState); });
-	}).finally(() => { stateManager.setState(lastState); });
+export function listPokemon(loader, trainer, mode = modes.list) {
+	return showListState(loader,
+		new ListPokemonState(loader, trainer.pokemons, mode));
 }
