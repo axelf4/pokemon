@@ -14,12 +14,9 @@ export class Movement {
 	}
 
 	get controller() {
-		if (this.controllerStack.length <= 0) throw new Error("The controller stack was unexpectedly empty.");
-		return this.controllerStack[this.controllerStack.length - 1];
-	}
-
-	getController() {
-		return this.controller;
+		let controller = this.controllerStack[this.controllerStack.length - 1];
+		if (!controller) throw new Error("The controller stack was unexpectedly empty.");
+		return controller;
 	}
 
 	pushController(controller) {
@@ -62,7 +59,8 @@ export class MovementSystem {
 	}
 
 	update(dt, time) {
-		const lastTime = this.lastTime || time;
+		let lastTime = this.lastTime || time;
+		if (time - lastTime > 1000) lastTime = time;
 		this.lastTime = time;
 		let game = this.game, em = game.em;
 		let entities = em.queryComponents([Position, direction.DirectionComponent, Movement]);

@@ -17,6 +17,7 @@ const TWEEN = require("@tweenjs/tween.js");
 
 import Trainer from "Trainer";
 import Pokemon, {pokemons, moves} from "./pokemon";
+import Item from "./item";
 
 import * as lootTable from "lootTable";
 
@@ -47,6 +48,7 @@ loader.loadTexture("textures/frame.9.png").then(texRegion => {
 			new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
 			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle, moves.growl ]),
 	]);
+	playerTrainer.items.push(Item.Pokeball);
 	const game = new Game(loader, batch, playerTrainer);
 	game.loadScript("home.js");
 	game.warp(9, 3);

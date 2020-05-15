@@ -1,5 +1,6 @@
 import Pokemon, {Move, DamageCategory, Stats} from "./pokemon";
 import Trainer from "./Trainer";
+import clamp from "./clamp";
 
 /**
  * Type effectiveness for <code>[attacking move type][defending type]</code>.
@@ -24,31 +25,31 @@ const typeMultipliers = [
 	[1, 1, 2, 1, 2, 1, 1, 1, .5, .5, .5, 2, 1, 1, .5, 2, 1], // Ice
 	[1, 1, 1, 1, 1, 1, 1, 1, .5, 1, 1, 1, 1, 1, 1, 2, 1], // Dragon
 	[1, .5, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, .5], // Dark
-];
+] as const;
 
-interface StatStages {
-	attack: number;
-	defense: number;
-	specialAttack: number;
-	specialDefense: number;
-	speed: number;
-	// TODO Add accuracy/evasion
+type StatStage = -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+function clampStatStage(s: number): StatStage {
+	return clamp(s, -6, 6) as StatStage;
 }
+
+type StatStages = { [S in keyof Omit<Stats, 'hp'> | 'accuracy' | 'evasion']: StatStage }
 
 /**
  * Returns the multiplier for calculating the effective stat given the stat stage.
  *
- * Modelled after gen 2+ games except twice as large.
+ * Modelled after gen 2+ games except squared.
  *
  * @param s The current stat stage.
  * @return The multiplier.
  * @see https://www.dragonflycave.com/mechanics/stat-stages
  */
-const statStageMultiplier = (s: number) => 2 * Math.max(2, 2 + s) / Math.max(2, 2 - s);
+const statStageMultiplier = (s: StatStage) => (Math.max(2, 2 + s) / Math.max(2, 2 - s))**2;
 
-const getDefaultStatStages = () => ({
-	attack: 0, defense: 0, specialAttack: 0, specialDefense: 0, speed: 0,
-});
+const defaultStatStages: StatStages = {
+	attack: 0, defense: 0, specialAttack: 0, specialDefense: 0,
+	speed: 0, accuracy: 0, evasion: 0,
+} as const;
 
 /** A player/enemy battler that may have a pokemon in battle. */
 class Battler {
@@ -69,16 +70,19 @@ class Battler {
 	sendOut(newPokemon: Pokemon): BattleEvent {
 		const oldPokemon = this.active?.pokemon;
 		// Reset stat stages and volatile statuses
-		this.active = {pokemon: newPokemon, statStages: getDefaultStatStages()};
+		this.active = {pokemon: newPokemon, statStages: {...defaultStatStages}};
 		return {
-			type: "sendOut", isPlayer: this.isPlayer,
-			pokemon: newPokemon, oldPokemon,
-			switching: !!oldPokemon && !oldPokemon.isFainted()
+			type: "sendOut", isPlayer: this.isPlayer, pokemon: newPokemon,
+			oldPokemon: oldPokemon && !oldPokemon.isFainted() ? oldPokemon : null,
 		};
 	}
 
 	get pokemon() {
 		return this.active!.pokemon;
+	}
+
+	get statStages() {
+		return this.active!.statStages;
 	}
 
 	calculateStats() {
@@ -90,6 +94,9 @@ class Battler {
 	}
 }
 
+/** Returns whether usage of the specified move missed. */
+const isMiss = (attacker: Battler, move: Move): boolean => move.accuracy * statStageMultiplier(clampStatStage(attacker.statStages.accuracy - attacker.statStages.evasion)) < 100 * Math.random();
+
 /**
  * Calculates the damage of an attack.
  *
@@ -98,7 +105,7 @@ class Battler {
  * @param move The move in question.
  * @see http://bulbapedia.bulbagarden.net/wiki/Damage_modification#Damage_formula
  */
-function calculateDamage(attacker: Battler, defender: Battler, move: Move): {damage: number, typeEffectiveness: number, crit: boolean} {
+function calculateDamage(attacker: Battler, defender: Battler, move: Move) {
 	const attackerStats = attacker.calculateStats(),
 		defenderStats = defender.calculateStats();
 	let attack, defense;
@@ -117,15 +124,12 @@ function calculateDamage(attacker: Battler, defender: Battler, move: Move): {dam
 
 	const crit = Math.random() < attackerStats.speed / 0x200;
 	const typeEffectiveness = defender.pokemon.species.types.reduce((acc, type) => acc * typeMultipliers[move.type][type], 1);
-
 	const stab = attacker.pokemon.species.types.some(type => type === move.type) ? 1.5 : 1;
 	const multipliers = stab * typeEffectiveness * (crit ? 2 : 1);
 
 	return {
-		damage: ((2 * attacker.pokemon.level + 10) / 250 * (attack / defense) * move.power + 2)
-		* (0.15 * Math.random() + 0.88) * multipliers | 0,
-		typeEffectiveness,
-		crit,
+		damage: ((2 * attacker.pokemon.level + 10) / 250 * (attack / defense) * move.power + 2) * (0.15 * Math.random() + 0.88) * multipliers | 0,
+		typeEffectiveness, crit,
 	};
 }
 
@@ -133,18 +137,15 @@ function calculateDamage(attacker: Battler, defender: Battler, move: Move): {dam
  * Returns whether a flee attempt was successful.
  * @see http://bulbapedia.bulbagarden.net/wiki/Escape
  */
-const canFlee = (speed: number, enemySpeed: number, escapeAttempts: number) =>
-	Math.random() * 255 < (speed * 128 / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
-
-/** Returns whether usage of the specified move missed. */
-const isMiss = (move: Move) => 100 * Math.random() >= move.accuracy;
+function canFlee(speed: number, enemySpeed: number, escapeAttempts: number): boolean {
+	return 255 * Math.random() < (128 * speed / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
+}
 
 /** Types of events yielded from the battle generator function. */
 type BattleEvent =
 	| { type: "msgbox"; text: string, time?: number }
 	| { type: "queryAction"; pokemon: Pokemon }
-	| { type: "sendOut"; isPlayer: boolean, switching: boolean,
-		pokemon: Pokemon, oldPokemon: Pokemon | undefined }
+	| { type: "sendOut"; isPlayer: boolean, pokemon: Pokemon, oldPokemon: Pokemon | null }
 	| { type: "useMove"; move: Move, isPlayer: boolean }
 	| { type: "setHealth"; percentage: number, isPlayer: boolean }
 	| { type: "faint"; pokemon: Pokemon, isPlayer: true, promptForNext: boolean }
@@ -224,11 +225,10 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 				case ActionType.Attack:
 					--action.move.pp; // Deplete PP
 					yield { type: "msgbox", text: `${attacker.pokemon.name} used ${action.move.name}!`, time: 1000 };
-
-					if (isMiss(action.move)) {
+					if (isMiss(attacker, action.move))
 						yield { type: "msgbox", text: "But it missed.", time: 1500 };
-					} else {
-						const { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, action.move);
+					else {
+						let { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, action.move);
 						defender.pokemon.hp = Math.max(0, defender.pokemon.hp - damage);
 						yield { type: "useMove", move: action.move, isPlayer };
 

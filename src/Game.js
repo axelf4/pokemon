@@ -19,7 +19,7 @@ var renderer = require("renderer");
 import range from "range";
 import * as stateManager from "stateManager";
 import TransitionState, {fade, createBattleTransition} from "TransitionState";
-import {listPokemon} from "ListState";
+import {listPokemon, listItems} from "ListState";
 var measureSpec = require("measureSpec");
 import BattleState from "BattleState";
 import { MovementSystem, Movement, LineOfSight,
@@ -38,11 +38,8 @@ var gl = renderer.gl;
 
 var font = resources.font;
 
-var mvMatrix = mat4.create();
-var positionVector = vec3.create();
-const up = vec3.fromValues(0, 1, 0);
-var tmp = vec3.create();
-var directionVector = vec3.fromValues(0, 0, -1);
+const mvMatrix = mat4.create(),
+	positionVector = vec3.create();
 
 var GameScreen = function(game) {
 	Stack.call(this);
@@ -77,6 +74,7 @@ const showPauseMenu = async function(game) {
 			await listPokemon(game.loader, game.playerTrainer);
 			break;
 		case 1: // Bag
+			await listItems(game.loader, game.playerTrainer);
 			break;
 		case 2: // Save
 			break;
@@ -94,7 +92,7 @@ GameScreen.prototype.onKey = function(type, key) {
 			// Hacky way of connecting input to player interacting with shit
 			let pos = game.player.position,
 				movement = game.player.movement;
-			if (!movement.isMoving && movement.getController() instanceof player.PlayerMovementController) {
+			if (!movement.isMoving && movement.controller instanceof player.PlayerMovementController) {
 				let playerDirection = game.player.directionComponent;
 				switch (key) {
 					case " ":

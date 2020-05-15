@@ -194,7 +194,7 @@ export default class BattleState extends State {
 						break;
 
 					case "sendOut":
-						if (battleEvent.switching) {
+						if (battleEvent.oldPokemon) {
 							showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`, {passive: true});
 							yield new Promise((resolve, reject) => {
 								new TWEEN.Tween(object0).to({ x: [0, 1] }, 2000)

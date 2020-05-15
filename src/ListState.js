@@ -12,6 +12,7 @@ const Image = require("Image");
 const Healthbar = require("Healthbar");
 import clamp from "clamp";
 import LoadGuard from "LoadGuard";
+import {getName as getItemName} from "./item";
 
 /** Enumeration of possible ListState modes. */
 export const modes = Object.freeze({
@@ -123,12 +124,10 @@ export default class ListState extends State {
 
 function showListState(loader, listState) {
 	const prevState = stateManager.getState();
-	return loader.all()
-		.then(() => new Promise(resolve => {
-			listState.setCloseCallback(resolve);
-			stateManager.setState(listState);
-		}))
-		.finally(() => { stateManager.setState(prevState); });
+	return new Promise(resolve => {
+		listState.setCloseCallback(resolve);
+		stateManager.setState(listState);
+	}).finally(() => { stateManager.setState(prevState); });
 }
 
 export class ListPokemonState extends ListState {
@@ -170,4 +169,20 @@ export class ListPokemonState extends ListState {
 export function listPokemon(loader, trainer, mode = modes.list) {
 	return showListState(loader,
 		new ListPokemonState(loader, trainer.pokemons, mode));
+}
+
+export class ListItemState extends ListState {
+	constructor(loader, items, ...args) {
+		super(loader, items, ...args);
+	}
+
+	itemToWidget(loader, item) {
+		const nameLabel = new Label(resources.font, `${getItemName(item)}`);
+		return nameLabel;
+	}
+}
+
+export function listItems(loader, trainer) {
+	return showListState(loader,
+		new ListItemState(loader, trainer.items));
 }
