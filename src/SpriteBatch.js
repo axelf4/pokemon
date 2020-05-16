@@ -1,9 +1,8 @@
-const glMatrix = require("gl-matrix"),
-	  pack = require("rgba-to-float"),
+import {mat4} from "gl-matrix";
+const pack = require("rgba-to-float"),
 	  renderer = require("renderer");
 
-const mat4 = glMatrix.mat4,
-	  gl = renderer.gl;
+const gl = renderer.gl;
 
 export class Color {
 	constructor(r, g, b, a = 1) {

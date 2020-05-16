@@ -1,8 +1,8 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-var glMatrix = require("gl-matrix");
 import * as renderer from "renderer";
+import {mat4, vec3} from "gl-matrix";
 import SpriteBatch from "SpriteBatch";
 import FileLoader from "FileLoader";
 import LoaderFacade from "LoaderFacade";
@@ -16,7 +16,7 @@ import NinePatch from "NinePatch";
 import Game from "Game";
 import TransitionState, {fade} from "TransitionState";
 import "touchControl";
-const TWEEN = require("@tweenjs/tween.js");
+import TWEEN from "@tweenjs/tween.js";
 
 import Trainer from "Trainer";
 import Pokemon, {pokemons, moves} from "./pokemon";
@@ -24,10 +24,9 @@ import Item from "./item";
 
 import * as lootTable from "lootTable";
 
-const gl = renderer.gl, {mat4, vec3} = glMatrix;
-
 console.log("----- Starting the game -----");
 
+const gl = renderer.gl;
 const projectionMatrix = mat4.create();
 const batch = new SpriteBatch();
 

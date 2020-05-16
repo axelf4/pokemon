@@ -24,10 +24,9 @@ module.exports = {
 			title: 'Game',
 			meta: {viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'},
 		}),
-		new CopyPlugin([
-			{ from: 'assets', to: 'assets' },
-			{ from: 'textures', to: 'textures' },
-		]),
+		new CopyPlugin({
+			patterns: [ { from: 'assets', to: 'assets' }, { from: 'textures', to: 'textures' }, ],
+		}),
 		new ForkTsCheckerWebpackPlugin(),
 	],
 	module: {

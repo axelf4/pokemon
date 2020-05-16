@@ -1,5 +1,5 @@
 import * as input from "input";
-var Container = require("Container.js");
+import Container from "Container";
 var Label = require("Label.js");
 var align = require("align.js");
 var resources = require("resources.js");

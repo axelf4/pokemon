@@ -1,11 +1,10 @@
 var renderer = require("renderer.js");
-var glMatrix = require("gl-matrix");
+import {vec2} from "gl-matrix";
 var path = require("path");
 var base64 = require("base64-js");
 import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
 
 var gl = renderer.gl;
-var vec2 = glMatrix.vec2;
 
 var MapRenderer = function(map) {
 	this.map = map;

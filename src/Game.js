@@ -4,16 +4,16 @@ var NinePatch = require("NinePatch.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var resources = require("resources.js");
-var Stack = require("Stack.js");
-var Panel = require("Panel.js");
+import Stack from "Stack";
+import Panel from "Panel";
 import Dialog from "Dialog";
 var align = require("align.js");
 import State from "State";
-var WidgetGroup = require("WidgetGroup.js");
+import {FOCUS_AFTER_DESCENDANTS} from "WidgetGroup";
 import * as input from "input";
 import * as direction from "direction";
 var Animation = require("Animation");
-var glMatrix = require("gl-matrix");
+import {mat4, vec3, quat} from "gl-matrix";
 import Select from "Select";
 var renderer = require("renderer");
 import range from "range";
@@ -33,27 +33,55 @@ import Interactable from "Interactable";
 import Animatable from "Animatable";
 import Size from "Size";
 
-const {mat4, vec3, quat} = glMatrix;
 var gl = renderer.gl;
-
-var font = resources.font;
-
 const mvMatrix = mat4.create(),
 	positionVector = vec3.create();
+var font = resources.font;
 
-var GameScreen = function(game) {
-	Stack.call(this);
-	this.game = game;
-	this.setFocusable(true);
-	this.setDescendantFocusability(WidgetGroup.FOCUS_AFTER_DESCENDANTS);
+class GameScreen extends Stack {
+	constructor(game) {
+		super();
+		this.game = game;
+		this.setFocusable(true);
+		this.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
 
-	this.uiLayer = new Panel();
-	this.uiLayer.justify = Panel.ALIGN_FLEX_END;
-	this.uiLayer.direction = Panel.DIRECTION_COLUMN;
-	this.addWidget(this.uiLayer);
-};
-GameScreen.prototype = Object.create(Stack.prototype);
-GameScreen.prototype.constructor = GameScreen;
+		this.uiLayer = new Panel();
+		this.uiLayer.justify = Panel.ALIGN_FLEX_END;
+		this.uiLayer.direction = Panel.DIRECTION_COLUMN;
+		this.addWidget(this.uiLayer);
+	}
+
+	onKey(type, key) {
+		if (this.flags & Widget.FLAG_FOCUSED) {
+			if (type === input.KEY_ACTION_DOWN) {
+				var game = this.game;
+				var em = this.game.em;
+				// Hacky way of connecting input to player interacting with shit
+				let pos = game.player.position,
+					movement = game.player.movement;
+				if (!movement.isMoving && movement.controller instanceof player.PlayerMovementController) {
+					let playerDirection = game.player.directionComponent;
+					switch (key) {
+						case " ":
+							let interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
+								pos.y + direction.getDeltaY(playerDirection.value));
+							if (interactable && interactable.hasComponent(Interactable)) {
+								interactable.interactable.callback(game);
+							}
+							break;
+						case "w": playerDirection.value = direction.UP; break;
+						case "a": playerDirection.value = direction.LEFT; break;
+						case "s": playerDirection.value = direction.DOWN; break;
+						case "d": playerDirection.value = direction.RIGHT; break;
+						case "Shift":
+							showPauseMenu(game);
+							break;
+					}
+				}
+			}
+		} else super.onKey(type, key);
+	}
+}
 
 const showPauseMenu = async function(game) {
 	game.lock();
@@ -82,39 +110,6 @@ const showPauseMenu = async function(game) {
 			break;
 	}
 	game.release();
-};
-
-GameScreen.prototype.onKey = function(type, key) {
-	if (this.flags & Widget.FLAG_FOCUSED) {
-		if (type === input.KEY_ACTION_DOWN) {
-			var game = this.game;
-			var em = this.game.em;
-			// Hacky way of connecting input to player interacting with shit
-			let pos = game.player.position,
-				movement = game.player.movement;
-			if (!movement.isMoving && movement.controller instanceof player.PlayerMovementController) {
-				let playerDirection = game.player.directionComponent;
-				switch (key) {
-					case " ":
-						let interactable = game.getEntityAtCell(pos.x + direction.getDeltaX(playerDirection.value),
-								pos.y + direction.getDeltaY(playerDirection.value));
-						if (interactable && interactable.hasComponent(Interactable)) {
-							interactable.interactable.callback(game);
-						}
-						break;
-					case "w": playerDirection.value = direction.UP; break;
-					case "a": playerDirection.value = direction.LEFT; break;
-					case "s": playerDirection.value = direction.DOWN; break;
-					case "d": playerDirection.value = direction.RIGHT; break;
-					case "Shift":
-						showPauseMenu(game);
-						break;
-				}
-			}
-		}
-	} else {
-		Stack.prototype.onKey.call(this, type, key);
-	}
 };
 
 var Game = function(loader, batch, playerTrainer) {

@@ -1,5 +1,5 @@
-var Container = require("Container.js");
-var Panel = require("Panel.js");
+import Container from "Container";
+import Panel from "Panel";
 var Label = require("Label.js");
 var align = require("align.js");
 var resources = require("resources.js");

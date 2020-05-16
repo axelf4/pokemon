@@ -1,15 +1,15 @@
 import State from "State";
 import * as input from "input";
 import * as stateManager from "stateManager";
-const Stack = require("Stack");
-const Panel = require("Panel");
+import Stack from "Stack";
+import Panel from "Panel";
 import Select from "Select";
 const align = require("align");
 const resources = require("resources");
 import swapElements from "swapElements";
 const Label = require("Label");
 const Image = require("Image");
-const Healthbar = require("Healthbar");
+import Healthbar from "Healthbar";
 import clamp from "clamp";
 import LoadGuard from "LoadGuard";
 import {getName as getItemName} from "./item";

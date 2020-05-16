@@ -1,6 +1,6 @@
 import State from "State";
-var Panel = require("Panel.js");
-var Container = require("Container.js");
+import Panel from "Panel";
+import Container from "Container";
 import Dialog from "Dialog";
 var align = require("align.js");
 var texture = require("texture.js");
@@ -12,18 +12,16 @@ import * as stateManager from "stateManager";
 var Label = require("Label.js");
 var Widget = require("Widget");
 var measureSpec = require("measureSpec");
-const Healthbar = require("Healthbar.js");
+import Healthbar from "Healthbar";
 var resources = require("resources.js");
 import { Color } from "SpriteBatch";
 import battle, { ActionType } from "battle";
-const glMatrix = require("gl-matrix");
+import {mat4, vec3, quat} from "gl-matrix";
 const renderer = require("renderer");
-const TWEEN = require("@tweenjs/tween.js");
+import TWEEN from "@tweenjs/tween.js";
 import TransitionState, {fade} from "TransitionState";
 import { listPokemon, modes } from "ListState";
 import wait from "wait";
-
-const { mat4, vec3, quat } = glMatrix;
 
 export default class BattleState extends State {
 	constructor(loader, nextState, player, enemy) {
@@ -124,7 +122,7 @@ export default class BattleState extends State {
 			self.playerOffset = { x: 1, y: 0, a: 1 };
 			self.enemyOffset = { x: 1, y: 0, a: 1 };
 
-			yield showDialog(`${enemy.trainer.getName()} wants to fight!`);
+			yield showDialog(`${enemy.getName()} wants to fight!`);
 
 			const battleGen = battle(player, enemy);
 			let nextArg;

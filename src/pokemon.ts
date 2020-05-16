@@ -130,11 +130,12 @@ export default class Pokemon {
 	public moves: Move[];
 	private nonVolatileStatus?: NonVolatileStatus;
 
-	constructor(species: Species | string, level: number, moves: Move[]) {
+	constructor(species: Species | string, level: number, moves?: Move[]) {
 		this.species = typeof species === "string" ? pokemons[species] : species;
 		this.level = level;
 		this.hp = this.calculateStats().hp;
-		this.moves = moves.map(move => Object.create(move, { pp: {value: move.pp, writable: true}}));
+		this.moves = (moves || getMovesForLevel(this.species, level))
+			.map(move => Object.create(move, { pp: {value: move.pp, writable: true}}));
 
 		if (new.target === Pokemon) Object.seal(this);
 	}

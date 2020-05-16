@@ -6,7 +6,6 @@ import Pokemon, { pokemons, moves } from "pokemon";
 
 import Position from "Position";
 import Interactable from "Interactable";
-import {LineOfSight} from "movement";
 import Size from "Size";
 
 export default function(game, loader) {
@@ -33,7 +32,8 @@ export default function(game, loader) {
 		}));
 	game.loadCharacterSprite(mom, "assets/girlSprite.png");
 
-	let tv = em.createEntity()
+	// TV
+	em.createEntity()
 		.addComponent(Position, 5, 4)
 		.addComponent(Size, 2, 1)
 		.addComponent(Interactable, thread.bind(undefined, function*(game) {
