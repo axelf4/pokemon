@@ -7,7 +7,7 @@
  */
 
 /** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
-import table from "./pokemon.json";
+import table from "./pokemonData.json";
 
 export enum Type {
 	Normal, Fight, Flying, Poison, Ground, Rock, Bug, Ghost, Steel,
@@ -36,7 +36,7 @@ export const pokemons: {[K in keyof typeof table]: Species} = new Proxy(table, {
 			specialDefense: data[5],
 			speed: data[6],
 			types: data[7].map((typeName: string) => Type[typeName as keyof typeof Type]),
-			moveSet: Object.fromEntries(Object.entries(data[8]).map(([k, data]) => [+k, moves[data as string]])),
+			moveSet: Object.fromEntries(Object.entries(data[8]).map(([k, data]) => [+k, moves[data as keyof typeof moves]])),
 		});
 	}
 });
@@ -69,7 +69,7 @@ export class Move {
 	public pp: number;
 	public accuracy: number;
 	public damageCategory: DamageCategory;
-	public priority: number;
+	public priority: Priority;
 
 	/**
 	 * @param accuracy The accuracy in percent.
@@ -92,16 +92,16 @@ export class Move {
 		return this.type;
 	}
 
-	toString() {
+	public toString() {
 		return `${this.name} (${this.type} - ${this.power === 1 ? 'X' : this.power} power - ${this.accuracy} accuracy)`;
 	}
 }
 
 /** Collection of all moves. */
-export const moves: {[name: string]: Move} = Object.freeze({
+export const moves = {
 	tackle: new Move("Tackle", Type.Normal, 35, 40, 100, DamageCategory.Physical),
 	growl: new Move("Growl", Type.Normal, 40, 0, 100, DamageCategory.Status),
-});
+} as const;
 
 /** Highest number of moves a pokemon can know at any one time. */
 export const maxMoveCount = 4;

@@ -4,7 +4,9 @@
 		"moduleResolution": "Node",
 		"resolveJsonModule": true,
 		"target": "ES2020",
+		// Don't emit; allow Babel to transform files
 		"noEmit": true,
+		// Disallow features that require cross-file information for emit
 		"isolatedModules": true
 	},
 	"include": ["src/**/*"]

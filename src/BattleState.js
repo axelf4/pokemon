@@ -124,10 +124,13 @@ export default class BattleState extends State {
 			self.playerOffset = { x: 1, y: 0, a: 1 };
 			self.enemyOffset = { x: 1, y: 0, a: 1 };
 
+			yield showDialog(`${enemy.trainer.getName()} wants to fight!`);
+
 			const battleGen = battle(player, enemy);
 			let nextArg;
 			for (;;) {
 				let {done, value: battleEvent} = battleGen.next(nextArg);
+				nextArg = undefined;
 				if (done) break;
 				console.log("Battle event:", battleEvent);
 

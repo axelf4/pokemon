@@ -5,7 +5,7 @@ const path = require('path'),
 	ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 module.exports = {
-	entry: ["@babel/polyfill", "./src/main.js"],
+	entry: "./src/main.js",
 	resolve: {
 		modules: [
 			path.join(__dirname, "src"),
@@ -37,10 +37,6 @@ module.exports = {
 				include: path.resolve(__dirname, 'src'),
 				exclude: /(node_modules|bower_components)/,
 				loader: "babel-loader",
-				options: {
-					presets: ["@babel/preset-env", "@babel/typescript"],
-					plugins: ["@babel/plugin-syntax-dynamic-import", "@babel/plugin-proposal-class-properties"]
-				}
 			},
 			{ test: /\.glsl$/, loader: "webpack-glsl-loader" },
 		]

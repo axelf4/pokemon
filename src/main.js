@@ -1,3 +1,6 @@
+import "core-js/stable";
+import "regenerator-runtime/runtime";
+
 var glMatrix = require("gl-matrix");
 import * as renderer from "renderer";
 import SpriteBatch from "SpriteBatch";

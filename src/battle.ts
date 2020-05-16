@@ -190,17 +190,15 @@ const expGain = (isWild: boolean, fainted: Pokemon, participators: Pokemon[]) =>
  * @param playerTrainer The player trainer.
  * @param enemyTrainer The enemy trainer.
  */
-export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): Generator<BattleEvent, void, Action> {
+export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): Generator<BattleEvent, void, Action | undefined> {
 	const player = new Battler(playerTrainer, true), enemy = new Battler(enemyTrainer, false);
-
-	yield { type: "msgbox", text: `${enemy.trainer.getName()} wants to fight!` };
 	yield enemy.sendOut(enemy.trainer.getPrimaryPokemon()!);
 	yield player.sendOut(player.trainer.getPrimaryPokemon()!);
 
 	let escapeAttempts = 0;
 	battleLoop:
 	for (;;) {
-		const playerAction = yield { type: "queryAction", pokemon: player.pokemon },
+		const playerAction = (yield { type: "queryAction", pokemon: player.pokemon })!,
 			enemyAction: Action = { type: ActionType.Attack, move: enemy.pokemon.moves[0]! }; // TODO add AI
 
 		const queue = [{battler: player, ...playerAction}, {battler: enemy, ...enemyAction}].sort((a, b) =>
@@ -256,6 +254,7 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 						};
 
 						if (promptForNext) {
+							if (!nextIndex) throw new Error("Should provide switch action");
 							if (nextIndex.type !== ActionType.SwitchPokemon) throw new Error();
 							let newPokemon = player.trainer.pokemons[nextIndex.pokemonIndex];
 							yield player.sendOut(newPokemon);
