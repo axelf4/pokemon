@@ -55,13 +55,10 @@ export class LineOfSight {
 export class MovementSystem {
 	constructor(game) {
 		this.game = game;
-		this.lastTime = null;
 	}
 
 	update(dt, time) {
-		let lastTime = this.lastTime || time;
-		if (time - lastTime > 1000) lastTime = time;
-		this.lastTime = time;
+		let lastTime = time - dt;
 		let game = this.game, em = game.em;
 		let entities = em.queryComponents([Position, direction.DirectionComponent, Movement]);
 		let casters = em.queryComponents([Position, direction.DirectionComponent, LineOfSight])
@@ -154,7 +151,6 @@ export class WalkForwardMovementController {
 export class RandomMovementController {
 	contructor(interval = 2000) {
 		this.interval = interval;
-		this.lastTime;
 	}
 
 	getTarget(game, time, entity, position) {

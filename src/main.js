@@ -68,7 +68,7 @@ var requestID, lastTime = (performance || Date).now();
 
 var update = function(timestamp) {
 	requestID = window.requestAnimationFrame(update);
-	var dt = timestamp - lastTime;
+	let dt = timestamp - lastTime;
 	if (dt > 1000) dt = 0; // If the user comes back to the tab after a large amount of time
 	lastTime = timestamp;
 
