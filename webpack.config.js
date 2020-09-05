@@ -2,7 +2,8 @@ const path = require('path'),
 	webpack = require('webpack'),
 	HtmlWebpackPlugin = require('html-webpack-plugin'),
 	CopyPlugin = require('copy-webpack-plugin'),
-	ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+	ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin'),
+	WebpackFreeTexPacker = require('webpack-free-tex-packer');
 
 module.exports = {
 	entry: "./src/main.js",
@@ -28,6 +29,14 @@ module.exports = {
 			patterns: [ { from: 'assets', to: 'assets' }, { from: 'textures', to: 'textures' }, ],
 		}),
 		new ForkTsCheckerWebpackPlugin(),
+		new WebpackFreeTexPacker(path.resolve(__dirname, 'textures'), 'atlases', {
+			textureName: 'atlas',
+			width: 512, height: 512,
+			padding: 1,
+			allowRotation: false, allowTrim: false,
+			detectIdentical: true,
+			exporter: "Pixi",
+		}),
 	],
 	module: {
 		rules: [

@@ -41,6 +41,14 @@ const loader = promiseTrap(cachingProxy(
 const transitionState = new TransitionState(null, fade);
 stateManager.setState(transitionState);
 
+const atlases = {};
+const r = require.context('../atlases/', false, /^atlas-\d+\.json$/);
+r.keys().forEach(key => atlases[key] = r(key));
+
+loader.loadJSON("atlases/atlas.json").then(x => {
+	console.log(x);
+});
+
 resources.font = new Font(loader);
 loader.loadTexture("textures/frame.9.png").then(texRegion => {
 	resources.frame = NinePatch.fromTextureRegion(texRegion);
