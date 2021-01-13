@@ -12,6 +12,9 @@ module.exports = {
 			"node_modules",
 		],
 		extensions: ['.js', '.ts'],
+		fallback: {
+			util: require.resolve("util/"),
+		},
 	},
 	mode: 'development',
 	devtool: "source-map",
@@ -20,6 +23,9 @@ module.exports = {
 	},
 	plugins: [
 		new webpack.HotModuleReplacementPlugin(),
+		new webpack.ProvidePlugin({
+			process: 'process/browser',
+		}),
 		new HtmlWebpackPlugin({
 			title: 'Game',
 			meta: {viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'},

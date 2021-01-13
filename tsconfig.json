@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		"strict": true,
 		"moduleResolution": "Node",
+		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"target": "ES2020",
 		// Don't emit; allow Babel to transform files

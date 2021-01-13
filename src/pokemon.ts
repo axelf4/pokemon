@@ -11,21 +11,21 @@ import table from "./pokemonData.json";
 
 export enum Type {
 	Normal, Fight, Flying, Poison, Ground, Rock, Bug, Ghost, Steel,
-		Fire, Water, Grass, Electric, Psychic, Ice, Dragon, Dark
+	Fire, Water, Grass, Electric, Psychic, Ice, Dragon, Dark,
 }
 
 export type Stats = Record<'hp' | 'attack' | 'defense' | 'specialAttack' | 'specialDefense'
 	| 'speed', number>
 
-type Species = Stats & {
+interface Species extends Stats {
 	name: string;
 	types: Type[];
 	moveSet: {[level: number]: Move};
-};
+}
 
 /** Dictionary of pokemon species. */
-export const pokemons: {[K in keyof typeof table]: Species} = new Proxy(table, {
-	get(obj, prop) {
+export const pokemons = new Proxy(table, {
+	get(obj, prop: keyof typeof table) {
 		let data = obj[prop];
 		return Object.freeze({
 			name: data[0],
@@ -35,11 +35,11 @@ export const pokemons: {[K in keyof typeof table]: Species} = new Proxy(table, {
 			specialAttack: data[4],
 			specialDefense: data[5],
 			speed: data[6],
-			types: data[7].map((typeName: string) => Type[typeName as keyof typeof Type]),
+			types: (data[7] as [keyof typeof Type]).map(x => Type[x]),
 			moveSet: Object.fromEntries(Object.entries(data[8]).map(([k, data]) => [+k, moves[data as keyof typeof moves]])),
 		});
 	}
-});
+}) as unknown as {[K in keyof typeof table]: Species};
 
 /**
  * Returns the total amount of experience required for the next level.
@@ -130,7 +130,7 @@ export default class Pokemon {
 	public moves: Move[];
 	private nonVolatileStatus?: NonVolatileStatus;
 
-	constructor(species: Species | string, level: number, moves?: Move[]) {
+	constructor(species: Species | keyof typeof pokemons, level: number, moves?: Move[]) {
 		this.species = typeof species === "string" ? pokemons[species] : species;
 		this.level = level;
 		this.hp = this.calculateStats().hp;
