@@ -160,7 +160,7 @@ export default class BattleState extends State {
 									break; // Shift was pressed
 								case 0: // Fight
 									const moveId = yield new Promise(function(resolve, reject) {
-										const moveNames = pokemon.moves.map(move => move.name);
+										const moveNames = pokemon.moves.map(move => move.move.name);
 										const select = new Select(moveNames, 2, resolve);
 										select.style.align = align.STRETCH;
 										select.flex = 1;

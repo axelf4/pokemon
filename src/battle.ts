@@ -1,4 +1,4 @@
-import Pokemon, {Move, DamageCategory, Stats} from "./pokemon";
+import Pokemon, {Move, MoveInstance, DamageCategory, Stats} from "./pokemon";
 import Trainer from "./Trainer";
 import clamp from "./clamp";
 
@@ -27,13 +27,13 @@ const typeMultipliers = [
 	[1, .5, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, .5], // Dark
 ] as const;
 
-type StatStage = -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6
+type StatStage = -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 function clampStatStage(s: number): StatStage {
 	return clamp(s, -6, 6) as StatStage;
 }
 
-type StatStages = { [S in keyof Omit<Stats, 'hp'> | 'accuracy' | 'evasion']: StatStage }
+type StatStages = { [S in keyof Omit<Stats, 'hp'> | 'accuracy' | 'evasion']: StatStage };
 
 /**
  * Returns the multiplier for calculating the effective stat given the stat stage.
@@ -53,14 +53,9 @@ const defaultStatStages: StatStages = {
 
 /** A player/enemy battler that may have a pokemon in battle. */
 class Battler {
-	trainer: Trainer;
-	isPlayer: boolean;
-	active?: {pokemon: Pokemon, statStages: StatStages};
+	private active?: {pokemon: Pokemon, statStages: StatStages};
 
-	constructor(trainer: Trainer, isPlayer: boolean) {
-		this.trainer = trainer;
-		this.isPlayer = isPlayer;
-	}
+	constructor(readonly trainer: Trainer, readonly isPlayer: boolean) {}
 
 	/**
 	 * Makes this battler switch to the specified pokemon.
@@ -95,7 +90,11 @@ class Battler {
 }
 
 /** Returns whether usage of the specified move missed. */
-const isMiss = (attacker: Battler, move: Move): boolean => move.accuracy * statStageMultiplier(clampStatStage(attacker.statStages.accuracy - attacker.statStages.evasion)) < 100 * Math.random();
+function isMiss(attacker: Battler, move: Move): boolean {
+	return move.accuracy
+		* statStageMultiplier(clampStatStage(attacker.statStages.accuracy - attacker.statStages.evasion))
+		< 100 * Math.random();
+}
 
 /**
  * Calculates the damage of an attack.
@@ -156,8 +155,8 @@ type BattleEvent =
 export enum ActionType { Attack, SwitchPokemon, Run, UseItem }
 
 type Action =
-	| { type: ActionType.Attack, move: Move }
-	| { type: ActionType.SwitchPokemon; pokemonIndex: number }
+	| { type: ActionType.Attack, move: MoveInstance }
+	| { type: ActionType.SwitchPokemon, pokemonIndex: number }
 	| { type: ActionType.Run };
 
 /**
@@ -181,8 +180,10 @@ enum WeatherType {
  *
  * @see https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula
  */
-const expGain = (isWild: boolean, fainted: Pokemon, participators: Pokemon[]) => (isWild ? 1 : 1.5) * 125 * fainted.level
-	/ (7 * participators.filter(p => !p.isFainted()).length) | 0;
+function expGain(isWild: boolean, fainted: Pokemon, participators: Pokemon[]): number {
+	return (isWild ? 1 : 1.5) * 125 * fainted.level
+		/ (7 * participators.filter(p => !p.isFainted()).length) | 0;
+}
 
 /**
  * Simulates a battle.
@@ -203,7 +204,8 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 
 		const queue = [{battler: player, ...playerAction}, {battler: enemy, ...enemyAction}].sort((a, b) =>
 			a.type === ActionType.Attack && b.type === ActionType.Attack
-			? b.move.priority - a.move.priority || b.battler.calculateStats().speed - a.battler.calculateStats().speed
+			? b.move.type.priority - a.move.type.priority
+			|| b.battler.calculateStats().speed - a.battler.calculateStats().speed
 			: b.type - a.type);
 		actionLoop:
 		for (let action of queue) {
@@ -220,15 +222,17 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 						yield { type: "msgbox", text: "Can't escape!" };
 					}
 					break;
+
 				case ActionType.Attack:
 					--action.move.pp; // Deplete PP
-					yield { type: "msgbox", text: `${attacker.pokemon.name} used ${action.move.name}!`, time: 1000 };
-					if (isMiss(attacker, action.move))
+					const move = action.move.type;
+					yield { type: "msgbox", text: `${attacker.pokemon.name} used ${move.name}!`, time: 1000 };
+					if (isMiss(attacker, move))
 						yield { type: "msgbox", text: "But it missed.", time: 1500 };
 					else {
-						let { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, action.move);
+						let { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, move);
 						defender.pokemon.hp = Math.max(0, defender.pokemon.hp - damage);
-						yield { type: "useMove", move: action.move, isPlayer };
+						yield { type: "useMove", move, isPlayer };
 
 						yield { type: "setHealth", isPlayer: !isPlayer, percentage: defender.pokemon.getHpPercentage() };
 						if (crit) yield { type: "msgbox", text: "A critical hit!", time: 1500 }
@@ -290,12 +294,11 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 					}
 
 					break;
+
 				case ActionType.SwitchPokemon:
 					let newPokemon = battler.trainer.pokemons[action.pokemonIndex];
 					yield battler.sendOut(newPokemon);
 					break;
-				default:
-					throw new Error("Invalid action.");
 			}
 		}
 	}

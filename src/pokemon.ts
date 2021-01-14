@@ -8,38 +8,40 @@
 
 /** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
 import table from "./pokemonData.json";
+import { mapObject } from "./utils";
 
 export enum Type {
 	Normal, Fight, Flying, Poison, Ground, Rock, Bug, Ghost, Steel,
 	Fire, Water, Grass, Electric, Psychic, Ice, Dragon, Dark,
 }
 
-export type Stats = Record<'hp' | 'attack' | 'defense' | 'specialAttack' | 'specialDefense'
-	| 'speed', number>
+export type Stats
+	= Record<'hp' | 'attack' | 'defense' | 'specialAttack' | 'specialDefense' | 'speed', number>;
 
-interface Species extends Stats {
+export interface Species extends Stats {
 	name: string;
 	types: Type[];
 	moveSet: {[level: number]: Move};
 }
 
+class SpeciesView implements Species {
+	constructor(private readonly data: (typeof table)[keyof typeof table]) {}
+
+	get name() { return this.data.name; }
+	get hp() { return this.data.hp; }
+	get attack() { return this.data.attack; }
+	get defense() { return this.data.defense; }
+	get specialAttack() { return this.data.specialAttack; }
+	get specialDefense() { return this.data.specialDefense; }
+	get speed() { return this.data.speed; }
+	get types() { return this.data.types.map(x => Type[x as keyof typeof Type]); }
+	get moveSet() { return Object.fromEntries(Object.entries(this.data.moveSet)
+		.map(([level, move]) => [+level, moves[move as keyof typeof moves]])); }
+}
+
 /** Dictionary of pokemon species. */
-export const pokemons = new Proxy(table, {
-	get(obj, prop: keyof typeof table) {
-		let data = obj[prop];
-		return Object.freeze({
-			name: data[0],
-			hp: data[1],
-			attack: data[2],
-			defense: data[3],
-			specialAttack: data[4],
-			specialDefense: data[5],
-			speed: data[6],
-			types: (data[7] as [keyof typeof Type]).map(x => Type[x]),
-			moveSet: Object.fromEntries(Object.entries(data[8]).map(([k, data]) => [+k, moves[data as keyof typeof moves]])),
-		});
-	}
-}) as unknown as {[K in keyof typeof table]: Species};
+export const pokemons: {[K in keyof typeof table]: Species}
+	= mapObject(table, data => new SpeciesView(data));
 
 /**
  * Returns the total amount of experience required for the next level.
@@ -63,34 +65,19 @@ export enum DamageCategory { Physical, Special, Status }
 type Priority = -7 | -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
 
 export class Move {
-	public name: string;
-	public type: Type;
-	public power: number;
-	public pp: number;
-	public accuracy: number;
-	public damageCategory: DamageCategory;
-	public priority: Priority;
-
 	/**
 	 * @param accuracy The accuracy in percent.
 	 * @param power The base power.
 	 */
-	constructor(name: string, type: Type, pp: number, power: number, accuracy: number,
-		damageCategory: DamageCategory, priority: Priority = 0) {
-		this.name = name;
-		this.type = type;
-		this.power = power;
-		this.pp = pp;
-		this.accuracy = accuracy;
-		this.damageCategory = damageCategory;
-		this.priority = priority;
-
-		if (new.target === Move) Object.freeze(this);
-	}
-
-	getType() {
-		return this.type;
-	}
+	constructor(
+		public readonly name: string,
+		public readonly type: Type,
+		public readonly pp: number,
+		public readonly power: number,
+		public readonly accuracy: number,
+		public readonly damageCategory: DamageCategory,
+		public readonly priority: Priority = 0
+	) {}
 
 	public toString() {
 		return `${this.name} (${this.type} - ${this.power === 1 ? 'X' : this.power} power - ${this.accuracy} accuracy)`;
@@ -120,6 +107,14 @@ export function getMovesForLevel(pokemon: Species, level: number): Move[] {
 		.map(([l, m]) => m);
 }
 
+/** An instance of a move whose PP can be depleted. */
+export interface MoveInstance {
+	/** What move this is. */
+	type: Move;
+	/** The current remaining uses of this move. */
+	pp: number;
+}
+
 /** An instance of a pokemon. */
 export default class Pokemon {
 	public species: Species;
@@ -127,7 +122,7 @@ export default class Pokemon {
 	public level: number;
 	public exp: number = 0;
 	public hp: number;
-	public moves: Move[];
+	public moves: MoveInstance[];
 	private nonVolatileStatus?: NonVolatileStatus;
 
 	constructor(species: Species | keyof typeof pokemons, level: number, moves?: Move[]) {
@@ -135,7 +130,7 @@ export default class Pokemon {
 		this.level = level;
 		this.hp = this.calculateStats().hp;
 		this.moves = (moves || getMovesForLevel(this.species, level))
-			.map(move => Object.create(move, { pp: {value: move.pp, writable: true}}));
+						 .map(move => ({type: move, pp: move.pp}));
 
 		if (new.target === Pokemon) Object.seal(this);
 	}
