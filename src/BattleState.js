@@ -105,6 +105,9 @@ export default class BattleState extends State {
 				options = options || {};
 				return new Promise(function(resolve, reject) {
 					const passive = options.passive || options.showFor;
+
+					info.removeAllWidgets();
+
 					var dialog = new Dialog(text, resolve, passive);
 					dialog.style.align = align.STRETCH;
 					dialog.flex = 1;
@@ -160,7 +163,7 @@ export default class BattleState extends State {
 									break; // Shift was pressed
 								case 0: // Fight
 									const moveId = yield new Promise(function(resolve, reject) {
-										const moveNames = pokemon.moves.map(move => move.move.name);
+										const moveNames = pokemon.moves.map(move => move.type.name);
 										const select = new Select(moveNames, 2, resolve);
 										select.style.align = align.STRETCH;
 										select.flex = 1;
@@ -220,25 +223,30 @@ export default class BattleState extends State {
 						(battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).setup(battleEvent.pokemon);
 						break;
 					case "useMove":
-						yield new Promise((resolve, reject) => {
-							new TWEEN.Tween(object0)
-								.to({
-									x: [ 0.05, 0.08, 0.10, -0.2, object0.x ],
-									y: [ 0.05, 0.07, 0.08, 0, object0.y ],
-								}, 1000)
-								.interpolation(TWEEN.Interpolation.CatmullRom)
-								.easing(TWEEN.Easing.Linear.None)
-								.chain(new TWEEN.Tween(object1)
+						if (battleEvent.miss) {
+							showDialog(`${battleEvent.pokemon.name} used ${battleEvent.move.name}!`, {showFor: 1000});
+							showDialog("But it missed.", {showFor: 1000});
+						} else {
+							showDialog(`${battleEvent.pokemon.name} used ${battleEvent.move.name}!`, {passive: true});
+							yield new Promise((resolve, reject) => {
+								new TWEEN.Tween(object0)
 									.to({
-										x: [ 0.1, 0.11, object1.x ],
-										y: [ -0.03, -0.01, object1.y ],
+										x: [ 0.05, 0.08, 0.10, -0.2, object0.x ],
+										y: [ 0.05, 0.07, 0.08, 0, object0.y ],
 									}, 1000)
 									.interpolation(TWEEN.Interpolation.CatmullRom)
 									.easing(TWEEN.Easing.Linear.None)
-									.delay(100)
-									.onComplete(resolve)).start();
-						});
-						info.removeAllWidgets();
+									.chain(new TWEEN.Tween(object1)
+										.to({
+											x: [ 0.1, 0.11, object1.x ],
+											y: [ -0.03, -0.01, object1.y ],
+										}, 1000)
+										.interpolation(TWEEN.Interpolation.CatmullRom)
+										.easing(TWEEN.Easing.Linear.None)
+										.delay(100)
+										.onComplete(resolve)).start();
+							});
+						}
 						break;
 					case "faint":
 						yield Promise.all([

@@ -145,7 +145,7 @@ type BattleEvent =
 	| { type: "msgbox"; text: string, time?: number }
 	| { type: "queryAction"; pokemon: Pokemon }
 	| { type: "sendOut"; isPlayer: boolean, pokemon: Pokemon, oldPokemon: Pokemon | null }
-	| { type: "useMove"; move: Move, isPlayer: boolean }
+	| { type: "useMove"; pokemon: Pokemon, move: Move, miss: boolean, isPlayer: boolean }
 	| { type: "setHealth"; percentage: number, isPlayer: boolean }
 	| { type: "faint"; pokemon: Pokemon, isPlayer: true, promptForNext: boolean }
 	| { type: "faint"; pokemon: Pokemon, isPlayer: false }
@@ -226,14 +226,12 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 				case ActionType.Attack:
 					--action.move.pp; // Deplete PP
 					const move = action.move.type;
-					yield { type: "msgbox", text: `${attacker.pokemon.name} used ${move.name}!`, time: 1000 };
-					if (isMiss(attacker, move))
-						yield { type: "msgbox", text: "But it missed.", time: 1500 };
-					else {
+					const miss = isMiss(attacker, move);
+					yield { type: "useMove", pokemon: attacker.pokemon, move, isPlayer, miss };
+
+					if (!miss) {
 						let { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, move);
 						defender.pokemon.hp = Math.max(0, defender.pokemon.hp - damage);
-						yield { type: "useMove", move, isPlayer };
-
 						yield { type: "setHealth", isPlayer: !isPlayer, percentage: defender.pokemon.getHpPercentage() };
 						if (crit) yield { type: "msgbox", text: "A critical hit!", time: 1500 }
 
