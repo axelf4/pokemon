@@ -5,35 +5,35 @@ import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
 
 var gl = renderer.gl;
 
-const vertexShaderSource =
-"attribute vec2 aVertexPosition;" +
-"attribute vec2 aTextureCoord;" +
-"attribute vec2 aColor;" +
+const vertexShaderSource = `
+	attribute vec2 aVertexPosition;
+	attribute vec2 aTextureCoord;
 
-"uniform mat4 uPMatrix;" +
+	uniform mat4 uMvpMatrix;
 
-"varying highp vec2 vTextureCoord;" +
+	varying vec2 vTextureCoord;
 
-"void main(void) {" +
-"	vTextureCoord = aTextureCoord + 0.0 * aColor;" +
-"	gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);" +
-"}";
-const fragmentShaderSource =
-"precision mediump float;" +
-"varying highp vec2 vTextureCoord;" +
-"uniform sampler2D uSampler;" +
-"uniform sampler2D uCutoffTex;" +
-"uniform float uCutoff;" +
-"uniform float uFade;" +
-"uniform vec3 uColor;" +
-"uniform vec2 invResolution;" +
+	void main(void) {
+		vTextureCoord = aTextureCoord;
+		gl_Position = uMvpMatrix * vec4(aVertexPosition, 0.0, 1.0);
+	}`,
+fragmentShaderSource = `
+	precision mediump float;
+	varying vec2 vTextureCoord;
 
-"void main(void) {" +
-"	vec2 suv = gl_FragCoord.xy * invResolution;" +
-"	float cutoff = float(texture2D(uCutoffTex, suv).r > uCutoff);" +
-"	gl_FragColor = texture2D(uSampler, vTextureCoord) * cutoff;" +
-"	gl_FragColor = mix(gl_FragColor, vec4(uColor, 1.0), uFade);" +
-"}";
+	uniform sampler2D uSampler;
+	uniform sampler2D uCutoffTex;
+	uniform float uCutoff;
+	uniform float uFade;
+	uniform vec3 uColor;
+	uniform vec2 invResolution;
+
+	void main(void) {
+		vec2 suv = gl_FragCoord.xy * invResolution;
+		float cutoff = float(texture2D(uCutoffTex, suv).r > uCutoff);
+		gl_FragColor = texture2D(uSampler, vTextureCoord) * cutoff;
+		gl_FragColor = mix(gl_FragColor, vec4(uColor, 1.0), uFade);
+	}`;
 
 export const fade = (state, t) => ({ cutoffTexture: renderer.whiteTexture, c: 0, f: t, r: 0, g: 0, b: 0 });
 
@@ -42,19 +42,19 @@ export const reverse = transition => (state, t) => transition(state, 1 - t);
 export const outIn = (a, b) => (state, t) => (state === TRANSITION_FADE_OUT ? a : b)(state, t);
 
 export function createWipeIn(loader) {
-	return loader.loadTexture("assets/transition2.png").then(texRegion =>
-		(state, t) => ({ cutoffTexture: texRegion.texture, c: t, f: 0, r: 0, g: 0, b: 0 })
+	return loader.load("assets/transition2.png").then(texRegion =>
+		(state, t) => ({ cutoffTexture: texRegion.texture.texture, c: t, f: 0, r: 0, g: 0, b: 0 })
 	);
 }
 
 export function createBattleTransition(loader) {
 	return Promise.all([
-		loader.loadTexture("assets/transition.png").then(region => region.texture),
+		loader.load("assets/transition.png").then(region => region.texture.texture),
 		createWipeIn(loader)
 	]).then(result => {
 			const [cutoffTexture, wipeIn] = result;
 			return outIn((state, t) => {
-				const flashCount = 2
+				const flashCount = 2;
 				const flashDuration = 0.15;
 				const ft = flashCount * flashDuration;
 				const sin = Math.sin, abs = Math.abs;

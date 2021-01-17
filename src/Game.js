@@ -1,6 +1,4 @@
 import nano from "nano-ecs";
-var texture = require("texture.js");
-var NinePatch = require("NinePatch.js");
 var Widget = require("Widget.js");
 var player = require("player.js");
 var resources = require("resources.js");
@@ -148,36 +146,12 @@ const getEntityInterpPos = function(time, entity, pos, movement) {
 	}
 };
 
-const drawMapLayer = function(batch, map, layer) {
-	const data = layer.data;
-	let y = 0;
-	for (let row = 0, rows = map.height; row < rows; ++row) {
-		let x = 0;
-		for (var col = 0, cols = map.width; col < cols; ++col) {
-			var gid = data[col + row * map.width];
-			if (gid !== 0) {
-				const tileset = map.getTileSetByGid(gid);
-				const x1 = x, y1 = y, x2 = x1 + map.tilewidth, y2 = y1 + map.tileheight;
-				const sx = tileset.getTileX(gid), sy = tileset.getTileY(gid);
-				const imageWidth = tileset.texture.width, imageHeight = tileset.texture.height;
-				const u1 = sx / imageWidth, v1 = sy / imageHeight,
-					u2 = (sx + tileset.tilewidth) / imageWidth, v2 = (sy + tileset.tileheight) / imageHeight;
-
-				batch.draw(tileset.texture.texture, x1, y1, x2, y2, u1, v1, u2, v2);
-			}
-
-			x += map.tilewidth;
-		}
-		y += map.tileheight;
-	}
-};
-
-const drawMapLayers = function(batch, map, layers) {
+function drawMapLayers(batch, map, layers) {
 	for (let i = 0, length = layers.length; i < length; ++i) {
 		const layer = map.layers[layers[i]];
-		drawMapLayer(batch, map, layer);
+		map.drawLayer(batch, layer);
 	}
-};
+}
 
 Game.prototype.draw = function(batch, dt, time) {
 	const em = this.em, player = this.player;
@@ -200,7 +174,7 @@ Game.prototype.draw = function(batch, dt, time) {
 
 	vec3.set(positionVector, transformX, transformY, 0);
 	mat4.fromRotationTranslationScale(mvMatrix, quat.create(), positionVector, vec3.fromValues(scaleFactor, scaleFactor, 1));
-	var oldTransformMatrix = batch.getTransformMatrix();
+	let oldTransformMatrix = batch.getTransformMatrix();
 	batch.setTransformMatrix(mvMatrix);
 	batch.begin();
 
@@ -222,7 +196,7 @@ Game.prototype.draw = function(batch, dt, time) {
 				: spriteComponent.region;
 		}
 
-		const texture = spriteComponent.texture;
+		const texture = spriteComponent.texture.texture;
 		const u1 = region.x / texture.width, u2 = (region.x + region.width) / texture.width,
 			v1 = region.y / texture.height,	v2 = (region.y + region.height) / texture.height;
 
@@ -457,7 +431,7 @@ Game.prototype.snapEntity = function(entity) {
 };
 
 Game.prototype.loadCharacterSprite = function(entity, url) {
-	return this.loader.loadTexture(url).then(textureRegion => {
+	return this.loader.load(url).then(textureRegion => {
 		var em = this.em;
 		entity.addComponent(SpriteComponent, textureRegion);
 		let spriteComponent = entity.spriteComponent;

@@ -10,7 +10,7 @@ import Interactable from "Interactable";
 
 export default function(game, loader) {
 	let em = game.em;
-	loader.loadMap("assets/professor-house.tmx").then(map => {
+	loader.load("assets/professor-house.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
 

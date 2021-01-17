@@ -10,7 +10,7 @@ import Size from "Size";
 
 export default function(game, loader) {
 	let em = game.em;
-	loader.loadMap("assets/home.tmx").then(map => {
+	loader.load("assets/home.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2", "Tile Layer 3"], ["Foreground"]);
 	});
 

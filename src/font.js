@@ -1,5 +1,5 @@
 var parse = require("parse-bmfont-ascii");
-var texture = require("texture.js");
+const loaderModule = require("./loader");
 
 var log2PageSize = 9;
 var pageSize = 1 << log2PageSize;
@@ -16,7 +16,7 @@ var Font = function(loader) {
 
 	for (var i = 0; i < pages; i++) this.glyphs[i] = [];
 
-	loader.loadText("assets/font.fnt").then(text => {
+	loaderModule.loadText(loader.fileLoader, "assets/font.fnt").then(text => {
 		var font = self.font = parse(text);
 		self.lineHeight = font.common.lineHeight;
 		font.chars.forEach(glyph => {
@@ -24,7 +24,7 @@ var Font = function(loader) {
 		});
 		var texturePromises = [];
 		font.pages.forEach((page, index) => {
-			texturePromises.push(loader.loadTexture("assets/" + page).then(textureRegion => {
+			texturePromises.push(loader.load("assets/" + page).then(textureRegion => {
 				this.pageTextures[index] = textureRegion;
 			}));
 		});
@@ -40,40 +40,24 @@ Font.prototype.getGlyph = function(id) {
 	return this.glyphs[Math.floor(id / pageSize)][id & pageSize - 1];
 };
 
-Font.prototype.drawGlyph = function(batch, x, y, glyph) {
-	throw new Error("not yet implemented");
-	var glyphId = text.charCodeAt(i);
-	var glyph = this.getGlyph(glyphId);
-	const region = this.pageTextures[glyph.page];
-
-	var x1 = x + glyph.xoffset * this.scale, x2 = x1 + glyph.width * this.scale,
-	y1 = y + glyph.yoffset * this.scale, y2 = y1 + glyph.height * this.scale;
-
-	var u1 = glyph.x / region.width;
-	var v1 = glyph.y / region.height;
-	var u2 = (glyph.x + glyph.width) / region.width;
-	var v2 = (glyph.y + glyph.height) / region.height;
-
-	batch.draw(region.texture, x1, y1, x2, y2, u1, v1, u2, v2);
-};
-
 Font.prototype.drawText = function(batch, x, y, text) {
 	const scale = this.scale;
 	var drawX = x, drawY = y;
 	for (var i = 0, length = text.length; i < length; i++) {
 		var glyphId = text.charCodeAt(i);
 		var glyph = this.getGlyph(glyphId);
-		const region = this.pageTextures[glyph.page];
+		const {texture: {texture, width: texWidth, height: texHeight}}
+			  = this.pageTextures[glyph.page];
 
-		var x1 = drawX + glyph.xoffset * scale, x2 = x1 + glyph.width * scale,
-		y1 = drawY + glyph.yoffset * scale, y2 = y1 + glyph.height * scale;
+		let x1 = drawX + glyph.xoffset * scale, x2 = x1 + glyph.width * scale,
+			y1 = drawY + glyph.yoffset * scale, y2 = y1 + glyph.height * scale;
 
-		var u1 = glyph.x / region.width;
-		var v1 = glyph.y / region.height;
-		var u2 = (glyph.x + glyph.width) / region.width;
-		var v2 = (glyph.y + glyph.height) / region.height;
+		let u1 = glyph.x / texWidth,
+			v1 = glyph.y / texHeight,
+			u2 = (glyph.x + glyph.width) / texWidth,
+			v2 = (glyph.y + glyph.height) / texHeight;
 
-		batch.draw(region.texture, x1, y1, x2, y2, u1, v1, u2, v2);
+		batch.draw(texture, x1, y1, x2, y2, u1, v1, u2, v2);
 
 		drawX += glyph.xadvance * scale;
 	}

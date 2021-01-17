@@ -140,7 +140,7 @@ export class ListPokemonState extends ListState {
 		panel.direction = Panel.DIRECTION_ROW;
 
 		const icon = new Image(null);
-		loader.loadTexture("assets/pokemon/Slowpoke.png").then(region => {
+		loader.load("assets/pokemon/Slowpoke.png").then(region => {
 			icon.setRegion(region);
 		});
 		icon.style.width = icon.style.height = 35;

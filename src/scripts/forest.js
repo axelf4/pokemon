@@ -29,7 +29,7 @@ module.exports = function(game, loader) {
 	var lollipopMan = em.createEntity();
 	em.addComponent(lollipopMan, new Position(12, 5));
 	em.addComponent(lollipopMan, new DirectionComponent(direction.DOWN));
-	loader.loadTexture("assets/dancer.png").then(textureRegion => {
+	loader.load("assets/dancer.png").then(textureRegion => {
 		var animation = new Animation(500, Animation.getSheetFromTexture(1, 0, 0, 32, 32));
 		var spriteComponent = new SpriteComponent(textureRegion, animation);
 		spriteComponent.offsetX = -8;

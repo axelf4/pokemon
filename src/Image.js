@@ -44,8 +44,9 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 	var width, height;
 
-	var w = this.region.x1 - this.region.x0, h = this.region.y1 - this.region.y0;
-	var desiredAspect = w / h;
+	let {texture: {width: texWidth, height: texHeight}, u1, v1, u2, v2} = this.region,
+		w = (u2 - u1) * texWidth, h = (v2 - v1) * texHeight,
+		desiredAspect = w / h;
 
 	var resizeWidth = widthMode != measureSpec.EXACTLY, resizeHeight = heightMode != measureSpec.EXACTLY;
 
@@ -104,15 +105,8 @@ Image.prototype.layout = function(widthMeasureSpec, heightMeasureSpec) {
 
 
 Image.prototype.draw = function(batch) {
-	var region = this.region;
-	var u1 = (region.x0 + 0.5) / region.width;
-	var v1 = (region.y0 + 0.5) / region.height;
-	var u2 = (region.x1 - 0.5) / region.width;
-	var v2 = (region.y1 - 0.5) / region.height;
-	var x = this.x + this.imageX;
-	var y = this.y + this.imageY;
-	// var width = region.x1 - region.x0, height = region.y1 - region.y0;
-	batch.draw(region.texture, x, y, x + this.width, y + this.height, u1, v1, u2, v2);
+	let x = this.x + this.imageX, y = this.y + this.imageY;
+	this.region.draw(batch, x, y, x + this.width, y + this.height);
 };
 
 module.exports = Image;

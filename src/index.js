@@ -5,14 +5,14 @@ import * as renderer from "renderer";
 import {mat4, vec3} from "gl-matrix";
 import SpriteBatch from "SpriteBatch";
 import FileLoader from "FileLoader";
-import LoaderFacade from "LoaderFacade";
+import Loader from "./loader";
 import * as input from "input";
 import * as stateManager from "stateManager";
 import promiseTrap from "promise-trap";
 import cachingProxy from "cachingProxy";
 var resources = require("resources");
 var Font = require("font.js");
-import NinePatch from "NinePatch";
+import NinePatch from "./NinePatch";
 import Game from "Game";
 import TransitionState, {fade} from "TransitionState";
 import "touchControl";
@@ -35,34 +35,33 @@ input.setListener((type, key) => {
 	else stateManager.getState().onKey(type, key);
 });
 
-const loader = promiseTrap(cachingProxy(
-			new LoaderFacade(new FileLoader("pokemongame"))));
-
 const transitionState = new TransitionState(null, fade);
 stateManager.setState(transitionState);
 
-resources.font = new Font(loader);
-loader.loadTexture("textures/frame.9.png").then(texRegion => {
-	resources.frame = NinePatch.fromTextureRegion(texRegion);
-}).then(() => {
+(async function() {
+	const loader = promiseTrap(cachingProxy(
+		await Loader.create(await FileLoader.create(1))));
+
+	resources.font = new Font(loader);
+
+	resources.frame = NinePatch.fromTextureRegion(
+		await loader.load("textures/frame.9.png")
+	);
+
 	let playerName = lootTable.choose([[1, "Axel"], [1, "Bob"]]);
 	const playerTrainer = new Trainer(playerName, [
-			new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
-			new Pokemon(pokemons.slowpoke, 4, [ moves.tackle, moves.growl ]),
+		new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
+		new Pokemon(pokemons.slowpoke, 4, [ moves.tackle, moves.growl ]),
 	]);
 	playerTrainer.items.push(Item.Pokeball);
 	const game = new Game(loader, batch, playerTrainer);
 	game.loadScript("home.js");
 	game.warp(9, 3);
 
-	loader.all().then(() => {
-		console.log("Loaded initial assets.");
-		transitionState.transitionTo(game);
-	}, () => {
-		console.log("Some asset was rejected.");
-	});
-
-});
+	await loader.all();
+	console.log("Loaded initial assets.");
+	transitionState.transitionTo(game);
+})();
 
 var requestID, lastTime = (performance || Date).now();
 
@@ -90,7 +89,7 @@ var update = function(timestamp) {
 	/*const error = gl.getError();
 	if (error !== gl.NO_ERROR && error !== gl.CONTEXT_LOST_WEBGL) {
 		console.error("OpenGL error.");
-	}*/
+	}/**/
 };
 
 window.requestAnimationFrame(update);

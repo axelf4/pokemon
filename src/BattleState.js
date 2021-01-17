@@ -3,7 +3,6 @@ import Panel from "Panel";
 import Container from "Container";
 import Dialog from "Dialog";
 var align = require("align.js");
-var texture = require("texture.js");
 var Image = require("Image.js");
 import Select from "Select";
 import NinePatch from "NinePatch";
@@ -30,10 +29,10 @@ export default class BattleState extends State {
 		const self = this;
 
 		thread(function*() {
-			loader.loadTexture("textures/battleinfo.9.png").then(texRegion => {
+			loader.load("textures/battleinfo.9.png").then(texRegion => {
 				self.battleInfoTex = NinePatch.fromTextureRegion(texRegion);
 			});
-			loader.loadTexture("assets/battleground.png").then(texRegion => {
+			loader.load("assets/battleground.png").then(texRegion => {
 				self.groundTex = texRegion;
 			});
 			self.characterTex0 = loader.loadTexturePlaceholder("assets/pokemon/Slowpoke.png");
@@ -318,9 +317,10 @@ export default class BattleState extends State {
 			batch.setTransformMatrix(transform);
 
 			const draw = (tex, x, y, width, align, color) => {
-				const height = width * (tex.y1 - tex.y0) / (tex.x1 - tex.x0);
-				const [ox, oy] = align(width, height);
-				tex.draw(batch, x + ox, y + oy, width, height, color);
+				const {texture: {width: texWidth, height: texHeight}, u1, v1, u2, v2} = tex,
+					  height = width * ((v2 - v1) * texHeight) / ((u2 - u1) * texWidth),
+					  [ox, oy] = align(width, height);
+				tex.draw(batch, x + ox, y + oy, x + ox + width, y + oy + height, color);
 			};
 			draw(this.groundTex, 0.5, 0.0, 0.7, middleCenter);
 			draw(texture, 0.5 + offset.x, 0.0 + offset.y, 0.4, almostBottomCenter, Color.fromAlpha(offset.a));

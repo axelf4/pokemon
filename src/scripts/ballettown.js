@@ -10,7 +10,7 @@ import {LineOfSight} from "movement";
 
 export default function(game, loader) {
 	let em = game.em;
-	loader.loadMap("assets/ballet-town.tmx").then(map => {
+	loader.load("assets/ballet-town.tmx").then(map => {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 	});
 

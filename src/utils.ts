@@ -10,3 +10,7 @@ export function mapObject<T extends object, V>(
 			res[k] = f(obj[k]);
 	return res;
 }
+
+export function unreachable(message?: string): never {
+	throw new Error(message);
+}

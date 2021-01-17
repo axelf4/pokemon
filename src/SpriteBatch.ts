@@ -1,34 +1,51 @@
 import {mat4} from "gl-matrix";
 const pack = require("rgba-to-float"),
 	  renderer = require("renderer");
+import { TexRegion } from "./texture";
 
 const gl = renderer.gl;
 
 export class Color {
-	constructor(r, g, b, a = 1) {
-		this.r = r;
-		this.g = g;
-		this.b = b;
-		this.a = a;
-	}
+	constructor(readonly r: number,
+				readonly g: number,
+				readonly b: number,
+				readonly a = 1) {}
 
-	static fromAlpha(a) {
+	static fromAlpha(a: number): Color {
 		return new this(1, 1, 1, a);
 	}
 }
 
 export const white = new Color(1, 1, 1, 1);
 
+/** The number of vertex elements per sprite. */
+const spriteSize = 20;
+
 export default class SpriteBatch {
-	constructor(capacity) {
-		capacity = capacity || 128;
-		const spriteSize = 20;
+	private size: number;
+	private idx = 0;
+	private drawing = false;
+
+	private vertices: Float32Array;
+	private vertexBuffer: WebGLBuffer;
+	private indexBuffer: WebGLBuffer;
+
+	private program: WebGLProgram;
+	private customProgram?: WebGLProgram;
+
+	private projectionMatrix = mat4.create();
+	private transformMatrix = mat4.create();
+	private matrix = mat4.create();
+
+	private vertexPositionAttribute: GLint;
+	private textureCoordAttribute: GLint;
+	private colorAttribute: GLint;
+	private mvpMatrixUniform: GLint;
+
+	private lastTexture?: WebGLTexture;
+	
+	constructor(private readonly capacity = 128) {
 		this.size = spriteSize * capacity;
-		this.idx = 0;
-		this.drawing = false;
-		this.projectionMatrix = mat4.create();
-		this.transformMatrix = mat4.create();
-		this.matrix = mat4.create();
 
 		this.vertices = new Float32Array(this.size);
 		this.vertexBuffer = gl.createBuffer();
@@ -54,21 +71,20 @@ export default class SpriteBatch {
 			attribute vec2 aTextureCoord;
 			attribute vec4 aColor;
 
-			uniform mat4 uMVMatrix;
-			uniform mat4 uPMatrix;
+			uniform mat4 uMvpMatrix;
 
-			varying highp vec2 vTextureCoord;
+			varying vec2 vTextureCoord;
 			varying vec4 vColor;
 
 			void main(void) {
 				vTextureCoord = aTextureCoord;
 				vColor = aColor;
-				vColor.a = aColor.a * (255.0 / 254.0);
-				gl_Position = uPMatrix * vec4(aVertexPosition, 0.0, 1.0);
+				// vColor.a = aColor.a * (255.0 / 254.0);
+				gl_Position = uMvpMatrix * vec4(aVertexPosition, 0.0, 1.0);
 			}`,
 		fragmentShaderSource = `
 			precision mediump float;
-			varying highp vec2 vTextureCoord;
+			varying vec2 vTextureCoord;
 			varying vec4 vColor;
 			uniform sampler2D uTexture;
 
@@ -80,22 +96,29 @@ export default class SpriteBatch {
 			fragmentShader: fragmentShaderSource
 		});
 		gl.useProgram(this.program);
-		this.customProgram = null;
 		this.vertexPositionAttribute = gl.getAttribLocation(this.program, "aVertexPosition");
 		this.textureCoordAttribute = gl.getAttribLocation(this.program, "aTextureCoord");
 		this.colorAttribute = gl.getAttribLocation(this.program, "aColor");
-		this.projectionMatrixUniform = gl.getUniformLocation(this.program, "uPMatrix");
+		this.mvpMatrixUniform = gl.getUniformLocation(this.program, "uMvpMatrix");
 		gl.uniform1i(gl.getUniformLocation(this.program, "uTexture"), 0);
 	}
 
-	begin() {
+	private setupMatrices(): void {
+		mat4.multiply(this.matrix, this.projectionMatrix, this.transformMatrix);
+		let uniformLocation = this.customProgram
+			? gl.getUniformLocation(this.customProgram, "uMvpMatrix")
+			: this.mvpMatrixUniform;
+		gl.uniformMatrix4fv(uniformLocation, false, this.matrix);
+	}
+
+	begin(): void {
 		if (this.drawing) throw new Error("end must be called before begin.");
 		this.drawing = true;
 		gl.depthMask(false);
 		gl.activeTexture(gl.TEXTURE0);
 
 		let vertexPositionAttribute, textureCoordAttribute, colorAttribute;
-		if (this.customProgram !== null) {
+		if (this.customProgram) {
 			vertexPositionAttribute = gl.getAttribLocation(this.customProgram, "aVertexPosition");
 			textureCoordAttribute = gl.getAttribLocation(this.customProgram, "aTextureCoord");
 			colorAttribute = gl.getAttribLocation(this.customProgram, "aColor");
@@ -114,20 +137,13 @@ export default class SpriteBatch {
 		gl.vertexAttribPointer(vertexPositionAttribute, 2, gl.FLOAT, false, 20, 0);
 		gl.enableVertexAttribArray(textureCoordAttribute);
 		gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 20, 8);
-		gl.enableVertexAttribArray(colorAttribute);
-		gl.vertexAttribPointer(colorAttribute, 4, gl.UNSIGNED_BYTE, true, 20, 16);
+		if (colorAttribute !== -1) {
+			gl.enableVertexAttribArray(colorAttribute);
+			gl.vertexAttribPointer(colorAttribute, 4, gl.UNSIGNED_BYTE, true, 20, 16);
+		}
 	}
 
-	end() {
-		if (!this.drawing) throw new Error("begin must be called before end.");
-		this.flush();
-		gl.disableVertexAttribArray(this.vertexPositionAttribute);
-		gl.disableVertexAttribArray(this.textureCoordAttribute);
-		gl.disableVertexAttribArray(this.colorCoordAttribute);
-		this.drawing = false;
-	}
-
-	flush() {
+	private flush(): void {
 		if (this.idx === 0) return;
 		gl.bindTexture(gl.TEXTURE_2D, this.lastTexture);
 		gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices);
@@ -135,34 +151,48 @@ export default class SpriteBatch {
 		this.idx = 0;
 	}
 
-	setProgram(program) {
+	end(): void {
+		if (!this.drawing) throw new Error("begin must be called before end.");
+		this.flush();
+
+		let vertexPositionAttribute, textureCoordAttribute, colorAttribute;
+		if (this.customProgram) {
+			vertexPositionAttribute = gl.getAttribLocation(this.customProgram, "aVertexPosition");
+			textureCoordAttribute = gl.getAttribLocation(this.customProgram, "aTextureCoord");
+			colorAttribute = gl.getAttribLocation(this.customProgram, "aColor");
+		} else {
+			vertexPositionAttribute = this.vertexPositionAttribute;
+			textureCoordAttribute = this.textureCoordAttribute;
+			colorAttribute = this.colorAttribute;
+		}
+		gl.disableVertexAttribArray(vertexPositionAttribute);
+		gl.disableVertexAttribArray(textureCoordAttribute);
+		if (colorAttribute !== -1) gl.disableVertexAttribArray(colorAttribute);
+
+		this.drawing = false;
+	}
+
+	setProgram(program?: WebGLProgram): void {
 		if (this.drawing) {
 			throw new Error("Changing programs while drawing is currently not supported.");
 			this.flush();
 		}
 		this.customProgram = program;
 		if (this.drawing) {
-			if (this.customProgram !== null) {
-				gl.useProgram(this.customProgram);
-			} else {
-				gl.useProgram(this.program);
-			}
+			gl.useProgram(this.customProgram ?? this.program);
 			this.setupMatrices();
 		}
 	}
 
-	switchTexture(texture) {
-		if (this.lastTexture !== texture) this.flush();
-		this.lastTexture = texture;
-	}
-
-	draw(texture, x1, y1, x2, y2, u1, v1, u2, v2, color) {
+	draw(texture: WebGLTexture, x1: number, y1: number, x2: number, y2: number,
+		 u1: number, v1: number, u2: number, v2: number, color = white): void {
 		if (!this.drawing) throw new Error("SpriteBatch.begin must be called before draw.");
-		if (texture !== this.lastTexture) this.switchTexture(texture);
-		else if (this.idx === this.size) {
+		if (texture !== this.lastTexture) {
+			this.flush();
+			this.lastTexture = texture;
+		} else if (this.idx === this.size) {
 			this.flush();
 		}
-		color = color || white;
 		const packedColor = pack(0xFF * color.r, 0xFF * color.g, 0xFF * color.b, 0xFF * color.a);
 
 		this.vertices[this.idx] = x1;
@@ -189,33 +219,23 @@ export default class SpriteBatch {
 		this.vertices[this.idx + 18] = v2;
 		this.vertices[this.idx + 19] = packedColor;
 
-		this.idx += 20;
+		this.idx += spriteSize;
+
+		this.flush();
 	}
 
-	setupMatrices() {
-		mat4.multiply(this.matrix, this.projectionMatrix, this.transformMatrix);
-		if (this.customProgram !== null) {
-			var uniformLocation = gl.getUniformLocation(this.customProgram, "uPMatrix");
-			gl.uniformMatrix4fv(uniformLocation, false, this.matrix);
-		} else {
-			gl.uniformMatrix4fv(this.projectionMatrixUniform, false, this.matrix);
-		}
-	}
-
-	setProjectionMatrix(matrix) {
+	setProjectionMatrix(matrix: mat4): void {
 		if (this.drawing) this.flush();
-		// mat4.copy(this.projectionMatrix, matrix);
 		this.projectionMatrix = matrix;
 		if (this.drawing) this.setupMatrices();
 	}
 
-	getTransformMatrix() {
+	getTransformMatrix(): mat4 {
 		return this.transformMatrix;
 	}
 
-	setTransformMatrix(matrix) {
+	setTransformMatrix(matrix: mat4): void {
 		if (this.drawing) this.flush();
-		// mat4.copy(this.transformMatrix, matrix);
 		this.transformMatrix = matrix;
 		if (this.drawing) this.setupMatrices();
 	}
