@@ -31,27 +31,34 @@ export default class FileLoader {
 		});
 	}
 
-
 	/**
 	 * Loads a Blob given its URL.
 	 */
 	load(url: string): Promise<Blob> {
-		return (this.db ? new Promise((resolve, reject) => {
-			let readRequest = this.db!.transaction(storeName).objectStore(storeName).get(url);
+		return new Promise((resolve, reject) => {
+			if (!this.db)
+				throw new Error("Database is unavailable");
+
+			let readRequest = this.db.transaction(storeName).objectStore(storeName).get(url);
 			readRequest.onsuccess = event => {
 				let value = (event.target as IDBRequest)!.result;
 				if (value) {
-					console.log("Found cached download of asset " + url + ".");
+					console.debug("Found cached download of asset", url);
 					resolve(value);
 				} else {
-					reject(new Error("Asset not in database"));
+					reject(new Error(`Asset not in database: ${url}`));
 				}
 			};
 			readRequest.onerror = reject;
-		}) : Promise.reject(new Error("Database not available")))
-		// If not found locally: Fetch
+		})
 			.catch(e => {
-				return fetch(url, {cache: "no-store"}).then(response => response.blob())
+				// If not found locally: Fetch
+				return fetch(url, {cache: "no-store"})
+					.then(response => {
+						if (!response.ok)
+							throw new Error(`Unsuccessful response (${response.statusText}): ${url}`);
+						return response.blob();
+					})
 					.then(blob => { // Cache download in database
 						this.db?.transaction(storeName, "readwrite")
 							.objectStore(storeName)
