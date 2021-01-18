@@ -29,14 +29,14 @@ export default class BattleState extends State {
 		const self = this;
 
 		thread(function*() {
-			loader.load("textures/battleinfo.9.png").then(texRegion => {
+			loader.load("assets/sprites/battleinfo.9.png").then(texRegion => {
 				self.battleInfoTex = NinePatch.fromTextureRegion(texRegion);
 			});
-			loader.load("assets/battleground.png").then(texRegion => {
+			loader.load("assets/sprites/battleground.png").then(texRegion => {
 				self.groundTex = texRegion;
 			});
-			self.characterTex0 = loader.loadTexturePlaceholder("assets/pokemon/Slowpoke.png");
-			self.characterTex1 = loader.loadTexturePlaceholder("assets/pokemon/Slowpoke.png");
+			self.characterTex0 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
+			self.characterTex1 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
 
 			const widget = self.widget = new Panel();
 			widget.direction = Panel.DIRECTION_COLUMN;
@@ -44,7 +44,7 @@ export default class BattleState extends State {
 			const viewContainer = new Container();
 			viewContainer.style.align = align.STRETCH;
 			viewContainer.flex = 1;
-			viewContainer.background = loader.loadTexturePlaceholder("assets/battlebg.png");
+			viewContainer.background = loader.loadTexturePlaceholder("assets/sprites/battlebg.png");
 			widget.addWidget(viewContainer);
 
 			const view = new Panel();

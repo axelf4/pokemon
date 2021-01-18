@@ -25,7 +25,7 @@ class Tileset {
 
 	/** Returns the pixel y-coordinate of the tile with the specified gid. */
 	getTileY(id: number): number {
-		return this.margin + (this.tileheight + this.spacing) * Math.floor((id - this.firstgid) / this.columns);
+		return this.margin + (this.tileheight + this.spacing) * ((id - this.firstgid) / this.columns | 0);
 	}
 }
 

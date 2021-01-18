@@ -30,7 +30,7 @@ export default function(game, loader) {
 			]));
 			game.release();
 		}));
-	game.loadCharacterSprite(mom, "assets/girlSprite.png");
+	game.loadCharacterSprite(mom, "assets/sprites/girlSprite.png");
 
 	// TV
 	em.createEntity()

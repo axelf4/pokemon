@@ -49,6 +49,6 @@ export function createPlayer(game, loader, em) {
 		.addComponent(Position)
 		.addComponent(direction.DirectionComponent, direction.DOWN)
 		.addComponent(Movement, new PlayerMovementController())
-	game.loadCharacterSprite(player, "assets/playerSprite.png");
+	game.loadCharacterSprite(player, "assets/sprites/playerSprite.png");
 	return player;
 }

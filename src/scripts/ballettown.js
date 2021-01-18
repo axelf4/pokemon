@@ -63,5 +63,5 @@ export default function(game, loader) {
 		game.faceDirection(littleGirl, RIGHT);
 		game.release();
 	}));
-	game.loadCharacterSprite(littleGirl, "assets/girlSprite.png");
+	game.loadCharacterSprite(littleGirl, "assets/sprites/girlSprite.png");
 }

@@ -55,7 +55,7 @@ export default function(game, loader) {
 			}
 			game.release();
 		}));
-	game.loadCharacterSprite(professor, "assets/girlSprite.png");
+	game.loadCharacterSprite(professor, "assets/sprites/girlSprite.png");
 
 	let sign = em.createEntity()
 		.addComponent(Position, 8, 1)

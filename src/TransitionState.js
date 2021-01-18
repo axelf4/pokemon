@@ -2,6 +2,7 @@ import State from "State";
 import * as stateManager from "stateManager";
 import * as renderer from "./renderer";
 import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
+import { TexRegion, whiteTexRegion } from "./texture";
 
 var gl = renderer.gl;
 
@@ -24,46 +25,49 @@ fragmentShaderSource = `
 	uniform sampler2D uSampler;
 	uniform sampler2D uCutoffTex;
 	uniform float uCutoff;
+	uniform vec4 uCutoffUv;
 	uniform float uFade;
 	uniform vec3 uColor;
 	uniform vec2 invResolution;
 
 	void main(void) {
 		vec2 suv = gl_FragCoord.xy * invResolution;
-		float cutoff = float(texture2D(uCutoffTex, suv).r > uCutoff);
+		vec2 cutoffUv = uCutoffUv.st + (uCutoffUv.pq - uCutoffUv.st) * suv;
+		float cutoff = float(texture2D(uCutoffTex, cutoffUv).r > uCutoff);
+
 		gl_FragColor = texture2D(uSampler, vTextureCoord) * cutoff;
 		gl_FragColor = mix(gl_FragColor, vec4(uColor, 1.0), uFade);
 	}`;
 
-export const fade = (state, t) => ({ cutoffTexture: renderer.whiteTexture, c: 0, f: t, r: 0, g: 0, b: 0 });
+export const fade = (state, t) => ({ cutoffTexRegion: whiteTexRegion,
+									 c: 0, f: t, r: 0, g: 0, b: 0 });
 
 export const reverse = transition => (state, t) => transition(state, 1 - t);
 
 export const outIn = (a, b) => (state, t) => (state === TRANSITION_FADE_OUT ? a : b)(state, t);
 
 export function createWipeIn(loader) {
-	return loader.load("assets/transition2.png").then(texRegion =>
-		(state, t) => ({ cutoffTexture: texRegion.texture.texture, c: t, f: 0, r: 0, g: 0, b: 0 })
+	return loader.load("assets/sprites/transition2.png").then(texRegion =>
+		(state, t) => ({ cutoffTexRegion: texRegion, c: t, f: 0, r: 0, g: 0, b: 0 })
 	);
 }
 
 export function createBattleTransition(loader) {
 	return Promise.all([
-		loader.load("assets/transition.png").then(region => region.texture.texture),
+		loader.load("assets/sprites/transition.png"),
 		createWipeIn(loader)
-	]).then(result => {
-			const [cutoffTexture, wipeIn] = result;
+	]).then(([cutoffTexRegion, wipeIn]) => {
 			return outIn((state, t) => {
 				const flashCount = 2;
 				const flashDuration = 0.15;
 				const ft = flashCount * flashDuration;
 				const sin = Math.sin, abs = Math.abs;
 				if (t < ft) {
-					return { cutoffTexture: renderer.whiteTexture, c: 0,
+					return { cutoffTexRegion: whiteTexRegion, c: 0,
 						f: abs(sin(Math.PI * t / flashDuration)), r: 1, g: 1, b: 1 };
 				}
 
-				return { cutoffTexture, c: (t - ft) / (1 - ft),
+				return { cutoffTexRegion, c: (t - ft) / (1 - ft),
 					f: 0, r: 0, g: 0, b: 0 };
 			}, wipeIn);
 		});
@@ -80,8 +84,8 @@ export default class TransitionState extends State {
 		this.transition = transition;
 		this.toState = null;
 
-		this.texWidth = 1;
-		this.texHeight = 1;
+		// Framebuffer attachment has to be at least a 1x1 texture
+		this.texWidth = this.texHeight = 1;
 
 		this.texture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -94,9 +98,8 @@ export default class TransitionState extends State {
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
 
 		const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-		if (status !== gl.FRAMEBUFFER_COMPLETE) {
-			throw 'Bad framebuffer';
-		}
+		if (status !== gl.FRAMEBUFFER_COMPLETE)
+			throw new Error('Bad framebuffer');
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -108,6 +111,7 @@ export default class TransitionState extends State {
 		gl.uniform1i(gl.getUniformLocation(this.program, "uSampler"), 0);
 		gl.uniform1i(gl.getUniformLocation(this.program, "uCutoffTex"), 1);
 		this.cutoffLocation = gl.getUniformLocation(this.program, "uCutoff");
+		this.cutoffUvLocation = gl.getUniformLocation(this.program, "uCutoffUv");
 		this.fadeLocation = gl.getUniformLocation(this.program, "uFade");
 		this.colorLocation = gl.getUniformLocation(this.program, "uColor");
 		this.invResolutionLocation = gl.getUniformLocation(this.program, "invResolution");
@@ -144,7 +148,9 @@ export default class TransitionState extends State {
 			case TRANSITION_FADE_OUT: t = Math.min(this.timer / interval, 1); break;
 			case TRANSITION_FADE_IN: t = 1 - Math.min(this.timer / interval, 1); break;
 		}
-		const { cutoffTexture, c, f, r, g, b } = this.transition(this.transitionState, t);
+		const { cutoffTexRegion, c, f, r, g, b } = this.transition(this.transitionState, t),
+			  { texture: {texture: cutoffTexture}} = cutoffTexRegion;
+
 		if (this.timer > interval) {
 			this.timer = 0;
 			this.finishListeners.forEach(listener => listener());
@@ -181,6 +187,9 @@ export default class TransitionState extends State {
 		batch.begin();
 
 		gl.uniform1f(this.cutoffLocation, c);
+		gl.uniform4f(this.cutoffUvLocation,
+					 cutoffTexRegion.u1, cutoffTexRegion.v1,
+					 cutoffTexRegion.u2, cutoffTexRegion.v2);
 		gl.uniform1f(this.fadeLocation, f);
 		gl.uniform3f(this.colorLocation, r, g, b);
 		gl.uniform2f(this.invResolutionLocation, 1 / viewportWidth, 1 / viewportHeight);

@@ -92,6 +92,5 @@ export class TexRegion {
 	}
 }
 
-export function getPlaceholderTexture(): TexRegion {
-	return new TexRegion(renderer.whiteTexture, 0, 0, 1, 1);
-}
+export const whiteTexRegion: TexRegion
+	= new TexRegion({ texture: renderer.whiteTexture, width: 1, height: 1 });

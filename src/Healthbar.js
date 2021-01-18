@@ -8,7 +8,7 @@ export default class Healthbar extends Widget {
 		super();
 		this.percentage = percentage;
 
-		loader.load("assets/hpbar.png").then(texRegion => {
+		loader.load("assets/sprites/hpbar.png").then(texRegion => {
 			this.texRegion = texRegion;
 		});
 	}

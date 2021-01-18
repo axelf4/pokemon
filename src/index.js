@@ -45,7 +45,7 @@ stateManager.setState(transitionState);
 	resources.font = new Font(loader);
 
 	resources.frame = NinePatch.fromTextureRegion(
-		await loader.load("textures/frame.9.png")
+		await loader.load("assets/sprites/frame.9.png")
 	);
 
 	let playerName = lootTable.choose([[1, "Axel"], [1, "Bob"]]);
