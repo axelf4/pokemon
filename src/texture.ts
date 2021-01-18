@@ -1,8 +1,10 @@
 const renderer = require("renderer.js"), gl = renderer.gl;
 import { isPowerOfTwo, nextPowerOfTwo } from "./pow2";
 import SpriteBatch, { white } from "./SpriteBatch";
+import { range } from "./utils";
 
 export default interface Texture {
+	/** The texture name. */
 	texture: WebGLTexture;
 	width: number;
 	height: number;
@@ -52,6 +54,35 @@ export class TexRegion {
 		this.v1 = y0 / texture.height;
 		this.u2 = x1 / texture.width;
 		this.v2 = y1 / texture.height;
+	}
+
+	getRegion(): {x0: number, y0: number, x1: number, y1: number} {
+		let {width: texWidth, height: texHeight} = this.texture;
+		return {x0: this.u1 * texWidth, y0: this.v1 * texHeight,
+				x1: this.u2 * texWidth, y1: this.v2 * texHeight};
+	}
+
+	getSize(): {width: number, height: number} {
+		let {x0, y0, x1, y1} = this.getRegion();
+		return {width: x1 - x0, height: y1 - y0};
+	}
+
+	/**
+	 * Creates tiles out of this region starting from the top-left corner.
+	 *
+	 * @param padding Inner separation between consecutive tiles.
+	 * @return The 2D array of tiles indexed by [row][column].
+	 */
+	split(tileWidth: number, tileHeight: number, padding = 0): Array<Array<TexRegion>> {
+		let {x0, y0, x1, y1} = this.getRegion(),
+			width = x1 - x0, height = y1 - y0,
+			numRows = height / (tileHeight + padding), numCols = width / (tileWidth + padding);
+
+		return range(numRows).map(row => range(numCols).map(col => {
+			let x = x0 + col * (tileWidth + padding),
+			y = y0 + row * (tileHeight + padding);
+			return new TexRegion(this.texture, x, y, x + tileWidth, y + tileHeight);
+		}));
 	}
 
 	draw(batch: SpriteBatch, x1: number, y1: number, x2: number, y2: number,

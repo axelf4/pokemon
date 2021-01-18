@@ -28,7 +28,6 @@ var lerp = require("lerp");
 import Position from "Position";
 import SpriteComponent from "SpriteComponent";
 import Interactable from "Interactable";
-import Animatable from "Animatable";
 import Size from "Size";
 
 var gl = renderer.gl;
@@ -186,25 +185,20 @@ Game.prototype.draw = function(batch, dt, time) {
 			spriteComponent = entity.spriteComponent,
 			movement = entity.movement;
 
-		var region;
-		if (entity.hasComponent(Animatable)) {
+		let texRegion;
+		if (spriteComponent.animations) {
 			const dir = entity.directionComponent.value;
-			const animation = entity.animatable.getAnimation(dir);
-			region = movement && movement.isMoving ? animation.getFrame(time) : animation.getFrameByIndex(0);
+			const animation = spriteComponent.getAnimation(dir);
+			texRegion = movement?.isMoving ? animation.getFrame(time) : animation.frames[0];
 		} else {
-			region = spriteComponent.animation ? spriteComponent.animation.getFrame(time)
-				: spriteComponent.region;
+			texRegion = spriteComponent.texRegion;
 		}
-
-		const texture = spriteComponent.texture.texture;
-		const u1 = region.x / texture.width, u2 = (region.x + region.width) / texture.width,
-			v1 = region.y / texture.height,	v2 = (region.y + region.height) / texture.height;
 
 		let pos = movement ? getEntityInterpPos(time, entity, position, movement) : position;
 		let x = 16 * pos.x + spriteComponent.offsetX,
 			y = 16 * pos.y + spriteComponent.offsetY;
-		const width = region.width * spriteComponent.scale, height = region.height * spriteComponent.scale;
-		batch.draw(texture.texture, x, y, x + width, y + height, u1, v1, u2, v2);
+		let {width, height} = texRegion.getSize();
+		texRegion.draw(batch, x, y, x + width, y + height);
 	}
 
 	drawMapLayers(batch, this.map, this.foregroundLayers);
@@ -431,19 +425,21 @@ Game.prototype.snapEntity = function(entity) {
 };
 
 Game.prototype.loadCharacterSprite = function(entity, url) {
-	return this.loader.load(url).then(textureRegion => {
-		var em = this.em;
-		entity.addComponent(SpriteComponent, textureRegion);
+	return this.loader.load(url).then(texRegion => {
+		const em = this.em;
+
+		let tiles = texRegion.split(32, 32);
+		let animations = {
+			down: new Animation(250, tiles[0]),
+			up: new Animation(250, tiles[1]),
+			left: new Animation(250, tiles[2]),
+			right: new Animation(250, tiles[3]),
+		};
+
+		entity.addComponent(SpriteComponent, texRegion, animations);
 		let spriteComponent = entity.spriteComponent;
 		spriteComponent.offsetX = -8;
 		spriteComponent.offsetY = -16;
-		var animations = {
-			down: new Animation(250, Animation.getSheetFromTexture(4, 0, 0, 32, 32, 4, 0)),
-			up: new Animation(250, Animation.getSheetFromTexture(4, 0, 32, 32, 32, 4, 0)),
-			left: new Animation(250, Animation.getSheetFromTexture(4, 0, 64, 32, 32, 4, 0)),
-			right: new Animation(250, Animation.getSheetFromTexture(4, 0, 96, 32, 32, 4, 0)),
-		};
-		entity.addComponent(Animatable, animations);
 	});
 };
 

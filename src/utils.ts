@@ -14,3 +14,11 @@ export function mapObject<T extends object, V>(
 export function unreachable(message?: string): never {
 	throw new Error(message);
 }
+
+export function range(a: number, b?: number): Array<number> {
+	if (b === undefined) {
+		b = a;
+		a = 0;
+	}
+	return Array.from({length: b - a}, (_v, i) => a + i);
+}
