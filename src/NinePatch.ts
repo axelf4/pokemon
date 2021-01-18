@@ -20,10 +20,9 @@ export default class NinePatch {
 
 	private drawPatch(batch: SpriteBatch, texture: WebGLTexture, patch: Region,
 		 x: number, y: number, width: number, height: number): void {
-		const u1 = patch.x / this.texture.width,
-			v1 = patch.y / this.texture.height,
-			u2 = (patch.x + patch.width) / this.texture.width,
-			v2 = (patch.y + patch.height) / this.texture.height;
+		const {width: texWidth, height: texHeight} = this.texture,
+		u1 = (patch.x + 0.5) / texWidth, v1 = (patch.y + 0.5) / texHeight,
+			u2 = (patch.x + patch.width - 0.5) / texWidth, v2 = (patch.y + patch.height - 0.5) / texHeight;
 		batch.draw(texture, x, y, x + width, y + height, u1, v1, u2, v2);
 	};
 
