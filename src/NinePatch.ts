@@ -53,24 +53,27 @@ export default class NinePatch {
 	static fromTextureRegion(texRegion: TexRegion): NinePatch {
 		const {texture, width: texWidth, height: texHeight} = texRegion.texture;
 
-		const x0 = texRegion.u1 * texWidth, y0 = texRegion.v1 * texHeight,
-			x1 = texRegion.u2 * texWidth, y1 = texRegion.v2 * texHeight;
+		const x = texRegion.u1 * texWidth, y = texRegion.v1 * texHeight,
+			w = texRegion.u2 * texWidth - x, h = texRegion.v2 * texHeight - y;
 
-		const pixels = new Uint8Array(4 * (x1 - x0) * (y1 - y0));
+		const pixels = new Uint8Array(4 * w * h);
 
 		const fb = gl.createFramebuffer(); // Create framebuffer
 		gl.bindFramebuffer(gl.FRAMEBUFFER, fb); // Make it the current
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 		if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
 			throw new Error("These framebuffers man. Ain't working no more.");
-		gl.readPixels(x0, y0, x1, y1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+		gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.deleteFramebuffer(fb);
 
-		function scanLine(i0: number, i1: number,
+		/**
+		 * Returns start and end coordinates of the black line, both inclusive.
+		 */
+		function scanLine(len: number,
 						  pixelFunc: (i: number) => number): { start: number, end: number } {
-			let start = i1, end = i0;
-			for (let i = i0; i < i1; ++i) {
+			let start = len, end = 0;
+			for (let i = 1; i < len - 1; ++i) {
 				const pixel = 4 * pixelFunc(i);
 				if ((pixels[pixel] << 32
 							| pixels[pixel + 1] << 16
@@ -82,18 +85,19 @@ export default class NinePatch {
 			}
 			return { start, end };
 		}
-		const top = scanLine(x0, x1, i => i);
-		const left = scanLine(y0, y1, i => i * texWidth);
+		const top = scanLine(w, i => i),
+			left = scanLine(h, i => i * w);
+
 		const patches: Patches = [
-			{ x: 1, y: 1, width: top.start - 1, height: left.start - 2 }, // top left
-			{ x: top.start, y: 1, width: top.end - top.start, height: left.start - 2 }, // top middle
-			{ x: top.end + 1, y: 1, width: x1 - top.end - 2, height: left.start - 2 }, // top right
-			{ x: 1, y: left.start, width: top.start - 1, height: left.end - left.start }, // middle left
-			{ x: top.start, y: left.start, width: top.end - top.start, height: left.end - left.start }, // middle center
-			{ x: top.end + 1, y: left.start, width: x1 - top.end - 2, height: left.end - left.end }, // middle right
-			{ x: 1, y: left.end + 1, width: top.start - 1, height: y1 - left.end - 2 }, // bottom left
-			{ x: top.start, y: left.end + 1, width: top.end - top.start, height: y1 - left.end - 2 }, // bottom middle
-			{ x: top.end + 1, y: left.end + 1, width: x1 - top.end - 2, height: y1 - left.end - 2 } // bottom right
+			{ x: x + 1, y: y + 1, width: top.start - 1, height: left.start - 2 }, // top left
+			{ x: x + top.start, y: y + 1, width: top.end - top.start, height: left.start - 2 }, // top middle
+			{ x: x + top.end + 1, y: y + 1, width: w - top.end - 2, height: left.start - 2 }, // top right
+			{ x: x + 1, y: y + left.start, width: top.start - 1, height: left.end - left.start }, // middle left
+			{ x: x + top.start, y: y + left.start, width: top.end - top.start, height: left.end - left.start }, // middle center
+			{ x: x + top.end + 1, y: y + left.start, width: w - top.end - 2, height: left.end - left.end }, // middle right
+			{ x: x + 1, y: y + left.end + 1, width: top.start - 1, height: h - left.end - 2 }, // bottom left
+			{ x: x + top.start, y: y + left.end + 1, width: top.end - top.start, height: h - left.end - 2 }, // bottom middle
+			{ x: x + top.end + 1, y: y + left.end + 1, width: w - top.end - 2, height: h - left.end - 2 } // bottom right
 		];
 		return new NinePatch(texRegion.texture, patches);
 	}
