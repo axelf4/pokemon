@@ -98,11 +98,7 @@ class AtlasLoader {
 	}
 
 	load(url: string): Promise<TexRegion> | undefined {
-		// Free texture packer only includes the last src subdirectory
-		let source = /^assets\/(.*)/.exec(url)?.[1]; // Remove the first subdirectory
-		if (!source) return undefined;
-
-		let frame = this.frames[source];
+		let frame = this.frames[`assets/sprites/${url}`];
 		if (!frame) return undefined;
 		let {x, y, w, h, imageSrc} = frame;
 

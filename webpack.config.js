@@ -24,7 +24,8 @@ module.exports = {
 		],
 		extensions: ['.js', '.ts'],
 		fallback: {
-			util: require.resolve("util/"),
+			"path": require.resolve("path-browserify"),
+			"util": require.resolve("util/"),
 		},
 	},
 	mode: 'development',
