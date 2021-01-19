@@ -1,4 +1,4 @@
-import {LEFT, RIGHT, UP, DOWN} from "direction";
+import Direction from "direction";
 
 export default class SpriteComponent {
 	constructor(self, texRegion, animations) {
@@ -10,10 +10,10 @@ export default class SpriteComponent {
 
 	getAnimation(dir) {
 		switch (dir) {
-			case LEFT: return this.animations.left;
-			case RIGHT: return this.animations.right;
-			case UP: return this.animations.up;
-			case DOWN: return this.animations.down;
+			case Direction.Left: return this.animations.left;
+			case Direction.Right: return this.animations.right;
+			case Direction.Up: return this.animations.up;
+			case Direction.Down: return this.animations.down;
 			default: throw new Error("Invalid direction");
 		}
 	}

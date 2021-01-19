@@ -1,5 +1,5 @@
 import * as input from "input";
-import * as direction from "direction";
+import Direction, * as direction from "direction";
 import Position from "Position";
 import { Movement } from "movement";
 
@@ -12,16 +12,16 @@ export class PlayerMovementController {
 
 		let dx = 0, dy = 0;
 		if (keys["a"]) {
-			dir.value = direction.LEFT;
+			dir.value = Direction.Left;
 			dx = -1;
 		} else if (keys["d"]) {
-			dir.value = direction.RIGHT;
+			dir.value = Direction.Right;
 			dx = 1;
 		} else if (keys["w"]) {
-			dir.value = direction.UP;
+			dir.value = Direction.Up;
 			dy = -1;
 		} else if (keys["s"]) {
-			dir.value = direction.DOWN;
+			dir.value = Direction.Down;
 			dy = 1;
 		}
 
@@ -40,14 +40,14 @@ export class PlayerMovementController {
 				return dir.value;
 			}
 		}
-		return direction.NO_DIRECTION;
+		return null;
 	}
 }
 
 export function createPlayer(game, loader, em) {
 	const player = em.createEntity()
 		.addComponent(Position)
-		.addComponent(direction.DirectionComponent, direction.DOWN)
+		.addComponent(direction.DirectionComponent, Direction.Down)
 		.addComponent(Movement, new PlayerMovementController())
 	game.loadCharacterSprite(player, "assets/sprites/playerSprite.png");
 	return player;

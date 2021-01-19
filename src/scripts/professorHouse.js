@@ -1,4 +1,4 @@
-import {DirectionComponent, DOWN} from "direction";
+import Direction, {DirectionComponent} from "direction";
 var PushTrigger = require("PushTrigger.js");
 import thread from "thread";
 import save from "savegame";
@@ -26,7 +26,7 @@ export default function(game, loader) {
 
 	let professor = em.createEntity()
 		.addComponent(Position, 5, 5)
-		.addComponent(DirectionComponent, DOWN)
+		.addComponent(DirectionComponent, Direction.Down)
 		.addComponent(Interactable, thread.bind(undefined, function*(game) {
 			game.lock();
 			game.faceEachOther(professor, game.player);

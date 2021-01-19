@@ -1,5 +1,5 @@
 import Position from "Position";
-import * as direction from "direction";
+import Direction, * as direction from "direction";
 
 /** Amount of ticks it takes to move one grid at slowest speed. */
 export const BASE_SPEED = 250,
@@ -107,8 +107,7 @@ export class MovementSystem {
 				// TODO Ask entity what speed it wants to avoid having to wait for sync
 				if (isReadyToMove(movement.speed || 1)) {
 					const newDirection = movement.controller.getTarget(this.game, time, entity, position);
-					if (newDirection !== direction.NO_DIRECTION) {
-						if (newDirection === null) throw new Error("The specified direction should be NO_DIRECTION instead of null.");
+					if (newDirection !== null) {
 						directionComponent.value = newDirection;
 						position.x += direction.getDeltaX(newDirection);
 						position.y += direction.getDeltaY(newDirection);
@@ -124,7 +123,7 @@ export class MovementSystem {
 }
 
 export class StillMovementController {
-	getTarget(game, time, entity, position) { return direction.NO_DIRECTION; }
+	getTarget(game, time, entity, position) { return null; }
 }
 
 /**
@@ -141,7 +140,7 @@ export class WalkForwardMovementController {
 
 		if (game.isSolid(position.x + dx, position.y + dy)) {
 			this.callback();
-			return direction.NO_DIRECTION;
+			return null;
 		}
 
 		return dir;
@@ -158,14 +157,14 @@ export class RandomMovementController {
 		this.lastTime = time;
 		if (!prevTime || time - prevTime >= this.interval) {
 			let possible = [];
-			if (!game.isSolid(position.x - 1, position.y)) possible.push(direction.LEFT);
-			if (!game.isSolid(position.x + 1, position.y)) possible.push(direction.RIGHT);
-			if (!game.isSolid(position.x, position.y - 1)) possible.push(direction.UP);
-			if (!game.isSolid(position.x, position.y + 1)) possible.push(direction.DOWN);
+			if (!game.isSolid(position.x - 1, position.y)) possible.push(Direction.Left);
+			if (!game.isSolid(position.x + 1, position.y)) possible.push(Direction.Right);
+			if (!game.isSolid(position.x, position.y - 1)) possible.push(Direction.Up);
+			if (!game.isSolid(position.x, position.y + 1)) possible.push(Direction.Down);
 			if (possible.length > 0)
 				return possible[Math.floor(Math.random() * possible.length)];
 		}
-		return direction.NO_DIRECTION;
+		return null;
 	}
 }
 
@@ -181,14 +180,14 @@ export class PathMovementController {
 	getTarget(game, time, entity, position) {
 		if (this.path.length === 0) {
 			this.callback();
-			return direction.NO_DIRECTION;
+			return null;
 		}
 
 		// Check for collisions
 		const dir = this.path[0];
 		const dx = direction.getDeltaX(dir), dy = direction.getDeltaY(dir);
 		if (game.isSolid(position.x + dx, position.y + dy)) {
-			return direction.NO_DIRECTION;
+			return null;
 		}
 
 		return this.path.shift();

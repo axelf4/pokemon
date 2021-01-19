@@ -1,4 +1,4 @@
-import {DirectionComponent, UP, DOWN, RIGHT} from "direction";
+import Direction, {DirectionComponent} from "direction";
 var PushTrigger = require("PushTrigger.js");
 import thread from "thread";
 import save from "savegame";
@@ -14,7 +14,7 @@ export default function(game, loader) {
 		game.setMap(map, ["Tile Layer 1", "Tile Layer 2"], ["Foreground"]);
 	});
 
-	game.addPushTrigger(PushTrigger.createEdgeWarp(game, UP, 0, 0, "forest.js", true));
+	game.addPushTrigger(PushTrigger.createEdgeWarp(game, Direction.Up, 0, 0, "forest.js", true));
 	game.addPushTrigger(PushTrigger.createWarp(game, 6, 7, 2, 8, "home.js"));
 	game.addPushTrigger(PushTrigger.createWarp(game, 16, 14, 5, 11, "professorHouse.js"));
 
@@ -45,7 +45,7 @@ export default function(game, loader) {
 
 	let littleGirl = em.createEntity()
 	.addComponent(Position, 11, 2)
-	.addComponent(DirectionComponent, RIGHT)
+	.addComponent(DirectionComponent, Direction.Right)
 	.addComponent(LineOfSight, thread.bind(undefined, function*(game, em, caster, blocker) {
 		if (blocker !== game.player) return;
 		if (save.hasGottenPokemon) return;
@@ -53,7 +53,7 @@ export default function(game, loader) {
 		game.lock();
 		game.faceEachOther(caster, blocker);
 		yield game.showDialog("Only big boys can come through here.");
-		yield game.walkPath(game.player, [DOWN]);
+		yield game.walkPath(game.player, [Direction.Down]);
 		game.release();
 	}))
 	.addComponent(Interactable, thread.bind(undefined, function*(game) {

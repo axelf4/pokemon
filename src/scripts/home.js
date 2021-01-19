@@ -1,5 +1,5 @@
 var PushTrigger = require("PushTrigger.js");
-import {DirectionComponent, UP} from "direction";
+import Direction, {DirectionComponent} from "direction";
 import thread from "thread";
 import Trainer from "Trainer";
 import Pokemon, { pokemons, moves } from "pokemon";
@@ -18,7 +18,7 @@ export default function(game, loader) {
 
 	let mom = em.createEntity()
 		.addComponent(Position, 6, 6)
-		.addComponent(DirectionComponent, UP)
+		.addComponent(DirectionComponent, Direction.Up)
 		.addComponent(Interactable, thread.bind(undefined, function*(game) {
 			game.lock();
 			game.faceEachOther(mom, game.player);

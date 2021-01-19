@@ -9,7 +9,7 @@ var align = require("align.js");
 import State from "State";
 import {FOCUS_AFTER_DESCENDANTS} from "WidgetGroup";
 import * as input from "input";
-import * as direction from "direction";
+import Direction, * as direction from "direction";
 var Animation = require("Animation");
 import {mat4, vec3, quat} from "gl-matrix";
 import Select from "Select";
@@ -66,10 +66,10 @@ class GameScreen extends Stack {
 								interactable.interactable.callback(game);
 							}
 							break;
-						case "w": playerDirection.value = direction.UP; break;
-						case "a": playerDirection.value = direction.LEFT; break;
-						case "s": playerDirection.value = direction.DOWN; break;
-						case "d": playerDirection.value = direction.RIGHT; break;
+						case "w": playerDirection.value = Direction.Up; break;
+						case "a": playerDirection.value = Direction.Left; break;
+						case "s": playerDirection.value = Direction.Down; break;
+						case "d": playerDirection.value = Direction.Right; break;
 						case "Shift":
 							showPauseMenu(game);
 							break;
