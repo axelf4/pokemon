@@ -1,0 +1,13 @@
+#!/bin/sh
+
+rate=44100
+quality=6
+
+filename=${1:?Missing filename}
+filebase=$(basename "$filename" | sed 's/.gbs$//')
+subsong=${2:?Missing subsong}
+
+gbsplay -o stdout -E l -r "$rate" -t 300 -f 0 "$filename" "$subsong" "$subsong" \
+	| oggenc -q"$quality" -r --raw-endianness 0 -B 16 -C 2 -R "$rate" \
+			 -N "$subsong" -G "Gameboy music" \
+			 -o "$(printf "%s-%02d.ogg" "$filebase" "$subsong")" -

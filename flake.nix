@@ -10,7 +10,15 @@
       let pkgs = nixpkgs.legacyPackages.${system};
       in {
         devShell = pkgs.mkShell {
-          buildInputs = with pkgs; [ nodejs-14_x ];
+          buildInputs = with pkgs; [
+            nodejs-14_x
+            tiled
+
+            (callPackage ./gbs2vgm {})
+            gbsplay
+          ];
+
+          GBS_FILES = pkgs.callPackage extra/pokecrystal-gbs.nix {};
         };
       }
     );
