@@ -81,6 +81,7 @@ class GameScreen extends Stack {
 }
 
 const showPauseMenu = async function(game) {
+	resources.clickSfx.play();
 	game.lock();
 	const selected = await new Promise((resolve, reject) => {
 		game.widget.uiLayer.justify = Panel.ALIGN_FLEX_START;

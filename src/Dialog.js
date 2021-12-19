@@ -33,6 +33,8 @@ export default class Dialog extends Container {
 	 * @return True, if there is text left, otherwise false.
 	 */
 	advance() {
+		resources.clickSfx.play();
+
 		if (this.label.showAllText()) return true;
 		// Advance multi-page text
 		if (this.label.advance()) {

@@ -56,8 +56,8 @@ module.exports = {
 				loader: "babel-loader",
 			},
 			{
-				test: /\.vgm/,
-				type: 'asset',
+				test: /\.vgmd?$/,
+				type: 'asset/resource',
 			},
 		]
 	}

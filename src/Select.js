@@ -66,6 +66,7 @@ export default class Select extends Container {
 		let newCursorX = this.cursorX, newCursorY = this.cursorY;
 		switch (key) {
 			case " ": // If space was pressed
+				resources.clickSfx.play();
 				const selectedOption = this.cursorX + this.cursorY * this.columnCount;
 				this.listener(selectedOption);
 				return;

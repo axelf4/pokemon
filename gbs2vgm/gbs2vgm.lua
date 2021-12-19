@@ -37,15 +37,15 @@ do
 	  :convert(tonumber)
    parser:option("--intro-duration", "Duration of intro in seconds", "0")
 	  :convert(tonumber)
-   parser:option("--loop-duration", "Duration of loop in seconds", "0")
-	  :convert(tonumber)
+   parser:mutex(
+	  parser:option("--loop-duration", "Duration of loop in seconds", "0")
+	  :convert(tonumber),
+	  parser:flag "--no-header"
+   )
    args = parser:parse()
 end
 
 local introDuration, loopDuration = args.intro_duration, args.loop_duration
--- loopDuration = 37.621315192743765
--- introDuration = 1 * 60 + 29 - 2 * loopDuration -- 8.39909
--- introDuration = 26.70657596371882
 
 local out = assert(io.open("out.vgm", "wb"))
 -- Write header
@@ -69,7 +69,9 @@ local header = {
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    leu32(4194304) -- GB DMG clock
 }
-out:write(table.concat(map(string.char, header)))
+if not args.no_header then
+   out:write(table.concat(map(string.char, header)))
+end
 
 local function writeLoopOffset()
    local prevPos = out:seek()
@@ -110,7 +112,7 @@ end
 
 local f = io.popen("gbsplay -o iodumper " .. args.file
 				   .. " " .. args.subsong .. " " .. args.subsong
-				   .. " -T 0 -f 0 -t " .. (introDuration + loopDuration))
+				   .. " -T 0 -f 0 -t " .. math.ceil(introDuration + loopDuration))
 local sampleCount = 0
 local hasWrittenLoopPoint = false
 local cmdCount = 0
@@ -124,7 +126,8 @@ for line in f:lines() do
    cmdCount = cmdCount + 1
    if loopDuration > 0
 	  and sampleCount - (cmdCount * samplingRate / cpuRate)
-	  >= introDuration * samplingRate and not hasWrittenLoopPoint then
+	  >= introDuration * samplingRate
+	  and not hasWrittenLoopPoint then
 	  writeLoopOffset()
 	  hasWrittenLoopPoint = true
    end
@@ -135,18 +138,25 @@ for line in f:lines() do
 	  out:write(string.char(0xB3, reg - 0x10, val))
    end
 
+   if sampleCount - (cmdCount * samplingRate / cpuRate)
+	  >= (introDuration + loopDuration) * samplingRate then
+	  break
+   end
+
    ::continue::
 end
 f:close()
 -- out:write(string.char(0x66)) -- End of sound data
 
--- Write EOF offset
-local len = out:seek()
-out:seek("set", 0x04)
-out:write(string.char(leu32(len - 0x04)))
--- Write total NR of samples
-out:seek("set", 0x18)
-out:write(string.char(leu32(sampleCount)))
-out:close()
+if not args.no_header then
+   -- Write EOF offset
+   local len = out:seek()
+   out:seek("set", 0x04)
+   out:write(string.char(leu32(len - 0x04)))
+   -- Write total NR of samples
+   out:seek("set", 0x18)
+   out:write(string.char(leu32(sampleCount)))
+   out:close()
+end
 
 print("Total number of samples: ", sampleCount)

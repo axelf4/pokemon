@@ -62,6 +62,9 @@ stateManager.setState(transitionState);
 		await loader.load("assets/sprites/frame.9.png")
 	);
 
+	resources.clickSfx = APU.sfx(await loader.load("assets/click.vgmd")
+								 .then(b => b.arrayBuffer()));
+
 	let playerName = lootTable.choose([[1, "Axel"], [1, "Bob"]]);
 	const playerTrainer = new Trainer(playerName, [
 		new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
