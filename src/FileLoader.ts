@@ -56,7 +56,7 @@ export default class FileLoader {
 				return fetch(url, {cache: "no-store"})
 					.then(response => {
 						if (!response.ok)
-							throw new Error(`Unsuccessful response (${response.statusText}): ${url}`);
+							return Promise.reject(new Error(`Unsuccessful response (${response.statusText}): ${url}`));
 						return response.blob();
 					})
 					.then(blob => { // Cache download in database
