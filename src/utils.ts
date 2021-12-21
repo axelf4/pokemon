@@ -39,3 +39,14 @@ export function nextPowerOfTwo(x: number): number {
 		x = x | x >> i;
 	return x + 1;
 }
+
+/**
+ * Promise version of <code>setTimeout</code>.
+ *
+ * @param delay The delay in milliseconds.
+ * @param value Optionally, a value that the promise will resolve to.
+ * @return A promise that resolves after the specified amount of time.
+ */
+export function wait<T>(delay: number, ...args: [T] | []): Promise<T> {
+	return new Promise(resolve => setTimeout(resolve.bind(globalThis, ...args), delay));
+}

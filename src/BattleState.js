@@ -18,7 +18,7 @@ const renderer = require("renderer");
 import TWEEN from "@tweenjs/tween.js";
 import TransitionState, {fade} from "TransitionState";
 import { listPokemon, modes } from "ListState";
-import wait from "wait";
+import {wait} from "./utils";
 import {moveStats} from "./pokemon";
 import moveAnimations from "./moveAnimations";
 

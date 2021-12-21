@@ -1,7 +1,7 @@
 import Direction, {DirectionComponent} from "direction";
 var PushTrigger = require("PushTrigger.js");
 import save from "savegame";
-import wait from "wait";
+import {wait} from "../utils";
 
 import Position from "Position";
 import Size from "Size";

@@ -4,7 +4,7 @@ var Position = require("Position.js");
 var SpriteComponent = require("SpriteComponent.js");
 import { Movement, StillMovementController, RandomMovementController } from "movement";
 var direction = require("direction");
-import wait from "wait";
+import {wait} from "../utils";
 
 module.exports = function(game, loader) {
 	loader.loadMap("assets/forest.tmx").then(map => {
