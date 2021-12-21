@@ -1,6 +1,5 @@
 var PushTrigger = require("PushTrigger.js");
 import Direction, {DirectionComponent} from "direction";
-import thread from "thread";
 import Trainer from "Trainer";
 import Pokemon, { Move, pokemons } from "pokemon";
 
@@ -19,27 +18,28 @@ export default function(game, loader) {
 	let mom = em.createEntity()
 		.addComponent(Position, 6, 6)
 		.addComponent(DirectionComponent, Direction.Up)
-		.addComponent(Interactable, thread.bind(undefined, function*(game) {
+		.addComponent(Interactable, async game => {
 			game.lock();
 			game.faceEachOther(mom, game.player);
-			yield game.showDialog("Happy birthday! Now that you are 16 I no longer receive Child Benefit, hence you are useless.\n"
+			await game.showDialog("Happy birthday! Now that you are 16 I no longer receive Child Benefit, hence you are useless.\n"
 				+ "Stop watching anime and go out and play, you son of a bitch.\n"
 				+ "I heard Prof. Clark has moved in.\nMaybe you could go bother him.");
-			yield game.battle(new Trainer("Charles Ingvar", [
-				new Pokemon(pokemons.slowpoke, 4, [ Move.Tackle ])
+			await game.battle(new Trainer("Charles Ingvar", [
+				new Pokemon(pokemons.slowpoke, 1, [ Move.Tackle ])
 			]));
 			game.release();
-		}));
+
+		});
 	game.loadCharacterSprite(mom, "assets/sprites/girlSprite.png");
 
 	// TV
 	em.createEntity()
 		.addComponent(Position, 5, 4)
 		.addComponent(Size, 2, 1)
-		.addComponent(Interactable, thread.bind(undefined, function*(game) {
+		.addComponent(Interactable, async game => {
 			game.lock();
-			yield game.showDialog("A cooking show is airing on the television.");
-			yield game.showDialog("\"How to microwave cheese\", starring Gordon Ramsay and macaroni.");
+			await game.showDialog("A cooking show is airing on the television.");
+			await game.showDialog("\"How to microwave cheese\", starring Gordon Ramsay and macaroni.");
 			game.release();
-		}));
+		});
 }

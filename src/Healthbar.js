@@ -4,6 +4,9 @@ import {Mode} from "./measureSpec";
 var lerp = require("lerp");
 import TWEEN from "@tweenjs/tween.js";
 
+/** The height of the healthbar sprite. */
+const height = 7;
+
 export default class Healthbar extends Widget {
 	constructor(loader, percentage = 1) {
 		super();
@@ -15,10 +18,10 @@ export default class Healthbar extends Widget {
 	}
 
 	layout(widthMeasureSpec, heightMeasureSpec) {
-		var widthMode = measureSpec.getMode(widthMeasureSpec);
-		var heightMode = measureSpec.getMode(heightMeasureSpec);
-		var widthSize = measureSpec.getSize(widthMeasureSpec);
-		var heightSize = measureSpec.getSize(heightMeasureSpec);
+		let widthMode = measureSpec.getMode(widthMeasureSpec),
+			heightMode = measureSpec.getMode(heightMeasureSpec),
+			widthSize = measureSpec.getSize(widthMeasureSpec),
+			heightSize = measureSpec.getSize(heightMeasureSpec);
 
 		let width;
 		switch (widthMode) {
@@ -27,7 +30,7 @@ export default class Healthbar extends Widget {
 			case Mode.AtMost: width = Math.min(widthSize, 22); break;
 		}
 
-		this.setDimension(width, 7);
+		this.setDimension(width, height);
 	}
 
 	setPercentage(percentage, animate = true) {
@@ -51,17 +54,17 @@ export default class Healthbar extends Widget {
 			  uLastEnd = u1 + (20 - 0.5) / texWidth;
 
 		// Draw first end
-		batch.draw(texture, this.x, this.y, this.x + 16, this.y + 7, u1, v1, u1 + (16 + 0.5) / texWidth, v2);
+		batch.draw(texture, this.x, this.y, this.x + 16, this.y + height, u1, v1, u1 + (16 + 0.5) / texWidth, v2);
 		// Draw black bar background
-		batch.draw(texture, this.x + 16, this.y, this.x + this.width - 2, this.y + 7, uFirstEnd, v1, uLastEnd, v2);
+		batch.draw(texture, this.x + 16, this.y, this.x + this.width - 2, this.y + height, uFirstEnd, v1, uLastEnd, v2);
 		// Draw green/yellow/red
 		const p = this.percentage;
 		const colorOffset = p > 0.5 ? 16 : p > 0.2 ? 17 : 18;
 		const end = this.x + lerp(16, this.width - 2, p);
-		batch.draw(texture, this.x + 16, this.y, end, this.y + 7,
+		batch.draw(texture, this.x + 16, this.y, end, this.y + height,
 			u1 + (colorOffset + 0.5) / texWidth, v1,
 			u1 + (colorOffset + 1 - 0.5) / texWidth, v2);
 		// Draw last end
-		batch.draw(texture, this.x + this.width - 2, this.y, this.x + this.width, this.y + 7, uLastEnd, v1, u2, v2);
+		batch.draw(texture, this.x + this.width - 2, this.y, this.x + this.width, this.y + height, uLastEnd, v1, u2, v2);
 	}
 }

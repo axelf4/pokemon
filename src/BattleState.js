@@ -5,11 +5,10 @@ import Dialog from "Dialog";
 var align = require("align.js");
 import Select from "Select";
 import NinePatch from "NinePatch";
-import thread from "thread";
 import * as stateManager from "stateManager";
 import Label from "./Label";
 var Widget = require("Widget");
-var measureSpec = require("measureSpec");
+import * as measureSpec from "./measureSpec";
 import Healthbar from "Healthbar";
 var resources = require("resources.js");
 import { Color } from "SpriteBatch";
@@ -27,19 +26,18 @@ export default class BattleState extends State {
 	constructor(loader, nextState, player, enemy) {
 		super();
 		this.nextState = nextState;
-		const self = this;
 
-		thread(function*() {
+		(async () => {
 			loader.load("assets/sprites/battleinfo.9.png").then(texRegion => {
-				self.battleInfoTex = NinePatch.fromTextureRegion(texRegion);
+				this.battleInfoTex = NinePatch.fromTextureRegion(texRegion);
 			});
 			loader.load("assets/sprites/battleground.png").then(texRegion => {
-				self.groundTex = texRegion;
+				this.groundTex = texRegion;
 			});
-			self.characterTex0 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
-			self.characterTex1 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
+			this.characterTex0 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
+			this.characterTex1 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
 
-			const widget = self.widget = new Panel();
+			const widget = this.widget = new Panel();
 			widget.direction = Panel.DIRECTION_COLUMN;
 
 			const viewContainer = new Container();
@@ -53,11 +51,11 @@ export default class BattleState extends State {
 			view.justify = align.SPACE_AROUND;
 			viewContainer.addWidget(view);
 
-			yield loader.all(); // Wait for resources to load
+			await loader.all(); // Wait for resources to load
 
 			const createInfoBox = isPlayer => {
 				const container = new Container();
-				container.background = self.battleInfoTex;
+				container.background = this.battleInfoTex;
 				container.marginTop = 20;
 				view.addWidget(container);
 				container.setVisible(false);
@@ -114,18 +112,18 @@ export default class BattleState extends State {
 					info.addWidget(dialog);
 					dialog.requestFocus();
 					if (options.showFor) {
-						thread(function*() {
-							do yield wait(options.showFor);
+						(async () => {
+							do await wait(options.showFor);
 							while (dialog.advance());
-						});
+						})();
 					}
 				});
 			};
 
-			self.playerOffset = { x: 1, y: 0, a: 1 };
-			self.enemyOffset = { x: 1, y: 0, a: 1 };
+			this.playerOffset = { x: 1, y: 0, a: 1 };
+			this.enemyOffset = { x: 1, y: 0, a: 1 };
 
-			yield showDialog(`${enemy.getName()} wants to fight!`);
+			await showDialog(`${enemy.getName()} wants to fight!`);
 
 			const battleGen = battle(player, enemy);
 			let nextArg;
@@ -135,19 +133,19 @@ export default class BattleState extends State {
 				if (done) break;
 				console.log("Battle event:", battleEvent);
 
-				const object0 = battleEvent.isPlayer ? self.playerOffset : self.enemyOffset;
-				const object1 = battleEvent.isPlayer ? self.enemyOffset : self.playerOffset;
+				const object0 = battleEvent.isPlayer ? this.playerOffset : this.enemyOffset;
+				const object1 = battleEvent.isPlayer ? this.enemyOffset : this.playerOffset;
 				switch (battleEvent.type) {
 					case "msgbox":
 						let options = {};
 						if (battleEvent.time) options.showFor = battleEvent.time;
-						yield showDialog(battleEvent.text, options);
+						await showDialog(battleEvent.text, options);
 						break;
 					case "queryAction":
 						let pokemon = battleEvent.pokemon;
 						let playerAction = null;
 						while (!playerAction) {
-							var selected = yield new Promise(function(resolve, reject) {
+							var selected = await new Promise(function(resolve, reject) {
 								var dialog = new Dialog(`What will ${pokemon.name} do?`, null, true);
 								dialog.style.align = align.STRETCH;
 								dialog.flex = 1;
@@ -162,7 +160,7 @@ export default class BattleState extends State {
 								case -1:
 									break; // Shift was pressed
 								case 0: // Fight
-									const moveId = yield new Promise(function(resolve, reject) {
+									const moveId = await new Promise(function(resolve, reject) {
 										const moveNames = pokemon.moves.map(move => moveStats(move.type).name);
 										const select = new Select(moveNames, 2, resolve);
 										select.style.align = align.STRETCH;
@@ -177,10 +175,10 @@ export default class BattleState extends State {
 									}
 									break;
 								case 1: // Bag
-									yield showDialog("There's a time and place for everything, but not now...");
+									await showDialog("There's a time and place for everything, but not now...");
 									break;
 								case 2: // Pokemon
-									let pokemonIndex = yield listPokemon(loader, player, modes.choose);
+									let pokemonIndex = await listPokemon(loader, player, modes.choose);
 									if (pokemonIndex !== -1)
 										playerAction = { type: ActionType.SwitchPokemon, pokemonIndex };
 									break;
@@ -188,7 +186,7 @@ export default class BattleState extends State {
 									if (enemy.canEscapeFrom())
 										playerAction = { type: ActionType.Run };
 									else
-										yield showDialog("No! There's no running from a Trainer battle!");
+										await showDialog("No! There's no running from a Trainer battle!");
 									break;
 								default:
 									throw new Error("Invalid selected value.");
@@ -200,7 +198,7 @@ export default class BattleState extends State {
 					case "sendOut":
 						if (battleEvent.oldPokemon) {
 							showDialog(`Thats enough ${battleEvent.oldPokemon.name}! Get the fuck back here.`, {passive: true});
-							yield new Promise((resolve, reject) => {
+							await new Promise((resolve, reject) => {
 								new TWEEN.Tween(object0).to({ x: [0, 1] }, 2000)
 									.easing(TWEEN.Easing.Linear.None)
 									.onComplete(resolve).start();
@@ -209,7 +207,7 @@ export default class BattleState extends State {
 						}
 
 						showDialog(`${battleEvent.isPlayer ? "Go" : `${enemy.getName()} sent out`} ${battleEvent.pokemon.name}!`, {passive: true});
-						yield new Promise((resolve, reject) => {
+						await new Promise((resolve, reject) => {
 							new TWEEN.Tween(object0).to({
 								x: [1, 0.25, 0],
 								y: [0, -0.15, 0],
@@ -228,11 +226,11 @@ export default class BattleState extends State {
 							showDialog("But it missed.", {showFor: 1000});
 						} else {
 							showDialog(`${battleEvent.pokemon.name} used ${moveStats(battleEvent.move).name}!`, {passive: true});
-							yield moveAnimations[battleEvent.move](object0, object1);
+							await moveAnimations[battleEvent.move](object0, object1);
 						}
 						break;
 					case "faint":
-						yield Promise.all([
+						await Promise.all([
 							new Promise((resolve, reject) => {
 								new TWEEN.Tween(object0).to({ y: -0.3, a: 0, }, 2000)
 									.easing(TWEEN.Easing.Linear.None)
@@ -245,17 +243,17 @@ export default class BattleState extends State {
 						if (battleEvent.promptForNext) {
 							let pokemonIndex;
 							do {
-								pokemonIndex = yield listPokemon(loader, player, modes.choose);
+								pokemonIndex = await listPokemon(loader, player, modes.choose);
 							} while (pokemonIndex === -1);
 							nextArg = {type: ActionType.SwitchPokemon, pokemonIndex};
 						}
 						break;
 					case "setHealth":
 						let hpBar = (battleEvent.isPlayer ? playerInfoBox : enemyInfoBox).hpBar;
-						yield hpBar.setPercentage(battleEvent.percentage);
+						await hpBar.setPercentage(battleEvent.percentage);
 						break;
 					case "gainExp":
-						yield new Promise((resolve, reject) => {
+						await new Promise((resolve, reject) => {
 							new TWEEN.Tween({ exp: battleEvent.prevExp })
 								.to({ exp: battleEvent.newExp }, 1000).easing(TWEEN.Easing.Quadratic.Out)
 								.onUpdate(o => {
@@ -268,19 +266,18 @@ export default class BattleState extends State {
 			}
 
 			console.log("Switching to next state.");
-			const transition = new TransitionState(self, fade);
+			const transition = new TransitionState(this, fade);
 			stateManager.setState(transition);
 			transition.transitionTo(nextState);
-		});
+		})();
 	}
 
 	draw(batch, dt, time) {
 		const gl = renderer.gl;
 
 		if (this.widget && this.widget.isLayoutRequired()) {
-			var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
-			var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
-
+			let widthMeasureSpec = measureSpec.make(this.width, measureSpec.Mode.Exactly),
+				heightMeasureSpec = measureSpec.make(this.height, measureSpec.Mode.Exactly);
 			this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 		}
 

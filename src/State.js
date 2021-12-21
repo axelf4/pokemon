@@ -1,5 +1,5 @@
 import Widget from "./Widget";
-var measureSpec = require("measureSpec");
+import * as measureSpec from "./measureSpec";
 var renderer = require("renderer");
 
 const gl = renderer.gl;
@@ -15,8 +15,8 @@ export default class State {
 
 	draw(batch, dt, time) {
 		if (this.widget && this.widget.isLayoutRequired()) {
-			let widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY),
-				heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
+			let widthMeasureSpec = measureSpec.make(this.width, measureSpec.Mode.Exactly),
+				heightMeasureSpec = measureSpec.make(this.height, measureSpec.Mode.Exactly);
 			this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 		}
 

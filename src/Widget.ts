@@ -15,7 +15,7 @@ var FOCUS_BLOCK_DESCENDANTS = 0x60000;
 
 export default abstract class Widget {
 	parent: WidgetGroup | null = null;
-	private flags = 0;
+	private flags: number = Flag.LayoutRequired;
 	x = 0; y = 0; width = 0; height = 0;
 	marginTop = 0; marginRight = 0; marginBottom = 0; marginLeft = 0;
 	style = {};

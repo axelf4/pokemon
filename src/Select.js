@@ -89,8 +89,4 @@ export default class Select extends Container {
 			this.cursorY = newCursorY;
 		}
 	}
-
-	setOnSelectListener(listener) {
-		this.listener = listener;
-	}
 }

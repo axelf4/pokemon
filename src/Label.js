@@ -66,7 +66,7 @@ export default class Label extends Widget {
 			} else {
 				var charCode = ch.charCodeAt();
 				var glyph = this.font.getGlyph(charCode);
-				if (!glyph) console.log("Missing glyph for", charCode, "corresponds to", ch);
+				if (!glyph) console.error("Missing glyph for", charCode, "corresponding to", ch);
 
 				advance += glyph.xadvance * this.font.scale;
 				if (wrappingWidth && advance > wrappingWidth) {

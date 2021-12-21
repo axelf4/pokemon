@@ -17,7 +17,7 @@ export default class Dialog extends Container {
 		this.setFocusable(true);
 		this.setBackground(resources.frame);
 
-		var label = this.label = new Label(resources.font, text);
+		let label = this.label = new Label(resources.font, text);
 		label.justify = label.align = align.START;
 		label.margin(8);
 		label.displayUpTo = 0;
@@ -33,7 +33,7 @@ export default class Dialog extends Container {
 	 * @return True, if there is text left, otherwise false.
 	 */
 	advance() {
-		resources.clickSfx.play();
+		if (!this.passive) resources.clickSfx.play();
 
 		if (this.label.showAllText()) return true;
 		// Advance multi-page text
@@ -66,6 +66,6 @@ export default class Dialog extends Container {
 	/** Closes this dialog box. */
 	close() {
 		this.remove();
-		if (this.listener) this.listener();
+		this.listener?.();
 	}
 }

@@ -29,7 +29,7 @@ export function adjust(spec: MeasureSpec, delta: number): MeasureSpec {
 		return make(size, Mode.Unspecified); // No need to adjust size if unspecified.
 	size += delta;
 	if (size < 0) {
-		// throw new Error("MeasureSpec.adjust: new size would be negative!");
+		console.warn("MeasureSpec.adjust: new size would be negative!");
 		size = 0;
 	}
 	return make(size, mode);
