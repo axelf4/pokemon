@@ -1,7 +1,7 @@
 import State from "State";
 import * as stateManager from "stateManager";
 import * as renderer from "./renderer";
-import { isPowerOfTwo, nextPowerOfTwo } from "pow2";
+import { isPowerOfTwo, nextPowerOfTwo } from "./utils";
 import { TexRegion, whiteTexRegion } from "./texture";
 
 var gl = renderer.gl;

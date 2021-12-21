@@ -8,7 +8,7 @@
 
 /** name, hp, attack, defense, sp.att, sp.def, speed, types, moveSet */
 import table from "./pokemonData.json";
-import { mapObject } from "./utils";
+import { mapValues } from "./utils";
 
 export enum Type {
 	Normal, Fight, Flying, Poison, Ground, Rock, Bug, Ghost, Steel,
@@ -41,7 +41,7 @@ class SpeciesView implements Species {
 
 /** Dictionary of pokemon species. */
 export const pokemons: {[K in keyof typeof table]: Species}
-	= mapObject(table, data => new SpeciesView(data));
+	= mapValues(table, data => new SpeciesView(data));
 
 /**
  * Returns the total amount of experience required for the next level.

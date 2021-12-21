@@ -1,7 +1,6 @@
 const renderer = require("renderer.js"), gl = renderer.gl;
-import { isPowerOfTwo, nextPowerOfTwo } from "./pow2";
 import SpriteBatch, { white } from "./SpriteBatch";
-import { range } from "./utils";
+import { range, isPowerOfTwo, nextPowerOfTwo } from "./utils";
 
 export default interface Texture {
 	/** The texture name. */

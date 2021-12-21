@@ -1,7 +1,7 @@
 import FileLoader from "./FileLoader";
 import { loadTexture, TexRegion, whiteTexRegion } from "./texture";
 import TiledMap from "./TiledMap";
-import { mapObject, unreachable } from "./utils";
+import { mapValues, unreachable } from "./utils";
 
 export function loadText(fileLoader: FileLoader, url: string): Promise<string> {
 	return fileLoader.load(url).then(blob => new Promise((resolve, reject) => {
@@ -86,7 +86,7 @@ class AtlasLoader {
 		}
 
 		let frames = atlases
-			.flatMap((atlas: any) => mapObject(atlas.frames, ((frame: any) => Object.assign(
+			.flatMap((atlas: any) => mapValues(atlas.frames, ((frame: any) => Object.assign(
 				{
 					imageSrc: atlas.meta.image,
 				},
