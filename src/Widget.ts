@@ -1,6 +1,7 @@
 import type WidgetGroup from "./WidgetGroup";
 import type {KeyAction} from "./input";
 import type SpriteBatch from "./SpriteBatch";
+import type {MeasureSpec} from "./measureSpec";
 
 export enum Flag {
 	LayoutRequired = 1,
@@ -18,7 +19,7 @@ export default abstract class Widget {
 	private flags: number = Flag.LayoutRequired;
 	x = 0; y = 0; width = 0; height = 0;
 	marginTop = 0; marginRight = 0; marginBottom = 0; marginLeft = 0;
-	style = {};
+	style: any = {};
 
 	/**
 	 * Removes this widget from its parent.
@@ -41,7 +42,7 @@ export default abstract class Widget {
 		this.flags &= ~Flag.LayoutRequired; // TODO maybe should not be here
 	}
 
-	abstract layout(): void;
+	abstract layout(widthMeasureSpec: MeasureSpec, heightMeasureSpec: MeasureSpec): void;
 
 	abstract onKey(type: KeyAction, key: string): void;
 	abstract draw(batch: SpriteBatch, dt: number, time: number): void;

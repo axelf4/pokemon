@@ -12,7 +12,7 @@ function resolveAdjustedSize(desiredSize, spec) {
 	case Mode.AtMost:
 		return Math.min(desiredSize, size);
 	case Mode.Exactly:
-		return specSize;
+		return size;
 	}
 }
 

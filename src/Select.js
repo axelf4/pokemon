@@ -1,5 +1,5 @@
 import Container from "Container";
-import Panel from "Panel";
+import Panel, {Direction, Align} from "./Panel";
 import Label from "./Label";
 var align = require("align.js");
 var resources = require("resources.js");
@@ -23,20 +23,16 @@ export default class Select extends Container {
 		this.listener = listener;
 		this.setBackground(resources.frame);
 
-		const mainPanel = new Panel();
-		mainPanel.direction = Panel.DIRECTION_ROW;
-		mainPanel.justify = Panel.ALIGN_SPACE_AROUND;
+		const mainPanel = new Panel(Direction.Row, Align.SpaceAround);
 		mainPanel.margin(4);
 		this.addWidget(mainPanel);
 
 		var rectangleShape = optionContents.length % columnCount === 0;
 		var columns = new Array(columnCount);
 		for (var i = 0; i < columnCount; ++i) {
-			var column = new Panel();
-			column.direction = Panel.DIRECTION_COLUMN;
-			column.style.align = align.STRETCH;
+			let column = new Panel(Direction.Column, Align.Stretch);
 			column.marginRight = 10; // Pokemon Emerald-like
-			if (rectangleShape) column.justify = Panel.ALIGN_SPACE_AROUND;
+			if (rectangleShape) column.justify = Align.SpaceAround;
 			mainPanel.addWidget(column);
 			columns[i] = column;
 		}
@@ -48,7 +44,7 @@ export default class Select extends Container {
 
 			var content = typeof optionContents[i] === "string" ? new Label(resources.font, optionContents[i]) : optionContents[i];
 			var option = new Option(content);
-			option.style.align = align.STRETCH;
+			option.style.align = Align.Stretch;
 			columns[columnIndex].addWidget(option);
 
 			// Store the option for future use

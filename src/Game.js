@@ -3,9 +3,8 @@ var Widget = require("./Widget");
 var player = require("player.js");
 var resources = require("resources.js");
 import Stack from "Stack";
-import Panel from "Panel";
+import Panel, * as panel from "./Panel";
 import Dialog from "Dialog";
-var align = require("align.js");
 import State from "State";
 import {DescendantFocusability} from "WidgetGroup";
 import {KeyAction} from "input";
@@ -44,9 +43,7 @@ class GameScreen extends Stack {
 		this.setFocusable(true);
 		this.setDescendantFocusability(DescendantFocusability.FocusAfterDescendants);
 
-		this.uiLayer = new Panel();
-		this.uiLayer.justify = Panel.ALIGN_FLEX_END;
-		this.uiLayer.direction = Panel.DIRECTION_COLUMN;
+		this.uiLayer = new Panel(panel.Direction.Column, panel.Align.FlexEnd);
 		this.addWidget(this.uiLayer);
 	}
 
@@ -86,14 +83,15 @@ const showPauseMenu = async function(game) {
 	resources.clickSfx.play();
 	game.lock();
 	const selected = await new Promise((resolve, reject) => {
-		game.widget.uiLayer.justify = Panel.ALIGN_FLEX_START;
+		let oldJustify = game.widget.uiLayer.justify;
+		game.widget.uiLayer.justify = panel.Align.FlexStart;
 		const optionNames = ["Pokemon", "Bag", "Save", "Exit"];
 		const select = new Select(optionNames, 1, selected => {
-			game.widget.uiLayer.justify = Panel.ALIGN_FLEX_END;
+			game.widget.uiLayer.justify = oldJustify;
 			game.widget.uiLayer.removeAllWidgets();
 			resolve(selected);
 		});
-		select.style.align = align.END;
+		select.style.align = panel.Align.FlexEnd;
 		game.widget.uiLayer.addWidget(select);
 		select.requestFocus();
 	});
@@ -224,7 +222,7 @@ Game.prototype.say = Game.prototype.showDialog = function(text) {
 	return new Promise((resolve, reject) => {
 		const dialog = new Dialog(text, resolve);
 		dialog.style.height = 100;
-		dialog.style.align = align.STRETCH;
+		dialog.style.align = panel.Align.Stretch;
 		this.widget.uiLayer.addWidget(dialog);
 		dialog.requestFocus();
 	});
@@ -236,11 +234,11 @@ Game.prototype.multichoice = function(label, optionNames) {
 			this.widget.uiLayer.removeAllWidgets();
 			resolve(selected);
 		});
-		select.style.align = align.START;
+		select.style.align = panel.Align.FlexStart;
 		this.widget.uiLayer.addWidget(select);
 		select.requestFocus();
 		var dialog = new Dialog(label);
-		dialog.style.align = align.STRETCH;
+		dialog.style.align = panel.Align.Stretch;
 		dialog.style.height = 100;
 		this.widget.uiLayer.addWidget(dialog);
 	});

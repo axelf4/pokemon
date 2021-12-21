@@ -1,5 +1,5 @@
 import State from "State";
-import Panel from "Panel";
+import Panel, {Direction, Align} from "./Panel";
 import Container from "Container";
 import Dialog from "Dialog";
 var align = require("align.js");
@@ -37,18 +37,15 @@ export default class BattleState extends State {
 			this.characterTex0 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
 			this.characterTex1 = loader.loadTexturePlaceholder("assets/sprites/pokemon/Slowpoke.png");
 
-			const widget = this.widget = new Panel();
-			widget.direction = Panel.DIRECTION_COLUMN;
+			const widget = this.widget = new Panel(Direction.Column);
 
 			const viewContainer = new Container();
-			viewContainer.style.align = align.STRETCH;
+			viewContainer.style.align = Align.Stretch;
 			viewContainer.flex = 1;
 			viewContainer.background = loader.loadTexturePlaceholder("assets/sprites/battlebg.png");
 			widget.addWidget(viewContainer);
 
-			const view = new Panel();
-			view.direction = Panel.DIRECTION_ROW;
-			view.justify = align.SPACE_AROUND;
+			const view = new Panel(Direction.Row, Align.SpaceAround);
 			viewContainer.addWidget(view);
 
 			await loader.all(); // Wait for resources to load
@@ -60,8 +57,7 @@ export default class BattleState extends State {
 				view.addWidget(container);
 				container.setVisible(false);
 
-				const vPanel = new Panel();
-				vPanel.direction = Panel.DIRECTION_COLUMN;
+				const vPanel = new Panel(Direction.Column);
 				vPanel.marginTop = 4;
 				vPanel.marginRight = 12;
 				vPanel.marginBottom = 7;
@@ -94,8 +90,7 @@ export default class BattleState extends State {
 			};
 			const playerInfoBox = createInfoBox(true), enemyInfoBox = createInfoBox(false);
 
-			var info = new Panel();
-			info.direction = Panel.DIRECTION_ROW;
+			var info = new Panel(Direction.Row);
 			info.style.height = 100;
 			widget.addWidget(info);
 

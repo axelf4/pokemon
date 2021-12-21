@@ -1,3 +1,5 @@
+// TODO Remove this module
+
 exports.START = 0;
 
 exports.END = 1;

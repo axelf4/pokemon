@@ -16,10 +16,10 @@ enum Flag {
 }
 
 export default abstract class WidgetGroup extends Widget {
-	groupFlags: number = DescendantFocusability.FocusBeforeDescendants;
-	children: Widget[] = [];
-	focused: Widget | null = null;
-	transform = mat4.create();
+	private groupFlags: number = DescendantFocusability.FocusBeforeDescendants;
+	protected children: Widget[] = [];
+	private focused: Widget | null = null;
+	private transform = mat4.create();
 
 	addWidget(child: Widget) {
 		if (child.parent) throw new Error("The specified child already has a parent.");
