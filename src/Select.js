@@ -1,9 +1,9 @@
 import Container from "Container";
 import Panel from "Panel";
-var Label = require("Label.js");
+import Label from "./Label";
 var align = require("align.js");
 var resources = require("resources.js");
-import * as input from "input";
+import {KeyAction} from "input";
 
 // TODO Add arrow instead of border
 class Option extends Container {
@@ -61,7 +61,7 @@ export default class Select extends Container {
 	}
 
 	onKey(type, key) {
-		if (type !== input.KEY_ACTION_DOWN) return;
+		if (type !== KeyAction.Down) return;
 
 		let newCursorX = this.cursorX, newCursorY = this.cursorY;
 		switch (key) {

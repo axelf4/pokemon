@@ -3,12 +3,11 @@ import Panel from "Panel";
 import Container from "Container";
 import Dialog from "Dialog";
 var align = require("align.js");
-var Image = require("Image.js");
 import Select from "Select";
 import NinePatch from "NinePatch";
 import thread from "thread";
 import * as stateManager from "stateManager";
-var Label = require("Label.js");
+import Label from "./Label";
 var Widget = require("Widget");
 var measureSpec = require("measureSpec");
 import Healthbar from "Healthbar";
@@ -56,7 +55,7 @@ export default class BattleState extends State {
 
 			yield loader.all(); // Wait for resources to load
 
-			const createInfoBox = (isPlayer) => {
+			const createInfoBox = isPlayer => {
 				const container = new Container();
 				container.background = self.battleInfoTex;
 				container.marginTop = 20;
@@ -229,7 +228,6 @@ export default class BattleState extends State {
 							showDialog("But it missed.", {showFor: 1000});
 						} else {
 							showDialog(`${battleEvent.pokemon.name} used ${moveStats(battleEvent.move).name}!`, {passive: true});
-							console.log(moveAnimations, battleEvent.move);
 							yield moveAnimations[battleEvent.move](object0, object1);
 						}
 						break;
@@ -279,7 +277,7 @@ export default class BattleState extends State {
 	draw(batch, dt, time) {
 		const gl = renderer.gl;
 
-		if (this.widget && this.widget.flags & Widget.FLAG_LAYOUT_REQUIRED) {
+		if (this.widget && this.widget.isLayoutRequired()) {
 			var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
 			var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
 

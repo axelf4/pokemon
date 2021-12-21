@@ -1,4 +1,4 @@
-var Widget = require("Widget");
+import Widget from "./Widget";
 var measureSpec = require("measureSpec");
 var renderer = require("renderer");
 
@@ -14,10 +14,9 @@ export default class State {
 	update(dt, time) {}
 
 	draw(batch, dt, time) {
-		if (this.widget && this.widget.flags & Widget.FLAG_LAYOUT_REQUIRED) {
-			var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
-			var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
-
+		if (this.widget && this.widget.isLayoutRequired()) {
+			let widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY),
+				heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
 			this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 		}
 
@@ -25,7 +24,7 @@ export default class State {
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		batch.begin();
-		this.widget.draw(batch, dt, time);
+		this.widget?.draw(batch, dt, time);
 		batch.end();
 	}
 
@@ -33,17 +32,10 @@ export default class State {
 		this.width = width;
 		this.height = height;
 
-		if (this.widget) {
-			var widthMeasureSpec = measureSpec.make(width, measureSpec.EXACTLY);
-			var heightMeasureSpec = measureSpec.make(height, measureSpec.EXACTLY);
-
-			this.widget.layout(widthMeasureSpec, heightMeasureSpec);
-		}
+		this.widget?.invalidate();
 	}
 
 	onKey(type, key) {
-		if (this.widget) {
-			this.widget.onKey(type, key);
-		}
+		this.widget?.onKey(type, key);
 	}
 }

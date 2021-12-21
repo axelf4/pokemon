@@ -1,5 +1,6 @@
-var Widget = require("Widget.js");
-var measureSpec = require("measureSpec.js");
+import Widget from "./Widget";
+import * as measureSpec from "./measureSpec";
+import {Mode} from "./measureSpec";
 var lerp = require("lerp");
 import TWEEN from "@tweenjs/tween.js";
 
@@ -21,9 +22,9 @@ export default class Healthbar extends Widget {
 
 		let width;
 		switch (widthMode) {
-			case measureSpec.UNSPECIFIED: width = 22; break;
-			case measureSpec.EXACTLY: width = widthSize; break;
-			case measureSpec.AT_MOST: width = Math.min(widthSize, 22); break;
+			case Mode.Unspecified: width = 22; break;
+			case Mode.Exactly: width = widthSize; break;
+			case Mode.AtMost: width = Math.min(widthSize, 22); break;
 		}
 
 		this.setDimension(width, 7);

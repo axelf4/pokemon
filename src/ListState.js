@@ -1,5 +1,5 @@
 import State from "State";
-import * as input from "input";
+import {KeyAction} from "input";
 import * as stateManager from "stateManager";
 import Stack from "Stack";
 import Panel from "Panel";
@@ -7,8 +7,8 @@ import Select from "Select";
 const align = require("align");
 const resources = require("resources");
 import swapElements from "swapElements";
-const Label = require("Label");
-const Image = require("Image");
+import Label from "./Label";
+import Image from "./Image";
 import Healthbar from "Healthbar";
 import clamp from "clamp";
 import LoadGuard from "LoadGuard";
@@ -104,7 +104,7 @@ export default class ListState extends State {
 	}
 
 	onKey(type, key) {
-		if (type == input.KEY_ACTION_DOWN) {
+		if (type == KeyAction.Down) {
 			const prevPage = this.page;
 			switch (key) {
 				case "a": --this.page; break;

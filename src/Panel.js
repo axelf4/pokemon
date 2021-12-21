@@ -1,5 +1,6 @@
 import WidgetGroup from "WidgetGroup";
-var measureSpec = require("measureSpec.js");
+import * as measureSpec from "./measureSpec";
+import {Mode} from "./measureSpec";
 
 export const DIRECTION_ROW = 0,
 	DIRECTION_COLUMN = 1,
@@ -106,20 +107,20 @@ export default class Panel extends WidgetGroup {
 				var align = getAlign(child);
 
 				if (isStyleDimDefined(child, DIRECTION_ROW)) {
-					childWidthMeasureSpec = measureSpec.make(child.style.width, measureSpec.EXACTLY);
-				} else if (crossAxis === DIRECTION_ROW && widthMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
-					childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.EXACTLY);
+					childWidthMeasureSpec = measureSpec.make(child.style.width, Mode.Exactly);
+				} else if (crossAxis === DIRECTION_ROW && widthMode === Mode.Exactly && align === ALIGN_STRETCH) {
+					childWidthMeasureSpec = measureSpec.make(widthSize, Mode.Exactly);
 				} else {
-					var mode = widthSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
+					var mode = widthSize ? Mode.AtMost : Mode.Unspecified;
 					childWidthMeasureSpec = measureSpec.make(widthSize, mode);
 				}
 
 				if (isStyleDimDefined(child, DIRECTION_COLUMN)) {
-					childHeightMeasureSpec = measureSpec.make(child.style.height, measureSpec.EXACTLY);
-				} else if (crossAxis === DIRECTION_COLUMN && heightMode === measureSpec.EXACTLY && align === ALIGN_STRETCH) {
-					childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.EXACTLY);
+					childHeightMeasureSpec = measureSpec.make(child.style.height, Mode.Exactly);
+				} else if (crossAxis === DIRECTION_COLUMN && heightMode === Mode.Exactly && align === ALIGN_STRETCH) {
+					childHeightMeasureSpec = measureSpec.make(heightSize, Mode.Exactly);
 				} else {
-					var mode = heightSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
+					var mode = heightSize ? Mode.AtMost : Mode.Unspecified;
 					childHeightMeasureSpec = measureSpec.make(heightSize, mode);
 				}
 
@@ -155,31 +156,31 @@ export default class Panel extends WidgetGroup {
 
 			var childWidthMeasureSpec, childHeightMeasureSpec;
 			if (mainAxis === DIRECTION_ROW) {
-				childWidthMeasureSpec = measureSpec.make(childMainSize, measureSpec.EXACTLY);
+				childWidthMeasureSpec = measureSpec.make(childMainSize, Mode.Exactly);
 
 				if (isStyleDimDefined(child, DIRECTION_COLUMN)) {
-					childHeightMeasureSpec = measureSpec.make(child.style.height, measureSpec.EXACTLY);
-				} else if (heightSize && heightMode === measureSpec.EXACTLY && getAlign(child) === ALIGN_STRETCH) {
-					childHeightMeasureSpec = measureSpec.make(heightSize, measureSpec.EXACTLY);
+					childHeightMeasureSpec = measureSpec.make(child.style.height, Mode.Exactly);
+				} else if (heightSize && heightMode === Mode.Exactly && getAlign(child) === ALIGN_STRETCH) {
+					childHeightMeasureSpec = measureSpec.make(heightSize, Mode.Exactly);
 				} else {
-					var mode = heightSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
+					var mode = heightSize ? Mode.AtMost : Mode.Unspecified;
 					childHeightMeasureSpec = measureSpec.make(heightSize, mode);
 				}
 			} else {
-				childHeightMeasureSpec = measureSpec.make(childMainSize, measureSpec.EXACTLY);
+				childHeightMeasureSpec = measureSpec.make(childMainSize, Mode.Exactly);
 
 				if (isStyleDimDefined(child, DIRECTION_ROW)) {
-					childWidthMeasureSpec = measureSpec.make(child.style.width, measureSpec.EXACTLY);
-				} else if (widthSize && widthMode === measureSpec.EXACTLY && getAlign(child) === ALIGN_STRETCH) {
-					childWidthMeasureSpec = measureSpec.make(widthSize, measureSpec.EXACTLY);
+					childWidthMeasureSpec = measureSpec.make(child.style.width, Mode.Exactly);
+				} else if (widthSize && widthMode === Mode.Exactly && getAlign(child) === ALIGN_STRETCH) {
+					childWidthMeasureSpec = measureSpec.make(widthSize, Mode.Exactly);
 				} else {
-					var mode = widthSize ? measureSpec.AT_MOST : measureSpec.UNSPECIFIED;
+					var mode = widthSize ? Mode.AtMost : Mode.Unspecified;
 					childWidthMeasureSpec = measureSpec.make(widthSize, mode);
 				}
 			}
 			child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
 		}
-		if (totalFlexGrowFactors === 0 && remainingSpace > 0 && measureSpec.getMode(mainMeasureSpec) === measureSpec.EXACTLY) {
+		if (totalFlexGrowFactors === 0 && remainingSpace > 0 && measureSpec.getMode(mainMeasureSpec) === Mode.Exactly) {
 			// Allocate remaining space according to justifyContent.
 			switch (this.justify) {
 				case ALIGN_FLEX_START: break;
@@ -212,8 +213,8 @@ export default class Panel extends WidgetGroup {
 		}
 
 		// If the dimensions are definite: use them
-		if (measureSpec.getMode(mainMeasureSpec) === measureSpec.EXACTLY) mainSize = measureSpec.getSize(mainMeasureSpec);
-		if (measureSpec.getMode(crossMeasureSpec) === measureSpec.EXACTLY) crossSize = measureSpec.getSize(crossMeasureSpec);
+		if (measureSpec.getMode(mainMeasureSpec) === Mode.Exactly) mainSize = measureSpec.getSize(mainMeasureSpec);
+		if (measureSpec.getMode(crossMeasureSpec) === Mode.Exactly) crossSize = measureSpec.getSize(crossMeasureSpec);
 
 		// Position elements in the cross axis
 		for (var i = 0, length = this.children.length; i < length; i++) {
@@ -232,8 +233,8 @@ export default class Panel extends WidgetGroup {
 				}
 				// If the cross size of the child wasn't already definite
 				if (!isCrossSizeDefinite) {
-					var childWidthMeasureSpec = measureSpec.make(childWidth, childWidth ? measureSpec.EXACTLY : measureSpec.UNSPECIFIED);
-					var childHeightMeasureSpec = measureSpec.make(childHeight, childHeight ? measureSpec.EXACTLY : measureSpec.UNSPECIFIED);
+					var childWidthMeasureSpec = measureSpec.make(childWidth, childWidth ? Mode.Exactly : Mode.Unspecified);
+					var childHeightMeasureSpec = measureSpec.make(childHeight, childHeight ? Mode.Exactly : Mode.Unspecified);
 					child.layout(childWidthMeasureSpec, childHeightMeasureSpec);
 				}
 			} else if (align !== ALIGN_FLEX_START) {

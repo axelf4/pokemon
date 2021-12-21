@@ -1,6 +1,6 @@
-import * as input from "input";
+import {KeyAction} from "input";
 import Container from "Container";
-var Label = require("Label.js");
+import Label from "./Label";
 var align = require("align.js");
 var resources = require("resources.js");
 
@@ -47,7 +47,7 @@ export default class Dialog extends Container {
 
 	onKey(type, key) {
 		if (this.passive) return;
-		if (type === input.KEY_ACTION_DOWN && key === " ")
+		if (type === KeyAction.Down && key === " ")
 			this.advance();
 	}
 

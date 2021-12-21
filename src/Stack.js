@@ -1,27 +1,21 @@
-var Widget = require("Widget.js");
 import WidgetGroup from "WidgetGroup";
-var measureSpec = require("measureSpec.js");
+import * as measureSpec from "./measureSpec";
+import {Mode} from "./measureSpec";
 
 export default class Stack extends WidgetGroup {
-	constructor() {
-		super();
-	}
-
 	layout(widthMeasureSpec, heightMeasureSpec) {
-		var widthMode = measureSpec.getMode(widthMeasureSpec);
-		var heightMode = measureSpec.getMode(heightMeasureSpec);
-		var widthSize = measureSpec.getSize(widthMeasureSpec);
-		var heightSize = measureSpec.getSize(heightMeasureSpec);
+		let widthMode = measureSpec.getMode(widthMeasureSpec),
+			heightMode = measureSpec.getMode(heightMeasureSpec),
+			widthSize = measureSpec.getSize(widthMeasureSpec),
+			heightSize = measureSpec.getSize(heightMeasureSpec);
 
-		var width = 0, height = 0;
+		let width = 0, height = 0;
 
-		for (var i = 0, length = this.children.length; i < length; ++i) {
-			var child = this.children[i];
+		for (let child of this.children) {
+			let marginRow = child.marginLeft + child.marginRight,
+				marginColumn = child.marginTop + child.marginBottom;
 
-			var marginRow = child.marginLeft + child.marginRight;
-			var marginColumn = child.marginTop + child.marginBottom;
-
-			var childWidthMeasureSpec, childHeightMeasureSpec;
+			let childWidthMeasureSpec, childHeightMeasureSpec;
 			childWidthMeasureSpec = measureSpec.adjust(widthMeasureSpec, -marginRow);
 			childHeightMeasureSpec = measureSpec.adjust(heightMeasureSpec, -marginColumn);
 			child.layout(childWidthMeasureSpec, childHeightMeasureSpec);

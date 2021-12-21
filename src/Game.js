@@ -1,5 +1,5 @@
 import nano from "nano-ecs";
-var Widget = require("Widget.js");
+var Widget = require("./Widget");
 var player = require("player.js");
 var resources = require("resources.js");
 import Stack from "Stack";
@@ -7,8 +7,8 @@ import Panel from "Panel";
 import Dialog from "Dialog";
 var align = require("align.js");
 import State from "State";
-import {FOCUS_AFTER_DESCENDANTS} from "WidgetGroup";
-import * as input from "input";
+import {DescendantFocusability} from "WidgetGroup";
+import {KeyAction} from "input";
 import Direction, * as direction from "direction";
 var Animation = require("Animation");
 import {mat4, vec3, quat} from "gl-matrix";
@@ -18,7 +18,8 @@ import range from "range";
 import * as stateManager from "stateManager";
 import TransitionState, {fade, createBattleTransition} from "TransitionState";
 import {listPokemon, listItems} from "ListState";
-var measureSpec = require("measureSpec");
+import * as measureSpec from "./measureSpec";
+import {Mode} from "./measureSpec";
 import BattleState from "BattleState";
 import { MovementSystem, Movement, LineOfSight,
 	StillMovementController, WalkForwardMovementController,
@@ -41,7 +42,7 @@ class GameScreen extends Stack {
 		super();
 		this.game = game;
 		this.setFocusable(true);
-		this.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+		this.setDescendantFocusability(DescendantFocusability.FocusAfterDescendants);
 
 		this.uiLayer = new Panel();
 		this.uiLayer.justify = Panel.ALIGN_FLEX_END;
@@ -50,8 +51,8 @@ class GameScreen extends Stack {
 	}
 
 	onKey(type, key) {
-		if (this.flags & Widget.FLAG_FOCUSED) {
-			if (type === input.KEY_ACTION_DOWN) {
+		if (this.hasSelfFocus()) {
+			if (type === KeyAction.Down) {
 				var game = this.game;
 				var em = this.game.em;
 				// Hacky way of connecting input to player interacting with shit
@@ -157,9 +158,9 @@ function drawMapLayers(batch, map, layers) {
 Game.prototype.draw = function(batch, dt, time) {
 	const em = this.em, player = this.player;
 
-	if (this.widget && this.widget.flags & Widget.FLAG_LAYOUT_REQUIRED) {
-		var widthMeasureSpec = measureSpec.make(this.width, measureSpec.EXACTLY);
-		var heightMeasureSpec = measureSpec.make(this.height, measureSpec.EXACTLY);
+	if (this.widget && this.widget.isLayoutRequired()) {
+		let widthMeasureSpec = measureSpec.make(this.width, Mode.Exactly),
+			heightMeasureSpec = measureSpec.make(this.height, Mode.Exactly);
 
 		this.widget.layout(widthMeasureSpec, heightMeasureSpec);
 	}

@@ -1,6 +1,6 @@
-var Widget = require("Widget.js");
 import WidgetGroup from "WidgetGroup";
-var measureSpec = require("measureSpec.js");
+import * as measureSpec from "./measureSpec";
+import {Mode} from "./measureSpec";
 
 export default class Container extends WidgetGroup {
 	constructor() {
@@ -13,13 +13,13 @@ export default class Container extends WidgetGroup {
 		if (this.children.length !== 1) throw new Error("A container shall only have one child, since it is from China.");
 		var child = this.children[0];
 
-		var widthMode = measureSpec.getMode(widthMeasureSpec);
-		var heightMode = measureSpec.getMode(heightMeasureSpec);
-		var widthSize = measureSpec.getSize(widthMeasureSpec);
-		var heightSize = measureSpec.getSize(heightMeasureSpec);
+		let widthMode = measureSpec.getMode(widthMeasureSpec),
+			heightMode = measureSpec.getMode(heightMeasureSpec),
+			widthSize = measureSpec.getSize(widthMeasureSpec),
+			heightSize = measureSpec.getSize(heightMeasureSpec);
 
-		var marginRow = child.marginLeft + child.marginRight;
-		var marginColumn = child.marginTop + child.marginBottom;
+		let marginRow = child.marginLeft + child.marginRight,
+			marginColumn = child.marginTop + child.marginBottom;
 
 		const childWidthMeasureSpec = measureSpec.adjust(widthMeasureSpec, -marginRow),
 			childHeightMeasureSpec = measureSpec.adjust(heightMeasureSpec, -marginColumn);

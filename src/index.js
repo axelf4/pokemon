@@ -6,7 +6,7 @@ import {mat4, vec3} from "gl-matrix";
 import SpriteBatch from "SpriteBatch";
 import FileLoader from "FileLoader";
 import Loader from "./loader";
-import * as input from "input";
+import * as input from "./input";
 import * as stateManager from "stateManager";
 import promiseTrap from "promise-trap";
 import cachingProxy from "cachingProxy";
@@ -34,7 +34,7 @@ const projectionMatrix = mat4.create();
 const batch = new SpriteBatch();
 
 input.setListener((type, key) => {
-	if (type === input.KEY_ACTION_UP && key === "f") renderer.toggleFullscreen();
+	if (type === input.KeyAction.Up && key === "f") renderer.toggleFullscreen();
 	else stateManager.getState().onKey(type, key);
 });
 

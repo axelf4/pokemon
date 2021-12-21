@@ -9,7 +9,7 @@ export default class LoadGuard extends Container {
 		this.addWidget(child);
 		this.loaded = false;
 		loader.all().then(() => {
-			this.requestLayout();
+			this.invalidate();
 			this.loaded = true;
 		});
 	}
