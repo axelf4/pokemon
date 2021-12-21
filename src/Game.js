@@ -24,6 +24,7 @@ import { MovementSystem, Movement, LineOfSight,
 	StillMovementController, WalkForwardMovementController,
 	PathMovementController } from "movement";
 var lerp = require("lerp");
+import * as APU from "apu";
 
 import Position from "Position";
 import SpriteComponent from "SpriteComponent";
@@ -460,7 +461,11 @@ Game.prototype.battle = async function(enemyTrainer) {
 	const transition = new TransitionState(this, this.battleTransition);
 	stateManager.setState(transition);
 	const battleState = new BattleState(loader, this, this.playerTrainer, enemyTrainer);
+	const battleBgm = await loader.load("assets/battle.vgm")
+		  .then(b => b.arrayBuffer())
+		  .then(APU.fromFile);
 	await loader.all();
+	battleBgm.play();
 	transition.transitionTo(battleState);
 };
 

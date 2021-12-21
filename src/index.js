@@ -20,7 +20,7 @@ import TWEEN from "@tweenjs/tween.js";
 import * as APU from "apu";
 
 import Trainer from "Trainer";
-import Pokemon, {pokemons, moves} from "./pokemon";
+import Pokemon, {Move, pokemons} from "./pokemon";
 import Item from "./item";
 
 import * as lootTable from "lootTable";
@@ -67,8 +67,8 @@ stateManager.setState(transitionState);
 
 	let playerName = lootTable.choose([[1, "Axel"], [1, "Bob"]]);
 	const playerTrainer = new Trainer(playerName, [
-		new Pokemon(pokemons.snoopDogg, 6, [ moves.tackle, moves.growl ]),
-		new Pokemon(pokemons.slowpoke, 4, [ moves.tackle, moves.growl ]),
+		new Pokemon(pokemons.snoopDogg, 6, [ Move.Tackle, Move.Growl ]),
+		new Pokemon(pokemons.slowpoke, 4, [ Move.Tackle, Move.Growl ]),
 	]);
 	playerTrainer.items.push(Item.Pokeball);
 	const game = new Game(loader, batch, playerTrainer);

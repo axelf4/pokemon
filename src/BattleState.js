@@ -21,6 +21,8 @@ import TWEEN from "@tweenjs/tween.js";
 import TransitionState, {fade} from "TransitionState";
 import { listPokemon, modes } from "ListState";
 import wait from "wait";
+import {moveStats} from "./pokemon";
+import moveAnimations from "./moveAnimations";
 
 export default class BattleState extends State {
 	constructor(loader, nextState, player, enemy) {
@@ -162,7 +164,7 @@ export default class BattleState extends State {
 									break; // Shift was pressed
 								case 0: // Fight
 									const moveId = yield new Promise(function(resolve, reject) {
-										const moveNames = pokemon.moves.map(move => move.type.name);
+										const moveNames = pokemon.moves.map(move => moveStats(move.type).name);
 										const select = new Select(moveNames, 2, resolve);
 										select.style.align = align.STRETCH;
 										select.flex = 1;
@@ -223,28 +225,12 @@ export default class BattleState extends State {
 						break;
 					case "useMove":
 						if (battleEvent.miss) {
-							showDialog(`${battleEvent.pokemon.name} used ${battleEvent.move.name}!`, {showFor: 1000});
+							showDialog(`${battleEvent.pokemon.name} used ${moveStats(battleEvent.move).name}!`, {showFor: 1000});
 							showDialog("But it missed.", {showFor: 1000});
 						} else {
-							showDialog(`${battleEvent.pokemon.name} used ${battleEvent.move.name}!`, {passive: true});
-							yield new Promise((resolve, reject) => {
-								new TWEEN.Tween(object0)
-									.to({
-										x: [ 0.05, 0.08, 0.10, -0.2, object0.x ],
-										y: [ 0.05, 0.07, 0.08, 0, object0.y ],
-									}, 1000)
-									.interpolation(TWEEN.Interpolation.CatmullRom)
-									.easing(TWEEN.Easing.Linear.None)
-									.chain(new TWEEN.Tween(object1)
-										.to({
-											x: [ 0.1, 0.11, object1.x ],
-											y: [ -0.03, -0.01, object1.y ],
-										}, 1000)
-										.interpolation(TWEEN.Interpolation.CatmullRom)
-										.easing(TWEEN.Easing.Linear.None)
-										.delay(100)
-										.onComplete(resolve)).start();
-							});
+							showDialog(`${battleEvent.pokemon.name} used ${moveStats(battleEvent.move).name}!`, {passive: true});
+							console.log(moveAnimations, battleEvent.move);
+							yield moveAnimations[battleEvent.move](object0, object1);
 						}
 						break;
 					case "faint":
@@ -332,4 +318,8 @@ export default class BattleState extends State {
 		batch.end();
 		// gl.enable(gl.CULL_FACE);
 	}
+}
+
+if (module.hot) {
+	module.hot.accept("./moveAnimations");
 }

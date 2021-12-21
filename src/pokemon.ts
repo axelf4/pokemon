@@ -36,7 +36,7 @@ class SpeciesView implements Species {
 	get speed() { return this.data.speed; }
 	get types() { return this.data.types.map(x => Type[x as keyof typeof Type]); }
 	get moveSet() { return Object.fromEntries(Object.entries(this.data.moveSet)
-		.map(([level, move]) => [+level, moves[move as keyof typeof moves]])); }
+		.map(([level, move]) => [+level, Move[move as keyof typeof Move]])); }
 }
 
 /** Dictionary of pokemon species. */
@@ -64,8 +64,10 @@ export enum DamageCategory { Physical, Special, Status }
 
 type Priority = -7 | -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
 
-export class Move {
+export class MoveStats {
 	/**
+	 * Constructs a new move statistics with the given values.
+	 *
 	 * @param accuracy The accuracy in percent.
 	 * @param power The base power.
 	 */
@@ -85,10 +87,19 @@ export class Move {
 }
 
 /** Collection of all moves. */
-export const moves = {
-	tackle: new Move("Tackle", Type.Normal, 35, 40, 100, DamageCategory.Physical),
-	growl: new Move("Growl", Type.Normal, 40, 0, 100, DamageCategory.Status),
-} as const;
+export enum Move {
+	Tackle,
+	Growl,
+}
+
+export function moveStats(move: Move): MoveStats {
+	switch (move) {
+		case Move.Tackle:
+			return new MoveStats("Tackle", Type.Normal, 35, 40, 100, DamageCategory.Physical);
+		case Move.Growl:
+			return new MoveStats("Growl", Type.Normal, 40, 0, 100, DamageCategory.Status);
+	}
+}
 
 /** Highest number of moves a pokemon can know at any one time. */
 export const maxMoveCount = 4;
@@ -130,7 +141,7 @@ export default class Pokemon {
 		this.level = level;
 		this.hp = this.calculateStats().hp;
 		this.moves = (moves || getMovesForLevel(this.species, level))
-						 .map(move => ({type: move, pp: move.pp}));
+						 .map(move => ({type: move, pp: moveStats(move).pp}));
 
 		if (new.target === Pokemon) Object.seal(this);
 	}

@@ -1,6 +1,6 @@
 import battle from "./battle";
 import Trainer from "./Trainer";
-import Pokemon, {pokemons, moves} from "./pokemon";
+import Pokemon, {pokemons} from "./pokemon";
 
 test("should send out primary pokemon", () => {
 	let pokemonA = new Pokemon(pokemons.slowpoke, 1), trainerA = new Trainer("A", [pokemonA]),

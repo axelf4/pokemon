@@ -4,13 +4,13 @@
 		"attack": 65, "defense": 65, "specialAttack": 40, "specialDefense": 40,
 		"speed": 15,
 		"types": ["Water", "Psychic"],
-		"moveSet": {"1": "tackle"}
+		"moveSet": {"1": "Tackle"}
 	},
 	"snoopDogg": {
 		"name": "Snoop Dogg", "hp": 45,
 		"attack": 50, "defense": 55, "specialAttack": 75, "specialDefense": 65,
 		"speed": 30,
 		"types": ["Grass", "Poison"],
-		"moveSet": {"1": "tackle"}
+		"moveSet": {"1": "Tackle"}
 	}
 }

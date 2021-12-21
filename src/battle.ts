@@ -1,4 +1,4 @@
-import Pokemon, {Move, MoveInstance, DamageCategory, Stats} from "./pokemon";
+import Pokemon, {Move, MoveStats, MoveInstance, DamageCategory, Stats, moveStats} from "./pokemon";
 import Trainer from "./Trainer";
 import clamp from "./clamp";
 
@@ -90,7 +90,7 @@ class Battler {
 }
 
 /** Returns whether usage of the specified move missed. */
-function isMiss(attacker: Battler, move: Move): boolean {
+function isMiss(attacker: Battler, move: MoveStats): boolean {
 	return move.accuracy
 		* statStageMultiplier(clampStatStage(attacker.statStages.accuracy - attacker.statStages.evasion))
 		< 100 * Math.random();
@@ -104,7 +104,7 @@ function isMiss(attacker: Battler, move: Move): boolean {
  * @param move The move in question.
  * @see http://bulbapedia.bulbagarden.net/wiki/Damage_modification#Damage_formula
  */
-function calculateDamage(attacker: Battler, defender: Battler, move: Move) {
+function calculateDamage(attacker: Battler, defender: Battler, move: MoveStats) {
 	const attackerStats = attacker.calculateStats(),
 		defenderStats = defender.calculateStats();
 	let attack, defense;
@@ -167,8 +167,8 @@ type Action =
 enum WeatherType {
 	/** The default weather type. */
 	ClearSkies,
-		/** Makes all pokemon immune to freezing. */
-		HarshSunlight, Rain, Sandstorm, Hail
+	/** Makes all pokemon immune to freezing. */
+	HarshSunlight, Rain, Sandstorm, Hail
 }
 
 /**
@@ -204,7 +204,7 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 
 		const queue = [{battler: player, ...playerAction}, {battler: enemy, ...enemyAction}].sort((a, b) =>
 			a.type === ActionType.Attack && b.type === ActionType.Attack
-			? b.move.type.priority - a.move.type.priority
+			? moveStats(b.move.type).priority - moveStats(a.move.type).priority
 			|| b.battler.calculateStats().speed - a.battler.calculateStats().speed
 			: b.type - a.type);
 		actionLoop:
@@ -226,11 +226,11 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 				case ActionType.Attack:
 					--action.move.pp; // Deplete PP
 					const move = action.move.type;
-					const miss = isMiss(attacker, move);
+					const miss = isMiss(attacker, moveStats(move));
 					yield { type: "useMove", pokemon: attacker.pokemon, move, isPlayer, miss };
 
 					if (!miss) {
-						let { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, move);
+						let { damage, typeEffectiveness, crit } = calculateDamage(attacker, defender, moveStats(move));
 						defender.pokemon.hp = Math.max(0, defender.pokemon.hp - damage);
 						yield { type: "setHealth", isPlayer: !isPlayer, percentage: defender.pokemon.getHpPercentage() };
 						if (crit) yield { type: "msgbox", text: "A critical hit!", time: 1500 }

@@ -2,7 +2,7 @@ var PushTrigger = require("PushTrigger.js");
 import Direction, {DirectionComponent} from "direction";
 import thread from "thread";
 import Trainer from "Trainer";
-import Pokemon, { pokemons, moves } from "pokemon";
+import Pokemon, { Move, pokemons } from "pokemon";
 
 import Position from "Position";
 import Interactable from "Interactable";
@@ -26,7 +26,7 @@ export default function(game, loader) {
 				+ "Stop watching anime and go out and play, you son of a bitch.\n"
 				+ "I heard Prof. Clark has moved in.\nMaybe you could go bother him.");
 			yield game.battle(new Trainer("Charles Ingvar", [
-				new Pokemon(pokemons.slowpoke, 4, [ moves.tackle ])
+				new Pokemon(pokemons.slowpoke, 4, [ Move.Tackle ])
 			]));
 			game.release();
 		}));

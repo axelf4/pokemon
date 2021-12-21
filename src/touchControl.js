@@ -1,4 +1,4 @@
-/** Implements on-screen touch controls. */
+/** @file Implements on-screen touch controls. */
 
 /** Heuristic for checking if we should display on-screen controls. */
 function isTouchDevice() {
