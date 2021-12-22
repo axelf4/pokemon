@@ -69,7 +69,7 @@ export function isWhitespace(ch: string): boolean {
  * @param a The index of the first element.
  * @param b The index of the second element.
  */
-export function swapElements<T>(array: T[], a: number, b: number): void {
+export function swapElements(array: any[], a: number, b: number): void {
 	if (a === b) return;
 	array[a] = array.splice(b, 1, array[a])[0];
 }

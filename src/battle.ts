@@ -1,6 +1,6 @@
 import Pokemon, {Move, MoveStats, MoveInstance, DamageCategory, Stats, moveStats} from "./pokemon";
 import Trainer from "./Trainer";
-import {clamp} from "./utils";
+import {clamp, unreachable} from "./utils";
 
 /**
  * Type effectiveness for <code>[attacking move type][defending type]</code>.
@@ -51,44 +51,6 @@ const defaultStatStages: StatStages = {
 	speed: 0, accuracy: 0, evasion: 0,
 } as const;
 
-/** A player/enemy battler that may have a pokemon in battle. */
-class Battler {
-	private active?: {pokemon: Pokemon, statStages: StatStages};
-
-	constructor(readonly trainer: Trainer, readonly isPlayer: boolean) {}
-
-	/**
-	 * Makes this battler switch to the specified pokemon.
-	 *
-	 * Returns a battle event for this action.
-	 */
-	sendOut(newPokemon: Pokemon): BattleEvent {
-		const oldPokemon = this.active?.pokemon;
-		// Reset stat stages and volatile statuses
-		this.active = {pokemon: newPokemon, statStages: {...defaultStatStages}};
-		return {
-			type: "sendOut", isPlayer: this.isPlayer, pokemon: newPokemon,
-			oldPokemon: oldPokemon && !oldPokemon.isFainted() ? oldPokemon : null,
-		};
-	}
-
-	get pokemon() {
-		return this.active!.pokemon;
-	}
-
-	get statStages() {
-		return this.active!.statStages;
-	}
-
-	calculateStats() {
-		let {pokemon, statStages} = this.active!;
-		let stats = pokemon.calculateStats();
-		for (let key of Object.keys(stats).filter(k => k !== "hp"))
-			stats[key as keyof Stats] *= statStageMultiplier(statStages[key as keyof StatStages]);
-		return stats;
-	}
-}
-
 /** Returns whether usage of the specified move missed. */
 function isMiss(attacker: Battler, move: MoveStats): boolean {
 	return move.accuracy
@@ -105,8 +67,8 @@ function isMiss(attacker: Battler, move: MoveStats): boolean {
  * @see http://bulbapedia.bulbagarden.net/wiki/Damage_modification#Damage_formula
  */
 function calculateDamage(attacker: Battler, defender: Battler, move: MoveStats) {
-	const attackerStats = attacker.calculateStats(),
-		defenderStats = defender.calculateStats();
+	const attackerStats = calcStats(attacker),
+		defenderStats = calcStats(defender);
 	let attack, defense;
 	switch (move.damageCategory) {
 		case DamageCategory.Physical:
@@ -140,6 +102,79 @@ function canFlee(speed: number, enemySpeed: number, escapeAttempts: number): boo
 	return 255 * Math.random() < (128 * speed / (enemySpeed || 1) + 30 * escapeAttempts) % 256;
 }
 
+/**
+ * Enumeration of weather types.
+ *
+ * @see https://bulbapedia.bulbagarden.net/wiki/Weather#Types_of_weather_and_effects
+ */
+enum WeatherType {
+	/** The default weather type. */
+	ClearSkies,
+	/** Makes all pokemon immune to freezing. */
+	HarshSunlight,
+	Rain,
+	Sandstorm,
+	Hail,
+}
+
+/**
+ * Returns the experience yield from defeating a enemy pokemon.
+ * @param isWild Whether the fainted Pokémon is wild
+ * @param fainted The fainted Pokémon.
+ * @param participators The Pokémon that participated in the battle from the victorious party.
+ * @return The experience gained for each participant.
+ *
+ * @see https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula
+ */
+function expGain(isWild: boolean, fainted: Pokemon, participators: Pokemon[]): number {
+	return (isWild ? 1 : 1.5) * 125 * fainted.level
+		/ (7 * participators.filter(p => !p.isFainted()).length) | 0;
+}
+
+/** A player/enemy battler with a pokemon in battle. */
+interface Battler {
+	trainer: Trainer;
+	isPlayer: boolean;
+	pokemon: Pokemon;
+	statStages: StatStages;
+}
+
+type MaybeBattler = { [P in keyof Battler]: Battler[P] | (P extends "pokemon" ? null : never) };
+
+/**
+ * Makes the battler switch to the specified pokemon.
+ *
+ * Returns a battle event for this action.
+ */
+function sendOut(battler: MaybeBattler, newPokemon: Pokemon): BattleEvent {
+	const oldPokemon = battler.pokemon && !battler.pokemon.isFainted
+		? battler.pokemon : null;
+	battler.pokemon = newPokemon;
+	// Reset stat stages and volatile statuses
+	battler.statStages = {...defaultStatStages};
+	return {
+		type: "sendOut", isPlayer: battler.isPlayer,
+		pokemon: newPokemon, oldPokemon,
+	};
+}
+
+function createBattler(trainer: Trainer, isPlayer: boolean): [BattleEvent, Battler] {
+	let battler = {
+		trainer, isPlayer,
+		pokemon: null, statStages: {...defaultStatStages}
+	};
+	let initialPokemon = trainer.getPrimaryPokemon() ?? unreachable("The trainer has no usable pokemon");
+	let sendOutEvent = sendOut(battler, initialPokemon);
+	return [sendOutEvent, {...battler, pokemon: battler.pokemon!}];
+}
+
+function calcStats({pokemon, statStages}: Battler): Stats {
+	let stats = pokemon.calculateStats();
+	for (let key of Object.keys(stats).filter(k => k !== "hp"))
+		stats[key as keyof Stats] *= statStageMultiplier(statStages[key as keyof StatStages]);
+	return stats;
+}
+
 /** Types of events yielded from the battle generator function. */
 type BattleEvent =
 	| { type: "msgbox"; text: string, time?: number }
@@ -160,62 +195,38 @@ type Action =
 	| { type: ActionType.Run };
 
 /**
- * Enumeration of weather types.
- *
- * @see https://bulbapedia.bulbagarden.net/wiki/Weather#Types_of_weather_and_effects
- */
-enum WeatherType {
-	/** The default weather type. */
-	ClearSkies,
-	/** Makes all pokemon immune to freezing. */
-	HarshSunlight, Rain, Sandstorm, Hail
-}
-
-/**
- * Returns the experience yield from defeating a enemy pokemon.
- * @param isWild Whether the fainted Pokémon is wild
- * @param fainted The fainted Pokémon.
- * @param participators The Pokémon that participated in the battle from the victorious party.
- * @return The experience gained for each participant.
- *
- * @see https://bulbapedia.bulbagarden.net/wiki/Experience#Gain_formula
- */
-function expGain(isWild: boolean, fainted: Pokemon, participators: Pokemon[]): number {
-	return (isWild ? 1 : 1.5) * 125 * fainted.level
-		/ (7 * participators.filter(p => !p.isFainted()).length) | 0;
-}
-
-/**
  * Simulates a battle.
  *
  * @param playerTrainer The player trainer.
  * @param enemyTrainer The enemy trainer.
  */
 export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): Generator<BattleEvent, void, Action | undefined> {
-	const player = new Battler(playerTrainer, true), enemy = new Battler(enemyTrainer, false);
-	yield enemy.sendOut(enemy.trainer.getPrimaryPokemon()!);
-	yield player.sendOut(player.trainer.getPrimaryPokemon()!);
+	const [playerSendOut, player] = createBattler(playerTrainer, true),
+		[enemySendOut, enemy] = createBattler(enemyTrainer, false);
+	yield enemySendOut;
+	yield playerSendOut;
 
 	let escapeAttempts = 0;
 	battleLoop:
 	for (;;) {
-		const playerAction = (yield { type: "queryAction", pokemon: player.pokemon })!,
+		const playerAction = (yield { type: "queryAction", pokemon: player.pokemon }) ?? unreachable(),
 			enemyAction: Action = { type: ActionType.Attack, move: enemy.pokemon.moves[0]! }; // TODO add AI
 
-		const queue = [{battler: player, ...playerAction}, {battler: enemy, ...enemyAction}].sort((a, b) =>
+		const queue = [[player, playerAction] as const, [enemy, enemyAction] as const].sort(([battlerA, a], [battlerB, b]) =>
 			a.type === ActionType.Attack && b.type === ActionType.Attack
 			? moveStats(b.move.type).priority - moveStats(a.move.type).priority
-			|| b.battler.calculateStats().speed - a.battler.calculateStats().speed
+			|| calcStats(battlerB).speed - calcStats(battlerA).speed
 			: b.type - a.type);
 		actionLoop:
-		for (let action of queue) {
-			const battler = action.battler, {trainer, isPlayer} = battler;
-			const [attacker, defender] = isPlayer ? [player, enemy] : [enemy, player];
+		for (let [battler, action] of queue) {
+			const isPlayer = battler.isPlayer,
+				[attacker, defender]
+				= isPlayer ? [player, enemy] : [enemy, player];
 
 			switch (action.type) {
 				case ActionType.Run:
 					if (!isPlayer) throw new Error("Enemy fleeing not yet implemented.");
-					if (canFlee(player.calculateStats().speed, enemy.calculateStats().speed, ++escapeAttempts)) {
+					if (canFlee(calcStats(attacker).speed, calcStats(defender).speed, ++escapeAttempts)) {
 						yield { type: "msgbox", text: "Got away safely!" };
 						break battleLoop;
 					} else {
@@ -259,7 +270,7 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 							if (!nextIndex) throw new Error("Should provide switch action");
 							if (nextIndex.type !== ActionType.SwitchPokemon) throw new Error();
 							let newPokemon = player.trainer.pokemons[nextIndex.pokemonIndex];
-							yield player.sendOut(newPokemon);
+							yield sendOut(player, newPokemon);
 						} else {
 							yield { type: "msgbox", text: player.trainer.name + " is out of usable pokemon!"};
 							yield { type: "msgbox", text: player.trainer.name + " blacked out!"};
@@ -294,8 +305,8 @@ export default function* battle(playerTrainer: Trainer, enemyTrainer: Trainer): 
 					break;
 
 				case ActionType.SwitchPokemon:
-					let newPokemon = battler.trainer.pokemons[action.pokemonIndex];
-					yield battler.sendOut(newPokemon);
+					let newPokemon = attacker.trainer.pokemons[action.pokemonIndex];
+					yield sendOut(attacker, newPokemon);
 					break;
 			}
 		}
