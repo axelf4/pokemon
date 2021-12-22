@@ -1,7 +1,11 @@
-import { mapValues, range, isPowerOfTwo, nextPowerOfTwo } from "./utils";
+import { mapValues, range, isPowerOfTwo, nextPowerOfTwo, swapElements } from "./utils";
 
 test("range should be inclusive/exclusive", () => {
 	expect(range(1, 3)).toEqual([1, 2]);
+});
+
+test("range with one arg implies starting at zero", () => {
+	expect(range(3)).toEqual([0, 1, 2]);
 });
 
 test("can map the values of an object", () => {
@@ -28,4 +32,10 @@ describe("pow2 utilities", () => {
 		expect(nextPowerOfTwo(1)).toBe(1);
 		expect(nextPowerOfTwo(16)).toBe(16);
 	});
+});
+
+test("can swap two elements of an array", () => {
+	let xs = [1, 2, 3];
+	swapElements(xs, 0, 2);
+	expect(xs).toEqual([3, 2, 1]);
 });

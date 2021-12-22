@@ -1,9 +1,7 @@
-import * as input from "input";
+import { keys } from "./input";
 import Direction, * as direction from "direction";
 import Position from "Position";
 import { Movement } from "movement";
-
-var keys = input.keys;
 
 export class PlayerMovementController {
 	getTarget(game, time, entity, position) {

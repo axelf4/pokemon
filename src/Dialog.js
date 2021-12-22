@@ -1,4 +1,4 @@
-import {KeyAction} from "input";
+import {KeyAction} from "./input";
 import Container from "Container";
 import Label from "./Label";
 var align = require("align.js");

@@ -1,30 +1,28 @@
 import nano from "nano-ecs";
-var Widget = require("./Widget");
-var player = require("player.js");
-var resources = require("resources.js");
+import {PlayerMovementController, createPlayer} from "./player";
 import Stack from "Stack";
 import Panel, * as panel from "./Panel";
-import Dialog from "Dialog";
+import Dialog from "./Dialog";
 import State from "State";
 import {DescendantFocusability} from "WidgetGroup";
-import {KeyAction} from "input";
-import Direction, * as direction from "direction";
+import {KeyAction} from "./input";
+import Direction, * as direction from "./direction";
 var Animation = require("Animation");
 import {mat4, vec3, quat} from "gl-matrix";
-import Select from "Select";
-var renderer = require("renderer");
-import range from "range";
+import Select from "./Select";
+import * as renderer from "./renderer";
 import * as stateManager from "stateManager";
 import TransitionState, {fade, createBattleTransition} from "TransitionState";
 import {listPokemon, listItems} from "ListState";
 import * as measureSpec from "./measureSpec";
 import {Mode} from "./measureSpec";
-import BattleState from "BattleState";
+import BattleState from "./BattleState";
 import { MovementSystem, Movement, LineOfSight,
 	StillMovementController, WalkForwardMovementController,
-	PathMovementController } from "movement";
+	PathMovementController } from "./movement";
 var lerp = require("lerp");
 import * as APU from "apu";
+var resources = require("resources.js");
 
 import Position from "Position";
 import SpriteComponent from "SpriteComponent";
@@ -55,7 +53,7 @@ class GameScreen extends Stack {
 				// Hacky way of connecting input to player interacting with shit
 				let pos = game.player.position,
 					movement = game.player.movement;
-				if (!movement.isMoving && movement.controller instanceof player.PlayerMovementController) {
+				if (!movement.isMoving && movement.controller instanceof PlayerMovementController) {
 					let playerDirection = game.player.directionComponent;
 					switch (key) {
 						case " ":
@@ -128,7 +126,7 @@ var Game = function(loader, batch, playerTrainer) {
 	this.updateHooks = [];
 	this.pushTriggers = [];
 
-	this.player = player.createPlayer(this, loader, this.em);
+	this.player = createPlayer(this, loader, this.em);
 	this.battleTransition = null;
 	createBattleTransition(loader).then(transition => {this.battleTransition = transition;});
 };
@@ -467,10 +465,5 @@ Game.prototype.battle = async function(enemyTrainer) {
 	battleBgm.play();
 	transition.transitionTo(battleState);
 };
-
-/*audio.loadAudio("assets/masara-town.mp3", function(buffer) {
-	var source = audio.playAudio(buffer);
-	source.loop = true;
-});*/
 
 export default Game;

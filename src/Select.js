@@ -1,9 +1,8 @@
 import Container from "Container";
 import Panel, {Direction, Align} from "./Panel";
 import Label from "./Label";
-var align = require("align.js");
 var resources = require("resources.js");
-import {KeyAction} from "input";
+import {KeyAction} from "./input";
 
 // TODO Add arrow instead of border
 class Option extends Container {
@@ -29,18 +28,19 @@ export default class Select extends Container {
 
 		var rectangleShape = optionContents.length % columnCount === 0;
 		var columns = new Array(columnCount);
-		for (var i = 0; i < columnCount; ++i) {
-			let column = new Panel(Direction.Column, Align.Stretch);
-			column.marginRight = 10; // Pokemon Emerald-like
+		for (let i = 0; i < columnCount; ++i) {
+			let column = new Panel(Direction.Column);
 			if (rectangleShape) column.justify = Align.SpaceAround;
+			column.style.align = Align.Stretch;
+			column.marginRight = 10; // Pokemon Emerald-like
 			mainPanel.addWidget(column);
 			columns[i] = column;
 		}
 
 		const options = this.options = new Array(optionContents.length);
-		for (var i = 0; i < optionContents.length; ++i) {
-			var columnIndex = i % columnCount;
-			var rowIndex = Math.floor(i / columnCount);
+		for (let i = 0; i < optionContents.length; ++i) {
+			let columnIndex = i % columnCount,
+				rowIndex = Math.floor(i / columnCount);
 
 			var content = typeof optionContents[i] === "string" ? new Label(resources.font, optionContents[i]) : optionContents[i];
 			var option = new Option(content);

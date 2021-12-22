@@ -1,16 +1,14 @@
 import State from "State";
-import {KeyAction} from "input";
+import {KeyAction} from "./input";
 import * as stateManager from "stateManager";
 import Stack from "Stack";
-import Panel from "Panel";
+import Panel, * as panel from "./Panel";
 import Select from "Select";
-const align = require("align");
 const resources = require("resources");
-import swapElements from "swapElements";
 import Label from "./Label";
 import Image from "./Image";
 import Healthbar from "Healthbar";
-import clamp from "clamp";
+import {clamp, swapElements} from "./utils";
 import LoadGuard from "LoadGuard";
 import {getName as getItemName} from "./item";
 
@@ -33,17 +31,15 @@ export default class ListState extends State {
 		this.callback = null;
 		let switchingIndex = -1; // Index of pokemon currently switching or -1
 
-		const contextPanel = new Panel();
-		contextPanel.justify = Panel.ALIGN_FLEX_END;
+		const contextPanel = new Panel(panel.Direction.Row, panel.Align.FlexEnd);
 
 		this.page = 0;
 		this.maxPages = Math.ceil(items.length / numItemsPerPage);
 		(this.rebuildUi = () => {
 			this.widget.removeAllWidgets();
-			const mainPanel = new Panel();
-			mainPanel.direction = Panel.DIRECTION_COLUMN;
+			const mainPanel = new Panel(panel.Direction.Column);
 			const pageLabel = new Label(resources.font, `Page ${this.page + 1} of ${this.maxPages}`)
-			pageLabel.style.align = Panel.ALIGN_CENTER;
+			pageLabel.style.align = panel.Align.Center;
 			mainPanel.addWidget(pageLabel);
 
 			const contents = items.slice(numItemsPerPage * this.page, numItemsPerPage * (this.page + 1))
@@ -83,12 +79,12 @@ export default class ListState extends State {
 						}
 					}
 				});
-				contextMenu.style.align = align.END;
+				contextMenu.style.align = panel.Align.FlexEnd;
 				contextPanel.addWidget(contextMenu);
 				contextMenu.requestFocus();
 			});
 			select.flex = 1;
-			select.style.align = align.STRETCH;
+			select.style.align = panel.Align.Stretch;
 			select.margin(10);
 			mainPanel.addWidget(select);
 
@@ -136,8 +132,7 @@ export class ListPokemonState extends ListState {
 	}
 
 	itemToWidget(loader, pokemon) {
-		const panel = new Panel();
-		panel.direction = Panel.DIRECTION_ROW;
+		const root = new Panel(panel.Direction.Row);
 
 		const icon = new Image(null);
 		loader.load("assets/pokemon/Slowpoke.png").then(region => {
@@ -145,24 +140,22 @@ export class ListPokemonState extends ListState {
 		});
 		icon.style.width = icon.style.height = 35;
 		icon.marginRight = 10;
-		panel.addWidget(icon);
+		root.addWidget(icon);
 
-		const vert = new Panel();
-		vert.jusify = Panel.ALIGN_SPACE_AROUND;
-		vert.direction = Panel.DIRECTION_COLUMN;
-		vert.style.align = align.CENTER;
-		panel.addWidget(vert);
+		const vert = new Panel(panel.Direction.Column, panel.Align.SpaceAround);
+		vert.style.align = panel.Align.Center;
+		root.addWidget(vert);
 
 		const nameLabel = new Label(resources.font, `${pokemon.name} Lv. ${pokemon.level}`);
 		nameLabel.marginBottom = 5;
 		vert.addWidget(nameLabel);
 
 		const healthbar = new Healthbar(loader, pokemon.getHpPercentage());
-		healthbar.style.align = align.STRETCH;
+		healthbar.style.align = panel.Align.Stretch;
 		healthbar.style.width = 170;
 		vert.addWidget(healthbar);
 
-		return panel;
+		return root;
 	}
 }
 

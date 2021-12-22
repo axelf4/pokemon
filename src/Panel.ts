@@ -182,7 +182,8 @@ export default class Panel extends WidgetGroup {
 					childBasis += flexGrowFactor * remainingSpace / totalFlexGrowFactors;
 			}
 
-			let childCrossSize = getStyleSize(child, crossAxis) ?? availableCross;
+			let childCrossSize = getStyleSize(child, crossAxis)
+				?? availableCross - getMargin(child, crossAxis);
 			let childCrossMode = getStyleSize(child, crossAxis) !== undefined
 				|| (crossMode === Mode.Exactly && getAlign(child) === Align.Stretch)
 				? Mode.Exactly

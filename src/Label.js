@@ -1,7 +1,7 @@
 import Widget from "./Widget";
 import * as measureSpec from "./measureSpec";
 import {Mode} from "./measureSpec";
-var isWhitespace = require("isWhitespace.js");
+import {isWhitespace} from "./utils";
 var align = require("align.js");
 
 function computeVisibleGlyphs(font, str, start, end, maxAdvance) {

@@ -1,6 +1,6 @@
 import Pokemon, {Move, MoveStats, MoveInstance, DamageCategory, Stats, moveStats} from "./pokemon";
 import Trainer from "./Trainer";
-import clamp from "./clamp";
+import {clamp} from "./utils";
 
 /**
  * Type effectiveness for <code>[attacking move type][defending type]</code>.

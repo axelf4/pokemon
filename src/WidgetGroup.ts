@@ -78,8 +78,6 @@ export default abstract class WidgetGroup extends Widget {
 			batch.setTransformMatrix(oldMatrix);
 	}
 
-	drawChildren(batch: SpriteBatch, dt: number, time: number) { this.draw(batch, dt, time); }
-
 	clearFocus() {
 		super.clearFocus();
 		if (this.focused) {
