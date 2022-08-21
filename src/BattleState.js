@@ -2,16 +2,14 @@ import State from "State";
 import Panel, {Direction, Align} from "./Panel";
 import Container from "Container";
 import Dialog from "Dialog";
-var align = require("align.js");
 import Select from "Select";
 import NinePatch from "NinePatch";
 import * as stateManager from "stateManager";
 import Label from "./Label";
-var Widget = require("Widget");
 import * as measureSpec from "./measureSpec";
 import Healthbar from "Healthbar";
 var resources = require("resources.js");
-import { Color } from "SpriteBatch";
+import { Color, white } from "SpriteBatch";
 import battle, { ActionType } from "battle";
 import {mat4, vec3, quat} from "gl-matrix";
 const renderer = require("renderer");
@@ -65,11 +63,11 @@ export default class BattleState extends State {
 				container.addWidget(vPanel);
 
 				const label = new Label(resources.font);
-				label.style.align = align.STRETCH;
+				label.style.align = Align.Stretch;
 				vPanel.addWidget(label);
 
 				const hpBar = new Healthbar(loader);
-				hpBar.style.align = align.STRETCH;
+				hpBar.style.align = Align.Stretch;
 				vPanel.addWidget(hpBar);
 
 				let expLabel;
@@ -102,7 +100,7 @@ export default class BattleState extends State {
 					info.removeAllWidgets();
 
 					var dialog = new Dialog(text, resolve, passive);
-					dialog.style.align = align.STRETCH;
+					dialog.style.align = Align.Stretch;
 					dialog.flex = 1;
 					info.addWidget(dialog);
 					dialog.requestFocus();
@@ -115,8 +113,14 @@ export default class BattleState extends State {
 				});
 			};
 
-			this.playerOffset = { x: 1, y: 0, a: 1 };
-			this.enemyOffset = { x: 1, y: 0, a: 1 };
+			this.playerObject = { x: 1, y: 0, a: 1,
+								  texture: this.characterTex0,
+								  rotation: 0 };
+			this.playerScene = [];
+			this.enemyObject = { x: 1, y: 0, a: 1,
+								 texture: this.characterTex1,
+								 rotation: 0 };
+			this.enemyScene = [];
 
 			await showDialog(`${enemy.getName()} wants to fight!`);
 
@@ -128,8 +132,10 @@ export default class BattleState extends State {
 				if (done) break;
 				console.log("Battle event:", battleEvent);
 
-				const object0 = battleEvent.isPlayer ? this.playerOffset : this.enemyOffset;
-				const object1 = battleEvent.isPlayer ? this.enemyOffset : this.playerOffset;
+				const object0 = battleEvent.isPlayer ? this.playerObject : this.enemyObject,
+					  object1 = battleEvent.isPlayer ? this.enemyObject : this.playerObject,
+					  scene0 = battleEvent.isPlayer ? this.playerScene : this.enemyScene,
+					  scene1 = battleEvent.isPlayer ? this.enemyScene : this.playerScene;
 				switch (battleEvent.type) {
 					case "msgbox":
 						let options = {};
@@ -142,11 +148,11 @@ export default class BattleState extends State {
 						while (!playerAction) {
 							var selected = await new Promise(function(resolve, reject) {
 								var dialog = new Dialog(`What will ${pokemon.name} do?`, null, true);
-								dialog.style.align = align.STRETCH;
+								dialog.style.align = Align.Stretch;
 								dialog.flex = 1;
 								info.addWidget(dialog);
 								var select = new Select(["FIGTH", "BAG", "POKEMON", "RUN"], 2, resolve);
-								select.style.align = align.STRETCH;
+								select.style.align = Align.Stretch;
 								info.addWidget(select);
 								select.requestFocus();
 							});
@@ -158,7 +164,7 @@ export default class BattleState extends State {
 									const moveId = await new Promise(function(resolve, reject) {
 										const moveNames = pokemon.moves.map(move => moveStats(move.type).name);
 										const select = new Select(moveNames, 2, resolve);
-										select.style.align = align.STRETCH;
+										select.style.align = Align.Stretch;
 										select.flex = 1;
 										info.addWidget(select);
 										select.requestFocus();
@@ -221,7 +227,7 @@ export default class BattleState extends State {
 							showDialog("But it missed.", {showFor: 1000});
 						} else {
 							showDialog(`${battleEvent.pokemon.name} used ${moveStats(battleEvent.move).name}!`, {passive: true});
-							await moveAnimations[battleEvent.move](object0, object1);
+							await moveAnimations[battleEvent.move](loader, object0, object1, scene0, scene1);
 						}
 						break;
 					case "faint":
@@ -285,24 +291,28 @@ export default class BattleState extends State {
 			almostBottomCenter = (width, height) => [-width / 2, -0.9 * height],
 			middleCenter = (width, height) => [-width / 2, -height / 2];
 
-		const drawPokemon = (flipped, offset, texture) => {
+		const drawScene = (flipped, object, scene) => {
 			const transform = mat4.fromRotationTranslationScale(mat4.create(), quat.create(),
 				vec3.fromValues(this.width / 2, this.height / 2, 0),
 				vec3.fromValues(this.width / 2 * (flipped ? -1 : 1), this.width / 2, 0));
 			mat4.multiply(transform, oldMatrix, transform);
 			batch.setTransformMatrix(transform);
 
-			const draw = (tex, x, y, width, align, color) => {
+			const draw = (tex, x, y, width, align, color, rotation) => {
 				const {texture: {width: texWidth, height: texHeight}, u1, v1, u2, v2} = tex,
 					  height = width * ((v2 - v1) * texHeight) / ((u2 - u1) * texWidth),
 					  [ox, oy] = align(width, height);
-				tex.draw(batch, x + ox, y + oy, x + ox + width, y + oy + height, color);
+				tex.drawRotated(batch, x + ox + width / 2, y + oy + height / 2, width, height, rotation, color);
 			};
-			draw(this.groundTex, 0.5, 0.0, 0.7, middleCenter);
-			draw(texture, 0.5 + offset.x, 0.0 + offset.y, 0.4, almostBottomCenter, Color.fromAlpha(offset.a));
+			draw(this.groundTex, 0.5, 0.0, 0.7, middleCenter, white, 0);
+			draw(object.texture, 0.5 + object.x, 0.0 + object.y, 0.4, almostBottomCenter, Color.fromAlpha(object.a), 0);
+			for (let obj of scene) {
+				draw(obj.texture, 0.5 + obj.x, obj.y - 0.2, obj.width, middleCenter, Color.fromAlpha(obj.a), obj.rotation);
+			}
 		};
-		drawPokemon(false, this.enemyOffset, this.characterTex1);
-		drawPokemon(true, this.playerOffset, this.characterTex0);
+		drawScene(false, this.enemyObject, this.enemyScene);
+		drawScene(true, this.playerObject, this.playerScene);
+
 
 		batch.setTransformMatrix(oldMatrix);
 		batch.end();

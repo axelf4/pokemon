@@ -186,6 +186,13 @@ export default class SpriteBatch {
 
 	draw(texture: WebGLTexture, x1: number, y1: number, x2: number, y2: number,
 		 u1: number, v1: number, u2: number, v2: number, color = white): void {
+		this.draw2(texture, x1, y1, x2, y1, x2, y2, x1, y2, u1, v1, u2, v2, color);
+	}
+
+	draw2(texture: WebGLTexture,
+		  x1: number, y1: number, x2: number, y2: number,
+		  x3: number, y3: number, x4: number, y4: number,
+		 u1: number, v1: number, u2: number, v2: number, color = white): void {
 		if (!this.drawing) throw new Error("SpriteBatch.begin must be called before draw.");
 		if (texture !== this.lastTexture) {
 			this.flush();
@@ -202,19 +209,19 @@ export default class SpriteBatch {
 		this.vertices[this.idx + 4] = packedColor;
 
 		this.vertices[this.idx + 5] = x2;
-		this.vertices[this.idx + 6] = y1;
+		this.vertices[this.idx + 6] = y2;
 		this.vertices[this.idx + 7] = u2;
 		this.vertices[this.idx + 8] = v1;
 		this.vertices[this.idx + 9] = packedColor;
 
-		this.vertices[this.idx + 10] = x2;
-		this.vertices[this.idx + 11] = y2;
+		this.vertices[this.idx + 10] = x3;
+		this.vertices[this.idx + 11] = y3;
 		this.vertices[this.idx + 12] = u2;
 		this.vertices[this.idx + 13] = v2;
 		this.vertices[this.idx + 14] = packedColor;
 
-		this.vertices[this.idx + 15] = x1;
-		this.vertices[this.idx + 16] = y2;
+		this.vertices[this.idx + 15] = x4;
+		this.vertices[this.idx + 16] = y4;
 		this.vertices[this.idx + 17] = u1;
 		this.vertices[this.idx + 18] = v2;
 		this.vertices[this.idx + 19] = packedColor;

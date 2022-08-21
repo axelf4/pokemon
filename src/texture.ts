@@ -33,8 +33,8 @@ export function loadTexture(src: string): Promise<TexRegion> {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
-			resolve(new TexRegion({ texture, width: img.width, height: img.height },
-									0, 0, regionWidth, regionHeight));
+			resolve(TexRegion.fromPixelCoords({ texture, width: img.width, height: img.height },
+											  0, 0, regionWidth, regionHeight));
 		};
 		image.onerror = reject;
 		image.src = src;
@@ -42,17 +42,15 @@ export function loadTexture(src: string): Promise<TexRegion> {
 }
 
 export class TexRegion {
-	u1: number;
-	v1: number;
-	u2: number;
-	v2: number;
-
 	constructor(readonly texture: Texture,
-				x0 = 0, y0 = 0, x1 = texture.width, y1 = texture.height) {
-		this.u1 = x0 / texture.width;
-		this.v1 = y0 / texture.height;
-		this.u2 = x1 / texture.width;
-		this.v2 = y1 / texture.height;
+				readonly u1 = 0, readonly v1 = 0,
+				readonly u2 = 1, readonly v2 = 1) {}
+
+	static fromPixelCoords(texture: Texture,
+						   x0 = 0, y0 = 0, x1 = texture.width, y1 = texture.height) {
+		return new this(texture,
+						x0 / texture.width, y0 / texture.height,
+						x1 / texture.width, y1 / texture.height);
 	}
 
 	getRegion(): {x0: number, y0: number, x1: number, y1: number} {
@@ -80,14 +78,41 @@ export class TexRegion {
 		return range(numRows).map(row => range(numCols).map(col => {
 			let x = x0 + col * (tileWidth + padding),
 			y = y0 + row * (tileHeight + padding);
-			return new TexRegion(this.texture, x, y, x + tileWidth, y + tileHeight);
+			return TexRegion.fromPixelCoords(this.texture, x, y, x + tileWidth, y + tileHeight);
 		}));
+	}
+
+	flipped(h: boolean, v: boolean): TexRegion {
+		return new TexRegion(this.texture,
+							 h ? this.u2 : this.u1, v ? this.v2 : this.v1,
+							 h ? this.u1 : this.u2, v ? this.v1 : this.v2);
 	}
 
 	draw(batch: SpriteBatch, x1: number, y1: number, x2: number, y2: number,
 		 color = white): void {
 		batch.draw(this.texture.texture, x1, y1, x2, y2,
 				   this.u1, this.v1, this.u2, this.v2, color);
+	}
+
+	drawRotated(batch: SpriteBatch, x: number, y: number, width: number, height: number,
+				rotation: number, color = white): void {
+		let w = width, h = height;
+		let cos = Math.cos(rotation), sin = Math.sin(rotation);
+		let x1 = -w * cos / 2 + h * sin / 2,
+		y1 = -w * sin / 2 - h * cos / 2,
+
+		x2 = w * cos / 2 + h * sin / 2,
+		y2 = w * sin / 2 - h * cos / 2,
+
+		x3 = w * cos / 2 - h * sin / 2,
+		y3 = w * sin / 2 + h * cos / 2,
+
+		x4 = -w * cos / 2 - h * sin / 2,
+		y4 = -w * sin / 2 + h * cos / 2;
+
+		batch.draw2(this.texture.texture, x + x1, y + y1, x + x2, y + y2,
+					x + x3, y + y3, x + x4, y + y4,
+					this.u1, this.v1, this.u2, this.v2, color);
 	}
 }
 

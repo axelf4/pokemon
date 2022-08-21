@@ -103,7 +103,7 @@ class AtlasLoader {
 		let {x, y, w, h, imageSrc} = frame;
 
 		return loadTextureCached(this.fileLoader, `atlases/${imageSrc}`)
-			.then(({texture}) => new TexRegion(texture, x, y, x + w, y + h));
+			.then(({texture}) => TexRegion.fromPixelCoords(texture, x, y, x + w, y + h));
 	}
 }
 
