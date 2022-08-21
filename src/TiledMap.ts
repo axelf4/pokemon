@@ -3,7 +3,7 @@ import * as base64 from "base64-js";
 import FileLoader from "./FileLoader";
 import { loadXml, loadTextureCached } from "./loader";
 import Texture from "./texture";
-import { unreachable } from "./utils";
+import { range, unreachable } from "./utils";
 import type SpriteBatch from "./SpriteBatch";
 
 class Tileset {
@@ -56,50 +56,49 @@ export default class TiledMap {
 		tileheight = parseInt(root.getAttribute("tileheight") ?? unreachable());
 
 		let tilesets = await Promise.all(
-			Array.prototype.map.call(
-				root.getElementsByTagName("tileset"),
-				async tilesetNode => {
+			Array.from(root.getElementsByTagName("tileset"))
+				.map(async tilesetNode => {
 					let source = tilesetNode.getAttribute("source");
 					let node = source ? (await loadXml(fileLoader, path.join(dirname, source))).documentElement : tilesetNode;
 					let imageNode = node.getElementsByTagName("image")[0];
-					let imagePath = path.join(dirname, imageNode.getAttribute("source"));
+					let imagePath = path.join(dirname, imageNode.getAttribute("source") ?? unreachable());
 
 					return new Tileset(
-						parseInt(tilesetNode.getAttribute("firstgid")),
-						node.getAttribute("name"),
-						parseInt(node.getAttribute("tilewidth")),
-						parseInt(node.getAttribute("tileheight")),
-						parseInt(node.getAttribute("spacing")),
-						parseInt(node.getAttribute("margin")),
-						parseInt(node.getAttribute("columns")),
-						parseInt(imageNode.getAttribute("width")),
-						parseInt(imageNode.getAttribute("height")),
+						parseInt(tilesetNode.getAttribute("firstgid") ?? unreachable()),
+						node.getAttribute("name") ?? unreachable(),
+						parseInt(node.getAttribute("tilewidth") ?? unreachable()),
+						parseInt(node.getAttribute("tileheight") ?? unreachable()),
+						parseInt(node.getAttribute("spacing") ?? "0"),
+						parseInt(node.getAttribute("margin") ?? "0"),
+						parseInt(node.getAttribute("columns") ?? unreachable()),
+						parseInt(imageNode.getAttribute("width") ?? unreachable()),
+						parseInt(imageNode.getAttribute("height") ?? unreachable()),
 						(await loadTextureCached(fileLoader, imagePath)).texture,
 					);
-				}) as Array<Promise<Tileset>>);
+				}));
 
-		// getElementsByTagName returns a HTMLLiveCollection
-		let layers = Array.prototype.map.call(root.getElementsByTagName("layer"), node => {
+		// getElementsByTagName returns an HTMLLiveCollection
+		let layers = Array.from(root.getElementsByTagName("layer")).map(node => {
 			let dataNode = node.getElementsByTagName("data")[0];
 			var encoding = dataNode.getAttribute("encoding");
 
 			let data;
-			if (encoding === "csv") {
-				data = dataNode.textContent.split(",").map((x: string) => parseInt(x));
-			} else if (encoding === "base64") {
-				throw new Error("TODO");
-			} else throw new Error("Unsupported encoding for TML layer data.");
-			/*
-			  if (data.getAttribute("encoding") !== "base64" || !!data.getAttribute("compression")) throw new Error("Bad encoding or compression.");
-			  var buffer = new Buffer(text, 'base64');
-			  for (var i = 0, length = map.width * map.height; i < length; i++) {
-			  // TODO account for flips
-			  layer.data[i] = buffer.readUInt32LE(i);
-			  }
-			*/
+			switch (encoding) {
+				case "csv":
+					data = dataNode.textContent?.split(",").map((x: string) => parseInt(x))
+						?? unreachable();
+					break;
+				case "base64":
+					let buffer = base64.toByteArray(dataNode.textContent?.trim() ?? unreachable()).buffer;
+					let dataview = new DataView(buffer);
+					data = range(buffer.byteLength / 4).map(i => dataview.getUint32(4 * i, true));
+					break;
+				default:
+					throw new Error("Unsupported encoding for TML layer data.");
+			}
 
-			return { name: node.getAttribute("name"), data };
-		}) as Array<Layer>;
+			return { name: node.getAttribute("name") ?? unreachable(), data };
+		});
 
 		return new TiledMap(width, height, tilewidth, tileheight, tilesets, layers);
 	};
