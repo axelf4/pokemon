@@ -83,7 +83,7 @@ const showPauseMenu = async function(game) {
 	const selected = await new Promise((resolve, reject) => {
 		let oldJustify = game.widget.uiLayer.justify;
 		game.widget.uiLayer.justify = panel.Align.FlexStart;
-		const optionNames = ["Pokemon", "Bag", "Save", "Exit"];
+		const optionNames = ["Pokemon", "Bag", "Save", "Toggle Fullscreen", "Exit"];
 		const select = new Select(optionNames, 1, selected => {
 			game.widget.uiLayer.justify = oldJustify;
 			game.widget.uiLayer.removeAllWidgets();
@@ -102,6 +102,8 @@ const showPauseMenu = async function(game) {
 			break;
 		case 2: // Save
 			break;
+		case 3: // Toggle fullscreen
+			renderer.toggleFullscreen();
 		default:
 			break;
 	}
