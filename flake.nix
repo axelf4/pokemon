@@ -11,7 +11,7 @@
       in {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            nodejs-14_x
+            nodejs
             tiled
 
             (callPackage ./gbs2vgm {})
