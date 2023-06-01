@@ -197,7 +197,7 @@ export default class SpriteBatch {
 		if (texture !== this.lastTexture) {
 			this.flush();
 			this.lastTexture = texture;
-		} else if (this.idx === this.size) {
+		} else if (this.idx >= this.size) {
 			this.flush();
 		}
 		const packedColor = pack(0xFF * color.r, 0xFF * color.g, 0xFF * color.b, 0xFF * color.a);
@@ -227,8 +227,6 @@ export default class SpriteBatch {
 		this.vertices[this.idx + 19] = packedColor;
 
 		this.idx += spriteSize;
-
-		this.flush();
 	}
 
 	setProjectionMatrix(matrix: mat4): void {
